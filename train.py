@@ -30,14 +30,14 @@ def get_flops(model, batch_size=None):
     return flops.total_float_ops
 
 COCO_DIR = './coco/'
-DATASET_DIR = './dataset/'
+DATASET_DIR = './datasets/'
 IMAGE_SIZE = [300, 300]
-BATCH_SIZE = 1
+BATCH_SIZE = 16
 MODEL_NAME = 'B0'
-EPOCHS = 1
+EPOCHS = 200
 checkpoint_filepath = './checkpoints/'
 base_lr = 1e-3 if checkpoint_filepath is None else 1e-5
-coco14 = tfds.load('coco/2014', data_dir=COCO_DIR, split='train')
+
 train2012 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
 valid2012 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
 
@@ -84,8 +84,10 @@ validation_steps = number_test // BATCH_SIZE
 print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
 model.summary()
-flops = get_flops(model, BATCH_SIZE)
-print(f"FLOPS: {flops}")
+
+#flops = get_flops(model, BATCH_SIZE)
+#print(f"FLOPS: {flops}")
+
 # plot_model(model,'model_b0_ssd.png',show_shapes=True)
 
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=1, min_lr=1e-5, verbose=1)

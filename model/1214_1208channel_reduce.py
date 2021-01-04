@@ -118,45 +118,11 @@ def convolution(input_tensor, channel, size, stride, padding, name):
 
     return conv
 
-def depthwiseConv(input_tensor, channel, size, stride, name):
-    kernel_size = (size, size)
-    kernel_stride = (stride, stride)
-    conv = DepthwiseConv2D(kernel_size=kernel_size, strides=kernel_stride, padding='same',
-                  )(input_tensor)
-    conv = BatchNormalization(axis=-1, name=name + '_bn')(conv)
-    conv = Activation('relu', name=name + '_relu')(conv)
-
-    return conv
-
-# shared dense layer
-
-def concat_convolution(input_tensor, channel, size, stride, padding, name):
-    kernel_size = (size, size)
-    kernel_stride = (stride, stride)
-    print("input_tensor", input_tensor)
-    # pointwise
-    point_feature = SeparableConv2D(channel/2, kernel_size, kernel_stride,padding='same')(input_tensor)
-    point_feature = BatchNormalization(axis=-1, name=name+'_bn1')(point_feature)
-    point_feature = Activation('relu', name=name+'_relu1')(point_feature)
-    print("point_feature",point_feature)
-
-    # depthwise
-
-    depth_feature = DepthwiseConv2D(kernel_size=kernel_size, strides=kernel_stride, padding='same',
-                  )(point_feature)
-    depth_feature = BatchNormalization(axis=-1, name=name+'_bn2')(depth_feature)
-    depth_feature = Activation('relu', name=name+'_relu2')(depth_feature)
-    print("depth_feature", depth_feature)
-    shared_dense = Dense
-    emphasize = tf.keras.layers.GlobalAveragePooling2D()(depth_feature)
-    emphasize = shared_dense(units=channel/8, activation='relu', name=name+'_shared_dense_1')(emphasize)
-    emphasize = shared_dense(units=channel/2, activation=None, name=name+'_shared_dense_2')(emphasize)
-    emphasize = sigmoid(emphasize)
-    emphasize = Multiply()([depth_feature, emphasize])
-
-
-    return emphasize
-
+def mbconv(x, expand, squeeze, name):
+    r = Conv2D(expand, (1,1), activation='relu', name=name+'_expand')(x)
+    r = DepthwiseConv2D((3,3),  activation='relu', name=name+'_depthwise')(r)
+    r = Conv2D(squeeze, (1,1), name=name+'_squeeze')(r)
+    return Add()([r, x])
 
 
 def deconvolution(input_tensor, channel, size, name):
@@ -194,51 +160,43 @@ def create_backbone(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], reg
     print("conv10", conv10)
 
 
-    conv38 = convolution(conv38, 32, 3, 1, 'SAME', 'conv38_resampling')
-    conv38 = depthwiseConv(conv38, 32, 3, 1,  'conv38_depth')
-    conv19 = convolution(conv19, 64, 3, 1, 'SAME', 'conv19_resampling')
-    conv19 = depthwiseConv(conv19, 64, 3, 1,  'conv19_depth')
-    conv10 = convolution(conv10, 128, 3, 1, 'SAME', 'conv10_resampling')
-    conv10 = depthwiseConv(conv10, 128, 3, 1,  'conv10_depth')
 
     # fpn conv
 
+    conv38 = convolution(conv38, 32, 3, 1, 'SAME', 'conv38_resampling')
+
+    conv19 = convolution(conv19, 64, 3, 1, 'SAME', 'conv19_resampling')
+
+    conv10 = convolution(conv10, 128, 3, 1, 'SAME', 'conv10_resampling')
+
+
+    # conv38 = mbconv(conv38, 80, 40, 'conv38')
+    # conv19 = mbconv(conv38, 224, 112, 'conv19')
+    # conv10 = mbconv(conv38, 640, 320, 'conv10')
+
+    # topDown pathway
     conv38_concat = convolution(conv38, 64, 3, 2, 'SAME', 'conv38_down_1')
 
 
-    conv19 = Concatenate()([conv38_concat, conv19]) # 256 = 128 + 128
-    conv19 = concat_convolution(conv19, 64, 3, 1, 'SAME', 'conv19_concat_conv')
+    conv19 = Concatenate()([conv38_concat, conv19]) # 128 = 64 + 64
+    conv19 = mbconv(conv19, 256, 64, 'conv19_topdown')
 
 
     conv19_concat = convolution(conv19, 128, 3, 2, 'SAME', 'conv19_down_1')
+    conv10 = Concatenate()([conv19_concat, conv10]) # 256 = 128 + 128
+    conv10 = mbconv(conv10, 512, 128, 'conv10_topdown')
 
 
-    conv10 = Concatenate()([conv19_concat, conv10])
-
-    conv10 = concat_convolution(conv10, 128, 3, 1, 'SAME', 'conv10_concat_conv')
-
-    # conv10_@ = deconv용 conv10
-
-    # fpn deconv
-
-    # DECONV TEST
-    # 3X3 Deconv
-    # same = 20
-    # valid = 21
+    # bottomUp pathway
     deconv_conv19 = deconvolution(conv10, 64, 19, 'deconv10_to_19')
 
-
     conv19 = Concatenate()([deconv_conv19, conv19])
-    conv19 = concat_convolution(conv19, 64, 3, 1, 'SAME', 'conv19_concat_deconv')
-
-
-
+    conv19 = mbconv(conv19, 256, 64, 'conv19_bottomup')
 
     deconv_conv38 = deconvolution(conv19, 32, 38, 'deconv19_to_38')
 
     conv38 = Concatenate()([deconv_conv38, conv38])
-    conv38 = concat_convolution(conv38, 32, 3, 1, 'SAME', 'conv38_concat_deconv')
-
+    conv38 = mbconv(conv38, 128, 32, 'conv38_bottomup')
 
 
     conv38 = convolution(conv38, 32, 3, 1, 'SAME', 'conv38_fpn')
