@@ -134,6 +134,7 @@ def deconvolution(input_tensor, channel, size, name):
     conv = Activation('relu', name=name+'resize_relu')(conv)
 
     return conv
+<<<<<<< Updated upstream
 
 
 
@@ -141,6 +142,8 @@ def deconvolution(input_tensor, channel, size, name):
 
 
 
+=======
+>>>>>>> Stashed changes
 
 
 def create_backbone(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], regularization=5e-4):
