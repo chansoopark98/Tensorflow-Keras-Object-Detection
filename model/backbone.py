@@ -6,7 +6,7 @@ from keras.regularizers import l2
 from keras.layers.experimental.preprocessing import Resizing
 
 from keras.layers import GlobalAveragePooling2D, GlobalMaxPooling2D, Reshape, Dense, multiply, Permute, Concatenate, \
-    Conv2D, Add, Activation, Lambda , Dropout ,BatchNormalization, Multiply, DepthwiseConv2D, SeparableConv2D
+    Conv2D, Add, Activation, Lambda , Dropout ,BatchNormalization, Multiply, DepthwiseConv2D, SeparableConv2D, Conv2DTranspose
 from keras import backend as K
 
 
@@ -118,8 +118,14 @@ def convolution(input_tensor, channel, size, stride, padding, name):
 
     return conv
 
-def mbconv(x, expand, squeeze, name):
-    x = Conv2D(squeeze, (1, 1), activation='relu', padding='same', name=name + '_reduce')(x)
+def channelReduceMBConv(x, expand, squeeze, name):
+    x = Conv2D(squeeze, (1, 1), activation='relu', padding='same', name=name + '_channelReduce_reduce')(x)
+    r = Conv2D(expand, (1,1), activation='relu', padding='same', name=name+'_channelReduce_expand')(x)
+    r = DepthwiseConv2D((3,3),  activation='relu', padding='same', name=name+'_channelReduce_depthwise')(r)
+    r = Conv2D(squeeze, (1,1), padding='same', name=name+'_squeeze')(r)
+    return Add()([r, x])
+
+def MBConv(x, expand, squeeze, name):
     r = Conv2D(expand, (1,1), activation='relu', padding='same', name=name+'_expand')(x)
     r = DepthwiseConv2D((3,3),  activation='relu', padding='same', name=name+'_depthwise')(r)
     r = Conv2D(squeeze, (1,1), padding='same', name=name+'_squeeze')(r)
@@ -128,12 +134,19 @@ def mbconv(x, expand, squeeze, name):
 
 def deconvolution(input_tensor, channel, size, name):
     resized = Resizing(size, size, name=name+'_resizing')(input_tensor)
-    conv = Conv2D(channel, (3, 3), (1, 1), padding='SAME', kernel_regularizer=l2(0.0005),
-           kernel_initializer='he_normal', name=name+'_resize_conv')(resized)
-    conv = BatchNormalization(axis=-1, name=name+'_bn')(conv)
-    conv = Activation('relu', name=name+'resize_relu')(conv)
+    # conv = Conv2D(channel, (3, 3), (1, 1), padding='SAME', kernel_regularizer=l2(0.0005),
+    #        kernel_initializer='he_normal', name=name+'_resize_conv')(resized)
+    # conv = BatchNormalization(axis=-1, name=name+'_bn')(conv)
+    # conv = Activation('relu', name=name+'resize_relu')(conv)
 
-    return conv
+    return resized
+
+# def deconvolution(input_tensor, channel, size, name):
+#     deconv = Conv2DTranspose(channel, (3,3), strides=(2,2),activation='relu', padding='same',name=name+'_deconv'
+#                              ,output_padding=(2,2))(input_tensor)
+#     print(name+'deconv feature : ', deconv)
+#     return deconv
+#
 
 
 
@@ -174,28 +187,35 @@ def create_backbone(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], reg
 
 
     conv19 = Concatenate()([conv38_concat, conv19]) # 128 = 64 + 64
-    conv19 = mbconv(conv19, 256, 64, 'conv19_topdown_1')
-    conv19 = mbconv(conv19, 256, 64, 'conv19_topdown_2')
+    conv19 = channelReduceMBConv(conv19, 256, 64, 'conv19_topdown_1')
+    conv19 = MBConv(conv19, 256, 64, 'conv19_mbconv_2')
+    conv19 = MBConv(conv19, 256, 64, 'conv19_mbconv_3')
+
+
 
 
     conv19_concat = convolution(conv19, 128, 3, 2, 'SAME', 'conv19_down_1')
     conv10 = Concatenate()([conv19_concat, conv10]) # 256 = 128 + 128
-    conv10 = mbconv(conv10, 512, 128, 'conv10_topdown_1')
-    conv10 = mbconv(conv10, 512, 128, 'conv10_topdown_2')
+    conv10 = channelReduceMBConv(conv10, 512, 128, 'conv10_topdown_1')
+    conv10 = MBConv(conv10, 512, 128, 'conv10_mbconv_2')
+    conv10 = MBConv(conv10, 512, 128, 'conv10_mbconv_3')
 
 
     # bottomUp pathway
     deconv_conv19 = deconvolution(conv10, 64, 19, 'deconv10_to_19')
 
     conv19 = Concatenate()([deconv_conv19, conv19])
-    conv19 = mbconv(conv19, 256, 64, 'conv19_bottomup_1')
-    conv19 = mbconv(conv19, 256, 64, 'conv19_bottomup_2')
+    conv19 = channelReduceMBConv(conv19, 256, 64, 'conv19_bottomup_1')
+
 
     deconv_conv38 = deconvolution(conv19, 32, 38, 'deconv19_to_38')
+    conv38 = MBConv(conv38, 128, 32, 'conv38_mbconv_1')
+    conv38 = MBConv(conv38, 128, 32, 'conv38_mbconv_2')
+    conv38 = MBConv(conv38, 128, 32, 'conv38_mbconv_3')
 
     conv38 = Concatenate()([deconv_conv38, conv38])
-    conv38 = mbconv(conv38, 128, 32, 'conv38_bottomup_1')
-    conv38 = mbconv(conv38, 128, 32, 'conv38_bottomup_2')
+    conv38 = channelReduceMBConv(conv38, 128, 32, 'conv38_bottomup_1')
+
 
 
     conv38 = convolution(conv38, 32, 3, 1, 'SAME', 'conv38_fpn')
