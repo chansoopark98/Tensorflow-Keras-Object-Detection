@@ -190,6 +190,7 @@ def create_backbone(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], reg
     conv19 = channelReduceMBConv(conv19, 256, 64, 'conv19_topdown_1')
     conv19 = MBConv(conv19, 256, 64, 'conv19_mbconv_2')
     conv19 = MBConv(conv19, 256, 64, 'conv19_mbconv_3')
+    conv19 = MBConv(conv19, 256, 64, 'conv19_mbconv_4')
 
 
 
@@ -199,6 +200,7 @@ def create_backbone(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], reg
     conv10 = channelReduceMBConv(conv10, 512, 128, 'conv10_topdown_1')
     conv10 = MBConv(conv10, 512, 128, 'conv10_mbconv_2')
     conv10 = MBConv(conv10, 512, 128, 'conv10_mbconv_3')
+    conv10 = MBConv(conv10, 512, 128, 'conv10_mbconv_4')
 
 
     # bottomUp pathway
@@ -212,6 +214,7 @@ def create_backbone(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], reg
     conv38 = MBConv(conv38, 128, 32, 'conv38_mbconv_1')
     conv38 = MBConv(conv38, 128, 32, 'conv38_mbconv_2')
     conv38 = MBConv(conv38, 128, 32, 'conv38_mbconv_3')
+    conv38 = MBConv(conv38, 128, 32, 'conv38_mbconv_4')
 
     conv38 = Concatenate()([deconv_conv38, conv38])
     conv38 = channelReduceMBConv(conv38, 128, 32, 'conv38_bottomup_1')
