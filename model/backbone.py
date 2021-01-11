@@ -108,38 +108,49 @@ def create_base_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300]):
 
 
 
-def convolution(input_tensor, channel, size, stride, padding, name):
-    kernel_size = (size, size)
-    kernel_stride = (stride, stride)
-    conv = Conv2D(channel, kernel_size, kernel_stride, padding=padding, kernel_regularizer=l2(0.0005),
-           kernel_initializer='he_normal', name=name)(input_tensor)
-    conv = BatchNormalization(axis=-1, name=name+'_bn')(conv)
-    conv = Activation('relu', name=name+'_relu')(conv)
+# def convolution(input_tensor, channel, size, stride, padding, name):
+#     kernel_size = (size, size)
+#     kernel_stride = (stride, stride)
+#     conv = Conv2D(channel, kernel_size, kernel_stride, padding=padding, kernel_regularizer=l2(0.0005),
+#            kernel_initializer='he_normal', name=name)(input_tensor)
+#     conv = BatchNormalization(axis=3, name=name+'_bn')(conv)
+#     conv = Activation('relu', name=name+'_relu')(conv)
+#
+#     return conv
 
-    return conv
 
-def channelReduceMBConv(x, expand, squeeze, name):
-    x = Conv2D(squeeze, (1, 1), activation='relu', padding='same', name=name + '_channelReduce_reduce')(x)
-    r = Conv2D(expand, (1,1), activation='relu', padding='same', name=name+'_channelReduce_expand')(x)
-    r = DepthwiseConv2D((3,3),  activation='relu', padding='same', name=name+'_channelReduce_depthwise')(r)
-    r = Conv2D(squeeze, (1,1), padding='same', name=name+'_squeeze')(r)
-    return Add()([r, x])
 
 def MBConv(x, expand, squeeze, name):
-    r = Conv2D(expand, (1,1), activation='relu', padding='same', name=name+'_expand')(x)
-    r = DepthwiseConv2D((3,3),  activation='relu', padding='same', name=name+'_depthwise')(r)
+    r = Conv2D(expand, (1,1), padding='same', name=name+'_expand')(x)
+    r = BatchNormalization(axis=3, name=name + '_expand_bn')(r)
+    r = Activation(tf.nn.relu6, name=name + '_expand_relu6')(r)
+
+    r = DepthwiseConv2D((3,3), padding='same', name=name+'_depthwise')(r)
+    r = BatchNormalization(axis=3, name=name + '_depthwise_bn')(r)
+    r = Activation(tf.nn.relu6, name=name + '_depthwise_relu6')(r)
+
     r = Conv2D(squeeze, (1,1), padding='same', name=name+'_squeeze')(r)
+    r = BatchNormalization(axis=3, name=name + '_squeeze_bn')(r)
+
     return Add()([r, x])
 
+def strideMBConv(x, expand, squeeze, name):
+    r = Conv2D(expand, (1, 1), padding='same', name=name + '_stride_expand')(x)
+    r = BatchNormalization(axis=3, name=name + '_stride_expand_bn')(r)
+    r = Activation(tf.nn.relu6, name=name + '_stride_expand_relu6')(r)
 
-def deconvolution(input_tensor, channel, size, name):
-    resized = Resizing(size, size, name=name+'_resizing')(input_tensor)
-    # conv = Conv2D(channel, (3, 3), (1, 1), padding='SAME', kernel_regularizer=l2(0.0005),
-    #        kernel_initializer='he_normal', name=name+'_resize_conv')(resized)
-    # conv = BatchNormalization(axis=-1, name=name+'_bn')(conv)
-    # conv = Activation('relu', name=name+'resize_relu')(conv)
+    r = DepthwiseConv2D((3, 3), strides=(2, 2), padding='same', name=name + '_stride_depthwise')(r)
+    r = BatchNormalization(axis=3, name=name + '_stride_depthwise_bn')(r)
+    r = Activation(tf.nn.relu6, name=name + '_stride_depthwise_relu6')(r)
 
-    return resized
+    r = Conv2D(squeeze, (1,1), padding='same', name=name+'_squeeze')(r)
+    r = BatchNormalization(axis=3, name=name + '_squeeze_bn')(r)
+
+    return r
+
+# def deconvolution(input_tensor, channel, size, name):
+#     resized = Resizing(size, size, name=name+'_resizing')(input_tensor)
+#     return resized
 
 # def deconvolution(input_tensor, channel, size, name):
 #     deconv = Conv2DTranspose(channel, (3,3), strides=(2,2),activation='relu', padding='same',name=name+'_deconv'
@@ -168,62 +179,23 @@ def create_backbone(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], reg
     print("conv10", conv10)
 
 
+    conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_1')
+    conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_2')
+    conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_3')
+    conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_4')
+
+    conv19 = MBConv(conv19, 672, 112, 'conv19_mbconv_2')
+    conv19 = MBConv(conv19, 672, 112, 'conv19_mbconv_3')
+    conv19 = MBConv(conv19, 672, 112, 'conv19_mbconv_4')
+
+    conv10 = Conv2D(160, (1, 1), padding='same', name='conv10_channel_resizing', activation='relu')(conv10)
+    conv10 = MBConv(conv10, 960, 160, 'conv10_mbconv_1')
+    conv10 = MBConv(conv10, 960, 160, 'conv10_mbconv_2')
+    conv10 = MBConv(conv10, 960, 160, 'conv10_mbconv_3')
 
     # fpn conv
 
-    conv38 = convolution(conv38, 32, 3, 1, 'SAME', 'conv38_resampling')
 
-    conv19 = convolution(conv19, 64, 3, 1, 'SAME', 'conv19_resampling')
-
-    conv10 = convolution(conv10, 128, 3, 1, 'SAME', 'conv10_resampling')
-
-
-    # conv38 = mbconv(conv38, 80, 40, 'conv38')
-    # conv19 = mbconv(conv38, 224, 112, 'conv19')
-    # conv10 = mbconv(conv38, 640, 320, 'conv10')
-
-    # topDown pathway
-    conv38_concat = convolution(conv38, 64, 3, 2, 'SAME', 'conv38_down_1')
-
-
-    conv19 = Concatenate()([conv38_concat, conv19]) # 128 = 64 + 64
-    conv19 = channelReduceMBConv(conv19, 256, 64, 'conv19_topdown_1')
-    conv19 = MBConv(conv19, 256, 64, 'conv19_mbconv_2')
-    conv19 = MBConv(conv19, 256, 64, 'conv19_mbconv_3')
-    conv19 = MBConv(conv19, 256, 64, 'conv19_mbconv_4')
-
-
-
-
-    conv19_concat = convolution(conv19, 128, 3, 2, 'SAME', 'conv19_down_1')
-    conv10 = Concatenate()([conv19_concat, conv10]) # 256 = 128 + 128
-    conv10 = channelReduceMBConv(conv10, 512, 128, 'conv10_topdown_1')
-    conv10 = MBConv(conv10, 512, 128, 'conv10_mbconv_2')
-    conv10 = MBConv(conv10, 512, 128, 'conv10_mbconv_3')
-    conv10 = MBConv(conv10, 512, 128, 'conv10_mbconv_4')
-
-
-    # bottomUp pathway
-    deconv_conv19 = deconvolution(conv10, 64, 19, 'deconv10_to_19')
-
-    conv19 = Concatenate()([deconv_conv19, conv19])
-    conv19 = channelReduceMBConv(conv19, 256, 64, 'conv19_bottomup_1')
-
-
-    deconv_conv38 = deconvolution(conv19, 32, 38, 'deconv19_to_38')
-    conv38 = MBConv(conv38, 128, 32, 'conv38_mbconv_1')
-    conv38 = MBConv(conv38, 128, 32, 'conv38_mbconv_2')
-    conv38 = MBConv(conv38, 128, 32, 'conv38_mbconv_3')
-    conv38 = MBConv(conv38, 128, 32, 'conv38_mbconv_4')
-
-    conv38 = Concatenate()([deconv_conv38, conv38])
-    conv38 = channelReduceMBConv(conv38, 128, 32, 'conv38_bottomup_1')
-
-
-
-    conv38 = convolution(conv38, 32, 3, 1, 'SAME', 'conv38_fpn')
-    conv19 = convolution(conv19, 64, 3, 1, 'SAME', 'conv19_fpn')
-    conv10 = convolution(conv10, 128, 3, 1, 'SAME', 'conv10_fpn')
 
 
 

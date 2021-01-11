@@ -10,6 +10,10 @@ from preprocessing import prepare_dataset
 from tensorflow.keras.callbacks import LearningRateScheduler, ReduceLROnPlateau, ModelCheckpoint
 
 from tensorflow.keras.utils import plot_model
+
+#from keras.utils.vis_utils import plot_model
+#from keras.utils import plot_model
+
 from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2_as_graph
 """실험일지
 0928 efficientnetb0_SSD를 BATCH 16 EPOCH 100으로 추가 학습 한 결과 EVAL MAP는 약 74%
@@ -88,7 +92,7 @@ model.summary()
 #flops = get_flops(model, BATCH_SIZE)
 #print(f"FLOPS: {flops}")
 
-# plot_model(model,'model_b0_ssd.png',show_shapes=True)
+#plot_model(model,'model_b0_ssd.png',show_shapes=True)
 
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=1, min_lr=1e-5, verbose=1)
 checkpoint = ModelCheckpoint(checkpoint_filepath+'1109_test.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
