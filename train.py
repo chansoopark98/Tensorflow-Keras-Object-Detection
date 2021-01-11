@@ -33,10 +33,10 @@ def get_flops(model, batch_size=None):
                                             run_meta=run_meta, cmd='op', options=opts)
     return flops.total_float_ops
 
-COCO_DIR = './coco/'
+
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [300, 300]
-BATCH_SIZE = 1
+BATCH_SIZE = 16
 MODEL_NAME = 'B0'
 EPOCHS = 200
 checkpoint_filepath = './checkpoints/'
@@ -95,7 +95,7 @@ model.summary()
 #plot_model(model,'model_b0_ssd.png',show_shapes=True)
 
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=1, min_lr=1e-5, verbose=1)
-checkpoint = ModelCheckpoint(checkpoint_filepath+'1109_test.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
+checkpoint = ModelCheckpoint(checkpoint_filepath+'0112_home.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
 
 model.compile(
     optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr),
