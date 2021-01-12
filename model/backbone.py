@@ -134,6 +134,64 @@ def MBConv(x, expand, squeeze, name):
 
     return Add()([r, x])
 
+def attentionMBConv(x, expand, squeeze, name):
+
+    r = Conv2D(expand, (1, 1), padding='same', name=name + '_expand')(x)
+    r = BatchNormalization(axis=3, name=name + '_expand_bn')(r)
+    r = Activation(tf.nn.relu6, name=name + '_expand_relu6')(r)
+
+    r = DepthwiseConv2D((3, 3), padding='same', name=name + '_depthwise')(r)
+    r = BatchNormalization(axis=3, name=name + '_depthwise_bn')(r)
+    r = Activation(tf.nn.relu6, name=name + '_depthwise_relu6')(r)
+
+    r = Conv2D(squeeze, (1, 1), padding='same', name=name + '_squeeze')(r)
+    input_feature = BatchNormalization(axis=3, name=name + '_squeeze_bn')(r)
+
+    ratio = 8
+
+    channel = input_feature.shape[3]
+    print('channel=', channel)
+
+    shared_layer_one = Dense(channel // ratio,
+                             activation='relu',
+                             kernel_initializer='he_normal',
+                             use_bias=True,
+                             bias_initializer='zeros')
+    shared_layer_two = Dense(channel,
+                             kernel_initializer='he_normal',
+                             use_bias=True,
+                             bias_initializer='zeros')
+
+    avg_pool = GlobalAveragePooling2D()(input_feature)
+    avg_pool = Reshape((1, 1, channel))(avg_pool)
+    assert avg_pool.shape[1:] == (1, 1, channel)
+    avg_pool = shared_layer_one(avg_pool)
+    assert avg_pool.shape[1:] == (1, 1, channel // ratio)
+    avg_pool = shared_layer_two(avg_pool)
+    assert avg_pool.shape[1:] == (1, 1, channel)
+
+    max_pool = GlobalMaxPooling2D()(input_feature)
+    max_pool = Reshape((1, 1, channel))(max_pool)
+    assert max_pool.shape[1:] == (1, 1, channel)
+    max_pool = shared_layer_one(max_pool)
+    assert max_pool.shape[1:] == (1, 1, channel // ratio)
+    max_pool = shared_layer_two(max_pool)
+    assert max_pool.shape[1:] == (1, 1, channel)
+
+    cbam_feature = Add()([avg_pool, max_pool])
+    cbam_feature = Activation('sigmoid')(cbam_feature)
+
+    if K.image_data_format() == "channels_first":
+        cbam_feature = Permute((3, 1, 2))(cbam_feature)
+
+    input_feature = multiply([input_feature, cbam_feature])
+
+
+
+
+    return Add()([input_feature, x])
+
+
 def strideMBConv(x, expand, squeeze, name):
     r = Conv2D(expand, (1, 1), padding='same', name=name + '_stride_expand')(x)
     r = BatchNormalization(axis=3, name=name + '_stride_expand_bn')(r)
@@ -181,26 +239,23 @@ def create_backbone(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], reg
 
     conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_1')
     conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_2')
-    conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_3')
-    conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_4')
+    conv38 = attentionMBConv(conv38, 240, 40, 'conv38_attentionmbconv_1')
 
+    s_conv38 = strideMBConv(conv38, 240, 40, 'conv38_stridembconv_1')
+    conv19 = Concatenate()([s_conv38, conv19])  # 40+112
+    conv19 = Conv2D(112, (1, 1), padding='same', name='conv19_channel_resizing', activation='relu')(conv19)
+    conv19 = MBConv(conv19, 672, 112, 'conv19_mbconv_1')
     conv19 = MBConv(conv19, 672, 112, 'conv19_mbconv_2')
-    conv19 = MBConv(conv19, 672, 112, 'conv19_mbconv_3')
-    conv19 = MBConv(conv19, 672, 112, 'conv19_mbconv_4')
+    conv19 = attentionMBConv(conv19, 672, 112, 'conv19_attentionmbconv_1')
 
-    conv10 = Conv2D(160, (1, 1), padding='same', name='conv10_channel_resizing', activation='relu')(conv10)
-    conv10 = MBConv(conv10, 960, 160, 'conv10_mbconv_1')
-    conv10 = MBConv(conv10, 960, 160, 'conv10_mbconv_2')
-    conv10 = MBConv(conv10, 960, 160, 'conv10_mbconv_3')
+    s_conv19 = strideMBConv(conv19, 672, 112, 'conv19_stridembconv_1')
+    conv10 = Concatenate()([s_conv19, conv10])  # 40+112
+    conv10 = Conv2D(256, (1, 1), padding='same', name='conv10_channel_resizing', activation='relu')(conv10)
+    conv10 = MBConv(conv10, 512, 256, 'conv10_mbconv_1')
+    conv10 = MBConv(conv10, 512, 256, 'conv10_mbconv_2')
+    conv10 = attentionMBConv(conv10, 512, 256, 'conv10_attentionmbconv_1')
 
     # fpn conv
-
-
-
-
-
-
-
     source_layers.append(conv38)
     source_layers.append(conv19)
     source_layers.append(conv10)
