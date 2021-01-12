@@ -13,11 +13,11 @@ from pprint import pprint
 import csv
 
 
-DATASET_DIR = './dataset/'
+DATASET_DIR = './datasets/'
 IMAGE_SIZE = [300, 300]
 BATCH_SIZE = 16
 MODEL_NAME = 'B0'
-checkpoint_filepath = './checkpoints/1112_ep300.h5'
+checkpoint_filepath = './checkpoints/0112_home.h5'
 # def get_flops(model_h5_path):
 #     session = tf.compat.v1.Session()
 #     graph = tf.compat.v1.get_default_graph()

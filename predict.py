@@ -15,11 +15,11 @@ import cv2
 
 from collections import namedtuple
 
-DATASET_DIR = './dataset'
+DATASET_DIR = './datasets'
 IMAGE_SIZE = [300, 300]
-BATCH_SIZE = 2
+BATCH_SIZE = 16
 MODEL_NAME = 'B0'
-checkpoint_filepath = './checkpoints/1112_ep300.h5'
+checkpoint_filepath = './checkpoints/0112_home.h5'
 INPUT_DIR = './inputs'
 OUTPUT_DIR = './outputs'
 

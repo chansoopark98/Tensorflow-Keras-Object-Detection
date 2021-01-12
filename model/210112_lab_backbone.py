@@ -229,34 +229,31 @@ def create_backbone(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], reg
     # get extra layer
     #conv75 = base.get_layer('block2b_add').output  # 75 75 24
     conv38 = base.get_layer(layer_names[0]).output # 38 38 40
-    #conv19 = base.get_layer(layer_names[1]).output # 19 19 112`
-    #conv10 = base.get_layer(layer_names[2]).output # 10 10 320
+    conv19 = base.get_layer(layer_names[1]).output # 19 19 112`
+    conv10 = base.get_layer(layer_names[2]).output # 10 10 320
     print("input")
     print("conv38", conv38)
-    #print("conv19", conv19)
-    #print("conv10", conv10)
+    print("conv19", conv19)
+    print("conv10", conv10)
 
 
     conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_1')
     conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_2')
-    conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_3')
-    conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_4')
-    conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_5')
     conv38 = attentionMBConv(conv38, 240, 40, 'conv38_attentionmbconv_1')
 
-    conv19 = strideMBConv(conv38, 240, 80, 'conv38_stridembconv_1')
-    conv19 = MBConv(conv19, 480, 80, 'conv19_mbconv_1')
-    conv19 = MBConv(conv19, 480, 80, 'conv19_mbconv_2')
-    conv19 = MBConv(conv19, 480, 80, 'conv19_mbconv_3')
-    conv19 = MBConv(conv19, 480, 80, 'conv19_mbconv_4')
-    conv19 = attentionMBConv(conv19, 480, 80, 'conv19_attentionmbconv_1')
+    s_conv38 = strideMBConv(conv38, 240, 40, 'conv38_stridembconv_1')
+    conv19 = Concatenate()([s_conv38, conv19])  # 40+112
+    conv19 = Conv2D(112, (1, 1), padding='same', name='conv19_channel_resizing', activation='relu')(conv19)
+    conv19 = MBConv(conv19, 672, 112, 'conv19_mbconv_1')
+    conv19 = MBConv(conv19, 672, 112, 'conv19_mbconv_2')
+    conv19 = attentionMBConv(conv19, 672, 112, 'conv19_attentionmbconv_1')
 
-    conv10 = strideMBConv(conv19, 480, 160, 'conv19_stridembconv_1')
-    conv10 = MBConv(conv10, 960, 160, 'conv10_mbconv_1')
-    conv10 = MBConv(conv10, 960, 160, 'conv10_mbconv_2')
-    conv10 = MBConv(conv10, 960, 160, 'conv10_mbconv_3')
-    conv10 = MBConv(conv10, 960, 160, 'conv10_mbconv_4')
-    conv10 = attentionMBConv(conv10, 960, 160, 'conv10_attentionmbconv_1')
+    s_conv19 = strideMBConv(conv19, 672, 112, 'conv19_stridembconv_1')
+    conv10 = Concatenate()([s_conv19, conv10])  # 40+112
+    conv10 = Conv2D(256, (1, 1), padding='same', name='conv10_channel_resizing', activation='relu')(conv10)
+    conv10 = MBConv(conv10, 512, 256, 'conv10_mbconv_1')
+    conv10 = MBConv(conv10, 512, 256, 'conv10_mbconv_2')
+    conv10 = attentionMBConv(conv10, 512, 256, 'conv10_attentionmbconv_1')
 
     # fpn conv
     source_layers.append(conv38)
