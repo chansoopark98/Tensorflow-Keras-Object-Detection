@@ -184,12 +184,12 @@ def attentionMBConv(x, expand, squeeze, name):
     if K.image_data_format() == "channels_first":
         cbam_feature = Permute((3, 1, 2))(cbam_feature)
 
-    input_feature = multiply([input_feature, cbam_feature])
+    attention_feature = multiply([input_feature, cbam_feature])
 
 
 
 
-    return Add()([input_feature, x])
+    return Add()([input_feature, attention_feature])
 
 
 def strideMBConv(x, expand, squeeze, name):
@@ -228,16 +228,16 @@ def create_backbone(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], reg
 
     # get extra layer
     #conv75 = base.get_layer('block2b_add').output  # 75 75 24
-    conv38 = base.get_layer(layer_names[0]).output # 38 38 40
-    #conv19 = base.get_layer(layer_names[1]).output # 19 19 112`
-    #conv10 = base.get_layer(layer_names[2]).output # 10 10 320
+    efficient_conv38 = base.get_layer(layer_names[0]).output # 38 38 40
+    efficient_conv19 = base.get_layer(layer_names[1]).output # 19 19 112`
+    efficient_conv10 = base.get_layer(layer_names[2]).output # 10 10 320
     print("input")
-    print("conv38", conv38)
-    #print("conv19", conv19)
-    #print("conv10", conv10)
+    print("conv38", efficient_conv38)
+    print("conv19", efficient_conv19)
+    print("conv10", efficient_conv10)
 
 
-    conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_1')
+    conv38 = MBConv(efficient_conv38, 240, 40, 'conv38_mbconv_1')
     conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_2')
     conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_3')
     conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_4')
@@ -249,14 +249,17 @@ def create_backbone(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], reg
     conv19 = MBConv(conv19, 480, 80, 'conv19_mbconv_2')
     conv19 = MBConv(conv19, 480, 80, 'conv19_mbconv_3')
     conv19 = MBConv(conv19, 480, 80, 'conv19_mbconv_4')
-    conv19 = attentionMBConv(conv19, 480, 80, 'conv19_attentionmbconv_1')
+    conv19 = attentionMBConv(conv19, 480, 112, 'conv19_attentionmbconv_1')
+    conv19 = Add()([conv19, efficient_conv19])
+
 
     conv10 = strideMBConv(conv19, 480, 160, 'conv19_stridembconv_1')
     conv10 = MBConv(conv10, 960, 160, 'conv10_mbconv_1')
     conv10 = MBConv(conv10, 960, 160, 'conv10_mbconv_2')
     conv10 = MBConv(conv10, 960, 160, 'conv10_mbconv_3')
     conv10 = MBConv(conv10, 960, 160, 'conv10_mbconv_4')
-    conv10 = attentionMBConv(conv10, 960, 160, 'conv10_attentionmbconv_1')
+    conv10 = attentionMBConv(conv10, 960, 320, 'conv10_attentionmbconv_1')
+    conv10 = Add()([conv10, efficient_conv10])
 
     # fpn conv
     source_layers.append(conv38)
@@ -267,7 +270,6 @@ def create_backbone(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], reg
     # original code
     # for name in layer_names:
     #     source_layers.append(base.get_layer(name).output)
-
     x = source_layers[-1]
     # source_layers_0, # block3b_add/add_1:0    38, 38, 40
 
