@@ -5,6 +5,7 @@ dataset/
 inputs/
 outputs/
 pascal/
+checkpoints/
 
 
 # Byte-compiled / optimized / DLL files
