@@ -154,7 +154,7 @@ def strideMBConv(x, expand, squeeze, name):
 
 # def deconvolution(input_tensor, channel, size, name):
 #     deconv = Conv2DTranspose(channel, (3,3), strides=(2,2),activation='relu', padding='same',name=name+'_deconv'
-#                              ,output_padding=(2,2))(input_tensor)
+#                    p          ,output_padding=(2,2))(input_tensor)
 #     print(name+'deconv feature : ', deconv)
 #     return deconv
 #

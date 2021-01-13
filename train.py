@@ -36,7 +36,7 @@ def get_flops(model, batch_size=None):
 
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [300, 300]
-BATCH_SIZE = 16
+BATCH_SIZE = 1
 MODEL_NAME = 'B0'
 EPOCHS = 200
 checkpoint_filepath = './checkpoints/'
@@ -65,7 +65,7 @@ center_variance = 0.1
 size_variance = 0.2
 # train.py에서 priors를 변경하면 model/ssd.py도 수정해야함
 specs = [
-                SSDSpec(38, 8, SSDBoxSizes(30, 60), [2, 3]),
+                SSDSpec(38, 8, SSDBoxSizes(30, 60), [2]),
                 SSDSpec(19, 16, SSDBoxSizes(60, 111), [2, 3]),
                 SSDSpec(10, 32, SSDBoxSizes(111, 162), [2, 3]),
                 SSDSpec(5, 64, SSDBoxSizes(162, 213), [2, 3]),

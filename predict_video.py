@@ -11,7 +11,7 @@ import cv2
 
 from collections import namedtuple
 
-DATASET_DIR = './dataset'
+DATASET_DIR = 'datasets'
 IMAGE_SIZE = [300, 300]
 BATCH_SIZE = 16
 MODEL_NAME = 'B0'

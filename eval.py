@@ -13,7 +13,7 @@ from pprint import pprint
 import csv
 
 
-DATASET_DIR = './dataset/'
+DATASET_DIR = 'datasets/'
 IMAGE_SIZE = [300, 300]
 BATCH_SIZE = 16
 MODEL_NAME = 'B0'
