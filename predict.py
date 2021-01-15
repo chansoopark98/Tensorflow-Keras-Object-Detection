@@ -11,6 +11,7 @@ import os
 from preprocessing import prepare_for_prediction
 from tqdm import tqdm
 from PIL import Image
+import time
 import cv2
 
 from collections import namedtuple
@@ -102,7 +103,8 @@ def draw_bounding(img , bboxes, labels, img_size):
                     (255, 255, 255), 1, cv2.LINE_AA)
         alpha = 0.8
         cv2.addWeighted(img_box, alpha, img, 1. - alpha, 0, img)
-import time
+
+
 start = time.time()
 for batch in tqdm(dataset, total=test_steps):
 
