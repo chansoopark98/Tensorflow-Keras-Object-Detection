@@ -21,7 +21,7 @@ class Normalize(Layer):
         return self.gamma * K.l2_normalize(x, axis=-1)
 
 # create_classifier build
-def create_multibox_head(source_layers, num_priors, normalizations, num_classes=21, regularization=5e-4):
+def create_classifier(source_layers, num_priors, normalizations, num_classes=21, regularization=5e-4):
     mbox_conf = []
     mbox_loc = []
     for i, layer in enumerate(source_layers):

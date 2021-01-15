@@ -4,7 +4,7 @@ import tensorflow.keras as keras
 import numpy as np
 from utils.priors import *
 from model.ssd import ssd
-from model.loss import multibox_loss
+from model.loss import total_loss
 import os
 from preprocessing import prepare_dataset
 from tensorflow.keras.callbacks import LearningRateScheduler, ReduceLROnPlateau, ModelCheckpoint
@@ -99,7 +99,7 @@ checkpoint = ModelCheckpoint(checkpoint_filepath+'0113_home.h5', monitor='val_lo
 
 model.compile(
     optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr),
-    loss = multibox_loss
+    loss = total_loss
 )
 
 

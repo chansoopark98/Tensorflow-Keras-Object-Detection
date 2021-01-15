@@ -12,7 +12,7 @@ from keras import backend as K
 
 
 
-source_layers_to_extract = {
+get_efficient_feature = {
     'B0': ['block3b_add', 'block5c_add', 'block7a_project_bn'],
     'B1': ['block3c_add', 'block5d_add', 'block7b_add'],
     'B2': ['block3c_add', 'block5d_add', 'block7b_add'],
@@ -24,7 +24,7 @@ source_layers_to_extract = {
 }
 
 
-#    f   k  s    p
+# 필터 개수, 커널크기, stride, 패딩
 extra_layers_params = [[(128, 1, 1, 'same'), (256, 3, 2, 'same')],
                        [(128, 1, 1, 'same'), (256, 3, 1, 'valid')],
                        [(128, 1, 1, 'same'), (256, 3, 1, 'valid')]]
@@ -69,7 +69,7 @@ def add_layer(layer_params, x, regularization=5e-4):
 
 
 
-def create_base_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300]):
+def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300]):
     if pretrained is False:
         weights = None
 
@@ -219,11 +219,11 @@ def strideMBConv(x, expand, squeeze, name):
 
 
 
-def create_backbone(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], regularization=5e-4):
+def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], regularization=5e-4):
     source_layers = []
-    base = create_base_model(base_model_name, pretrained, IMAGE_SIZE)
+    base = create_efficientNet(base_model_name, pretrained, IMAGE_SIZE)
     print(base)
-    layer_names = source_layers_to_extract[base_model_name]
+    layer_names = get_efficient_feature[base_model_name]
     print("layer_names : ", layer_names)
 
     # get extra layer
@@ -267,7 +267,7 @@ def create_backbone(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], reg
     source_layers.append(conv10)
 
 
-    # original code
+    # original
     # for name in layer_names:
     #     source_layers.append(base.get_layer(name).output)
     x = source_layers[-1]

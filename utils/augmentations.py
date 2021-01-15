@@ -1,7 +1,13 @@
 import tensorflow as tf
+""" 
+dataset augmentation 설정
+파이썬 텐서플로우 데코레이터 설정
+"""
 
+# tf 데코레이터 함수 설정
 @tf.function
 def random_lighting_noise(image):
+    # image R,G,B 채널 셔플
     if tf.random.uniform([]) > 0.5:
         channels = tf.unstack(image, axis=-1)
         channels = tf.random.shuffle(channels)
@@ -9,15 +15,17 @@ def random_lighting_noise(image):
     return image
 
 
+# bbox 영역 가져오기
 @tf.function
-def bbox_area(bbox):
+def bbox_region(bbox):
+    # bbox = bounding box
     return (bbox[:,2] - bbox[:,0]) * (bbox[:,3] - bbox[:,1])
- 
+
+# data augmentation : 이미지, bbox, 라벨값 random  crop
 @tf.function
 def random_crop(image, bbox, labels):
-    # ar_ = bbox_area(bbox)
-    elems = tf.convert_to_tensor([0.1, 0.3, 0.5, 0.9, 1])
-    min_object_covered = tf.random.shuffle(elems)[0]
+    cropped_image_ratio = tf.convert_to_tensor([0.1, 0.3, 0.5, 0.9, 1])
+    min_object_covered = tf.random.shuffle(cropped_image_ratio)[0]
     if min_object_covered == tf.constant(1.0):
         return image, bbox, labels
     begin, size, bbox_for_draw = tf.image.sample_distorted_bounding_box(
@@ -62,7 +70,7 @@ def random_crop(image, bbox, labels):
     new_bbox = new_bbox * scale
     # new_centers = new_centers * scale_factor[::-1]
     new_bbox = tf.clip_by_value(new_bbox, 0, 1)
-    non_zero_area_mask = bbox_area(new_bbox) > tf.constant(0, tf.float32)
+    non_zero_area_mask = bbox_region(new_bbox) > tf.constant(0, tf.float32)
 
     new_labels = tf.boolean_mask(new_labels, non_zero_area_mask)
     new_bbox = tf.boolean_mask(new_bbox, non_zero_area_mask)
