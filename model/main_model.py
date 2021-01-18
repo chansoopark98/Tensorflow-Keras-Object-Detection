@@ -5,8 +5,8 @@ from keras.activations import sigmoid
 from keras.regularizers import l2
 from keras.layers.experimental.preprocessing import Resizing
 
-from keras.layers import GlobalAveragePooling2D, GlobalMaxPooling2D, Reshape, Dense, multiply, Permute, Concatenate, \
-    Conv2D, Add, Activation, Lambda , Dropout ,BatchNormalization, Multiply, DepthwiseConv2D, SeparableConv2D, Conv2DTranspose
+from keras.layers import GlobalAveragePooling2D, GlobalMaxPooling2D, Reshape, Dense, multiply, Concatenate, \
+    Conv2D, Add, Activation, Dropout ,BatchNormalization, DepthwiseConv2D
 from keras import backend as K
 
 
@@ -107,115 +107,66 @@ def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300])
     return base
 
 
+def convolution(input_tensor, channel, size, stride, padding, name):
+    kernel_size = (size, size)
+    kernel_stride = (stride, stride)
+    conv = Conv2D(channel, kernel_size, kernel_stride, padding=padding, kernel_regularizer=l2(0.0005),
+           kernel_initializer='he_normal', name=name)(input_tensor)
+    conv = BatchNormalization(axis=3, name=name+'_bn')(conv)
+    conv = Activation('relu', name=name+'_relu')(conv)
 
-# def convolution(input_tensor, channel, size, stride, padding, name):
-#     kernel_size = (size, size)
-#     kernel_stride = (stride, stride)
-#     conv = Conv2D(channel, kernel_size, kernel_stride, padding=padding, kernel_regularizer=l2(0.0005),
-#            kernel_initializer='he_normal', name=name)(input_tensor)
-#     conv = BatchNormalization(axis=3, name=name+'_bn')(conv)
-#     conv = Activation('relu', name=name+'_relu')(conv)
-#
-#     return conv
+    return conv
 
+def CA(x, expand, name):
+    squeeze = x.shape[3]
 
-
-def MBConv(x, expand, squeeze, name):
-    r = Conv2D(expand, (1,1), padding='same', name=name+'_expand')(x)
+    r = Conv2D(expand, (1, 1), padding='same', kernel_regularizer=l2(0.0005),
+           kernel_initializer='he_normal', name=name + '_stride_expand')(x)
     r = BatchNormalization(axis=3, name=name + '_expand_bn')(r)
-    r = Activation(tf.nn.relu6, name=name + '_expand_relu6')(r)
+    r = Activation('relu', name=name + '_relu')(r)
 
-    r = DepthwiseConv2D((3,3), padding='same', name=name+'_depthwise')(r)
+    r = DepthwiseConv2D((3,3), padding='same', depthwise_regularizer=l2(0.0005),
+                        depthwise_initializer='he_normal', name=name+'_depthwise')(r)
     r = BatchNormalization(axis=3, name=name + '_depthwise_bn')(r)
-    r = Activation(tf.nn.relu6, name=name + '_depthwise_relu6')(r)
+    r = Activation('relu', name=name + '_depthwise_relu')(r)
 
-    r = Conv2D(squeeze, (1,1), padding='same', name=name+'_squeeze')(r)
-    r = BatchNormalization(axis=3, name=name + '_squeeze_bn')(r)
-
-    return Add()([r, x])
-
-def attentionMBConv(x, expand, squeeze, name):
-
-    r = Conv2D(expand, (1, 1), padding='same', name=name + '_expand')(x)
-    r = BatchNormalization(axis=3, name=name + '_expand_bn')(r)
-    r = Activation(tf.nn.relu6, name=name + '_expand_relu6')(r)
-
-    r = DepthwiseConv2D((3, 3), padding='same', name=name + '_depthwise')(r)
-    r = BatchNormalization(axis=3, name=name + '_depthwise_bn')(r)
-    r = Activation(tf.nn.relu6, name=name + '_depthwise_relu6')(r)
-
-    r = Conv2D(squeeze, (1, 1), padding='same', name=name + '_squeeze')(r)
-    input_feature = BatchNormalization(axis=3, name=name + '_squeeze_bn')(r)
-
-    ratio = 8
-
-    channel = input_feature.shape[3]
-    print('channel=', channel)
-
-    shared_layer_one = Dense(channel // ratio,
+    shared_layer_one = Dense(expand // 8,
                              activation='relu',
                              kernel_initializer='he_normal',
                              use_bias=True,
                              bias_initializer='zeros')
-    shared_layer_two = Dense(channel,
+    shared_layer_two = Dense(expand,
                              kernel_initializer='he_normal',
                              use_bias=True,
                              bias_initializer='zeros')
 
-    avg_pool = GlobalAveragePooling2D()(input_feature)
-    avg_pool = Reshape((1, 1, channel))(avg_pool)
-    assert avg_pool.shape[1:] == (1, 1, channel)
+    avg_pool = GlobalAveragePooling2D()(r)
+    avg_pool = Reshape((1, 1, expand))(avg_pool)
     avg_pool = shared_layer_one(avg_pool)
-    assert avg_pool.shape[1:] == (1, 1, channel // ratio)
     avg_pool = shared_layer_two(avg_pool)
-    assert avg_pool.shape[1:] == (1, 1, channel)
 
-    max_pool = GlobalMaxPooling2D()(input_feature)
-    max_pool = Reshape((1, 1, channel))(max_pool)
-    assert max_pool.shape[1:] == (1, 1, channel)
+
+    max_pool = GlobalMaxPooling2D()(r)
+    max_pool = Reshape((1, 1, expand))(max_pool)
     max_pool = shared_layer_one(max_pool)
-    assert max_pool.shape[1:] == (1, 1, channel // ratio)
     max_pool = shared_layer_two(max_pool)
-    assert max_pool.shape[1:] == (1, 1, channel)
 
-    cbam_feature = Add()([avg_pool, max_pool])
-    cbam_feature = Activation('sigmoid')(cbam_feature)
+    channel_attention = Add()([avg_pool, max_pool])
+    channel_attention = Activation('sigmoid')(channel_attention)
 
-    if K.image_data_format() == "channels_first":
-        cbam_feature = Permute((3, 1, 2))(cbam_feature)
+    r = multiply([r, channel_attention])
 
-    attention_feature = multiply([input_feature, cbam_feature])
-
-
-
-
-    return Add()([input_feature, attention_feature])
-
-
-def strideMBConv(x, expand, squeeze, name):
-    r = Conv2D(expand, (1, 1), padding='same', name=name + '_stride_expand')(x)
-    r = BatchNormalization(axis=3, name=name + '_stride_expand_bn')(r)
-    r = Activation(tf.nn.relu6, name=name + '_stride_expand_relu6')(r)
-
-    r = DepthwiseConv2D((3, 3), strides=(2, 2), padding='same', name=name + '_stride_depthwise')(r)
-    r = BatchNormalization(axis=3, name=name + '_stride_depthwise_bn')(r)
-    r = Activation(tf.nn.relu6, name=name + '_stride_depthwise_relu6')(r)
-
-    r = Conv2D(squeeze, (1,1), padding='same', name=name+'_squeeze')(r)
+    r = Conv2D(squeeze, (1, 1), padding='same', kernel_regularizer=l2(0.0005),
+           kernel_initializer='he_normal', name=name + '_squeeze_conv')(r)
     r = BatchNormalization(axis=3, name=name + '_squeeze_bn')(r)
 
     return r
 
-# def deconvolution(input_tensor, channel, size, name):
-#     resized = Resizing(size, size, name=name+'_resizing')(input_tensor)
-#     return resized
 
-# def deconvolution(input_tensor, channel, size, name):
-#     deconv = Conv2DTranspose(channel, (3,3), strides=(2,2),activation='relu', padding='same',name=name+'_deconv'
-#                    p          ,output_padding=(2,2))(input_tensor)
-#     print(name+'deconv feature : ', deconv)
-#     return deconv
-#
+def upSampling(input_tensor, size, name):
+    resized = Resizing(size, size, name=name+'_resizing')(input_tensor)
+    return resized
+
 
 
 
@@ -236,30 +187,27 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     print("conv19", efficient_conv19)
     print("conv10", efficient_conv10)
 
+    conv38 = convolution(efficient_conv38, 64, 3, 1, 'SAME', 'conv38_resampling')
+    conv19 = convolution(efficient_conv19, 128, 3, 1, 'SAME', 'conv19_resampling')
+    conv10 = convolution(efficient_conv10, 256, 3, 1, 'SAME', 'conv10_resampling')
 
-    conv38 = MBConv(efficient_conv38, 240, 40, 'conv38_mbconv_1')
-    conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_2')
-    conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_3')
-    conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_4')
-    conv38 = MBConv(conv38, 240, 40, 'conv38_mbconv_5')
-    conv38 = attentionMBConv(conv38, 240, 40, 'conv38_attentionmbconv_1')
+    conv38 = CA(conv38, 128, 'conv38_ca')
+    conv19 = CA(conv19, 256, 'conv19_ca')
+    conv10 = CA(conv10, 512, 'conv10_ca')
 
-    conv19 = strideMBConv(conv38, 240, 80, 'conv38_stridembconv_1')
-    conv19 = MBConv(conv19, 480, 80, 'conv19_mbconv_1')
-    conv19 = MBConv(conv19, 480, 80, 'conv19_mbconv_2')
-    conv19 = MBConv(conv19, 480, 80, 'conv19_mbconv_3')
-    conv19 = MBConv(conv19, 480, 80, 'conv19_mbconv_4')
-    conv19 = attentionMBConv(conv19, 480, 112, 'conv19_attentionmbconv_1')
-    conv19 = Add()([conv19, efficient_conv19])
+    conv10_upSampling = upSampling(conv10, 19, 'conv10_to_conv19') # 10x10@256 to 19x19@256
+    conv10_upSampling = convolution(conv10_upSampling, 128, 1, 1, 'SAME', 'conv10_upSampling_conv')
+    concat_conv19 = Concatenate()([conv10_upSampling, conv19]) # 19x19 / @128+128
 
 
-    conv10 = strideMBConv(conv19, 480, 160, 'conv19_stridembconv_1')
-    conv10 = MBConv(conv10, 960, 160, 'conv10_mbconv_1')
-    conv10 = MBConv(conv10, 960, 160, 'conv10_mbconv_2')
-    conv10 = MBConv(conv10, 960, 160, 'conv10_mbconv_3')
-    conv10 = MBConv(conv10, 960, 160, 'conv10_mbconv_4')
-    conv10 = attentionMBConv(conv10, 960, 320, 'conv10_attentionmbconv_1')
-    conv10 = Add()([conv10, efficient_conv10])
+    conv19_upSampling = upSampling(conv19, 38, 'conv19_to_conv38')  # 19x19@128 to 38x38@128
+    conv19_upSampling = convolution(conv19_upSampling, 64, 1, 1, 'SAME', 'conv19_upSampling_conv')
+    concat_conv38 = Concatenate()([conv19_upSampling, conv38]) # 38x38 / @64+64
+
+
+    conv38 = convolution(concat_conv38, 128, 3, 1, 'SAME', 'conv38_for_predict')
+    conv19 = convolution(concat_conv19, 256, 3, 1, 'SAME', 'conv19_for_predict')
+    conv10 = convolution(conv10, 256, 3, 1, 'SAME', 'conv10_for_predict')
 
     # fpn conv
     source_layers.append(conv38)

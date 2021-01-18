@@ -119,6 +119,60 @@ def create_base_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300]):
 #     return conv
 
 
+def cbam(x, expand, squeeze, name):
+
+    r = Conv2D(expand, (1, 1), padding='same', name=name + '_expand')(x)
+    r = BatchNormalization(axis=3, name=name + '_expand_bn')(r)
+    r = Activation(tf.nn.relu6, name=name + '_expand_relu6')(r)
+
+    r = DepthwiseConv2D((3, 3), padding='same', name=name + '_depthwise')(r)
+    r = BatchNormalization(axis=3, name=name + '_depthwise_bn')(r)
+    r = Activation(tf.nn.relu6, name=name + '_depthwise_relu6')(r)
+
+    r = Conv2D(squeeze, (1, 1), padding='same', name=name + '_squeeze')(r)
+    input_feature = BatchNormalization(axis=3, name=name + '_squeeze_bn')(r)
+
+    ratio = 8
+
+    channel = input_feature.shape[3]
+    print('channel=', channel)
+
+    shared_layer_one = Dense(channel // ratio,
+                             activation='relu',
+                             kernel_initializer='he_normal',
+                             use_bias=True,
+                             bias_initializer='zeros')
+    shared_layer_two = Dense(channel,
+                             kernel_initializer='he_normal',
+                             use_bias=True,
+                             bias_initializer='zeros')
+
+    avg_pool = GlobalAveragePooling2D()(input_feature)
+    avg_pool = Reshape((1, 1, channel))(avg_pool)
+    assert avg_pool.shape[1:] == (1, 1, channel)
+    avg_pool = shared_layer_one(avg_pool)
+    assert avg_pool.shape[1:] == (1, 1, channel // ratio)
+    avg_pool = shared_layer_two(avg_pool)
+    assert avg_pool.shape[1:] == (1, 1, channel)
+
+    max_pool = GlobalMaxPooling2D()(input_feature)
+    max_pool = Reshape((1, 1, channel))(max_pool)
+    assert max_pool.shape[1:] == (1, 1, channel)
+    max_pool = shared_layer_one(max_pool)
+    assert max_pool.shape[1:] == (1, 1, channel // ratio)
+    max_pool = shared_layer_two(max_pool)
+    assert max_pool.shape[1:] == (1, 1, channel)
+
+    cbam_feature = Add()([avg_pool, max_pool])
+    cbam_feature = Activation('sigmoid')(cbam_feature)
+
+    attention_feature = multiply([input_feature, cbam_feature])
+
+
+
+
+    return Add()([input_feature, attention_feature])
+
 
 def MBConv(x, expand, squeeze, name):
     r = Conv2D(expand, (1,1), padding='same', name=name+'_expand')(x)
