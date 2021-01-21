@@ -6,7 +6,7 @@ from keras.regularizers import l2
 from keras.layers.experimental.preprocessing import Resizing
 
 from keras.layers import GlobalAveragePooling2D, GlobalMaxPooling2D, Reshape, Dense, multiply, Concatenate, \
-    Conv2D, Add, Activation, Dropout ,BatchNormalization, DepthwiseConv2D
+    Conv2D, Add, Activation, Dropout ,BatchNormalization, DepthwiseConv2D, Lambda
 from keras import backend as K
 
 
@@ -162,6 +162,26 @@ def CA(x, expand, name):
 
     return r
 
+def SA(x):
+    avg_pool = Lambda(lambda x: K.mean(x, axis=3, keepdims=True))(x)
+
+    max_pool = Lambda(lambda x: K.max(x, axis=3, keepdims=True))(x)
+
+    concat = Concatenate(axis=3)([avg_pool, max_pool])
+
+    sa_feature = Conv2D(filters=1,
+                          kernel_size=7,
+                          strides=1,
+                          padding='same',
+                          activation='sigmoid',
+                          kernel_initializer='he_normal',
+                          use_bias=False)(concat)
+
+
+
+    return multiply([x, sa_feature])
+
+
 
 def upSampling(input_tensor, size, name):
     resized = Resizing(size, size, name=name+'_resizing')(input_tensor)
@@ -195,12 +215,13 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     conv19 = CA(conv19, 256, 'conv19_ca')
     conv10 = CA(conv10, 512, 'conv10_ca')
 
-    conv10_upSampling = upSampling(conv10, 19, 'conv10_to_conv19') # 10x10@256 to 19x19@256
+    conv10_upSampling = SA(conv10)
+    conv10_upSampling = upSampling(conv10_upSampling, 19, 'conv10_to_conv19') # 10x10@256 to 19x19@256
     conv10_upSampling = convolution(conv10_upSampling, 128, 1, 1, 'SAME', 'conv10_upSampling_conv')
     concat_conv19 = Concatenate()([conv10_upSampling, conv19]) # 19x19 / @128+128
 
-
-    conv19_upSampling = upSampling(conv19, 38, 'conv19_to_conv38')  # 19x19@128 to 38x38@128
+    conv19_upSampling = SA(conv19)
+    conv19_upSampling = upSampling(conv19_upSampling, 38, 'conv19_to_conv38')  # 19x19@128 to 38x38@128
     conv19_upSampling = convolution(conv19_upSampling, 64, 1, 1, 'SAME', 'conv19_upSampling_conv')
     concat_conv38 = Concatenate()([conv19_upSampling, conv38]) # 38x38 / @64+64
 

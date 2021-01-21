@@ -110,5 +110,4 @@ history = model.fit(training_dataset,
                     validation_steps=validation_steps,
                     epochs=EPOCHS,
                     callbacks=[reduce_lr,checkpoint])
-save_path = './checkpoints/'
-model.save(save_path, save_format='h5')
+
