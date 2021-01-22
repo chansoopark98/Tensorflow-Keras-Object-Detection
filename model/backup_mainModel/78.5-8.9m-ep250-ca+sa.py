@@ -6,7 +6,7 @@ from keras.regularizers import l2
 from keras.layers.experimental.preprocessing import Resizing
 
 from keras.layers import GlobalAveragePooling2D, GlobalMaxPooling2D, Reshape, Dense, multiply, Concatenate, \
-    Conv2D, Add, Activation, Dropout ,BatchNormalization, DepthwiseConv2D, Lambda , SeparableConv2D
+    Conv2D, Add, Activation, Dropout ,BatchNormalization, DepthwiseConv2D, Lambda
 from keras import backend as K
 
 
@@ -106,27 +106,6 @@ def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300])
 
     return base
 
-def strideMBConv(x, name):
-    input_channel = x.shape[3]
-    expand_channel = input_channel * 2
-
-    r = Conv2D(expand_channel, (1, 1), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
-               padding='same', name=name + '_stride_expand')(x)
-    r = BatchNormalization(axis=3, name=name + '_stride_expand_bn')(r)
-    r = Activation('relu', name=name + '_1x1_relu')(r)
-
-    r = DepthwiseConv2D((3, 3), strides=(2, 2), depthwise_regularizer=l2(0.0005), depthwise_initializer='he_normal',
-                        padding='same', name=name + '_stride_depthwise')(r)
-    r = BatchNormalization(axis=3, name=name + '_stride_depthwise_bn')(r)
-    r = Activation('relu', name=name + '_depthwise_relu')(r)
-
-
-    r = SeparableConv2D(filters=expand_channel, kernel_size=(1,1),
-                        padding='same', pointwise_regularizer=l2(0.0005), pointwise_initializer='he_normal')(r)
-    r = Activation('relu', name=name + '_pointwise_relu')(r)
-    return r
-
-
 
 def convolution(input_tensor, channel, size, stride, padding, name):
     kernel_size = (size, size)
@@ -151,7 +130,7 @@ def CA(x, expand, name):
     r = BatchNormalization(axis=3, name=name + '_depthwise_bn')(r)
     r = Activation('relu', name=name + '_depthwise_relu')(r)
 
-    shared_layer_one = Dense(expand // 16,
+    shared_layer_one = Dense(expand // 8,
                              activation='relu',
                              kernel_initializer='he_normal',
                              use_bias=True,
@@ -228,40 +207,34 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     conv19 = convolution(efficient_conv19, 128, 3, 1, 'SAME', 'conv19_resampling')
     conv10 = convolution(efficient_conv10, 256, 3, 1, 'SAME', 'conv10_resampling')
 
-    # bottom-up pathway
-    conv10 = CA(conv10, 512, 'conv10_ca') # for top-down
+
+    conv10 = CA(conv10, 512, 'conv10_ca')
     conv10_upSampling = upSampling(conv10, 19, 'conv10_to_conv19')  # 10x10@256 to 19x19@256
 
-    concat_conv19 = Concatenate()([conv10_upSampling, conv19])  # 19x19 / @128+256
-    concat_conv19 = convolution(concat_conv19, 128, 1, 1, 'SAME', 'conv19_upSampling_conv') # for top-down
-    ca_conv19 = CA(concat_conv19, 256, 'conv19_down_ca')
-    ca_conv19 = upSampling(ca_conv19, 38, 'conv19_to_conv38')  # 10x10@128 to 19x19@128
-
-    concat_conv38 = Concatenate()([conv38, ca_conv19])  # 38x39 / @64+128
-    concat_conv38 = convolution(concat_conv38, 64, 1, 1, 'SAME', 'conv38_upSampling_conv')
-    sa_conv38 = SA(concat_conv38) ### for predict
-
-    # top-down pathway
-    down_conv19 = strideMBConv(sa_conv38, 'conv38_downSampling_conv')
-    down_concat_conv19 = Concatenate()([concat_conv19, down_conv19]) # 19x19@ 64 + 128
-    down_concat_conv19 = convolution(down_concat_conv19, 128, 1, 1, 'SAME', 'conv19_down_conv')
-    sa_down_conv19 = SA(down_concat_conv19) ### for predict
-
-    down_conv10 = strideMBConv(sa_down_conv19, 'conv10_downSampling_conv')
-    down_concat_conv10 = Concatenate()([conv10, down_conv10])  # @256+128
-    down_concat_conv10 = convolution(down_concat_conv10, 256, 1, 1, 'SAME', 'conv10_down_conv')
-    sa_conv_conv10 = SA(down_concat_conv10) ### for predict
+    concat_conv19 = Concatenate()([conv10_upSampling, conv19])  # 19x19 / @128+128
+    concat_conv19 = convolution(concat_conv19, 128, 1, 1, 'SAME', 'conv10_upSampling_conv') # for predict
+    concat_conv19 = CA(concat_conv19, 256, 'conv19__ca')
 
 
+    conv10_upSampling = SA(conv10)
+    conv10_upSampling = upSampling(conv10_upSampling, 19, 'conv10_to_conv19') # 10x10@256 to 19x19@256
+    conv10_upSampling = convolution(conv10_upSampling, 128, 1, 1, 'SAME', 'conv10_upSampling_conv')
 
-    sa_conv38 = convolution(sa_conv38, 128, 3, 1, 'SAME', 'conv38_for_predict')
-    sa_down_conv19 = convolution(sa_down_conv19, 256, 3, 1, 'SAME', 'conv19_for_predict')
-    sa_conv_conv10 = convolution(sa_conv_conv10, 256, 3, 1, 'SAME', 'conv10_for_predict')
+
+    conv19_upSampling = SA(conv19)
+    conv19_upSampling = upSampling(conv19_upSampling, 38, 'conv19_to_conv38')  # 19x19@128 to 38x38@128
+    conv19_upSampling = convolution(conv19_upSampling, 64, 1, 1, 'SAME', 'conv19_upSampling_conv')
+    concat_conv38 = Concatenate()([conv19_upSampling, conv38]) # 38x38 / @64+64
+
+
+    conv38 = convolution(concat_conv38, 128, 3, 1, 'SAME', 'conv38_for_predict')
+    conv19 = convolution(concat_conv19, 256, 3, 1, 'SAME', 'conv19_for_predict')
+    conv10 = convolution(conv10, 256, 3, 1, 'SAME', 'conv10_for_predict')
 
     # fpn conv
-    source_layers.append(sa_conv38)
-    source_layers.append(sa_down_conv19)
-    source_layers.append(sa_conv_conv10)
+    source_layers.append(conv38)
+    source_layers.append(conv19)
+    source_layers.append(conv10)
 
 
     # original

@@ -20,27 +20,27 @@ from tensorflow.python.framework.convert_to_constants import convert_variables_t
 0929 오전1:18 DEFAULT BOX SCALE 수정 후(38,38 ASPECT RATIO 변경 2 -> 2,3 총 6) pretrain값은 4,6,6,6,4,4로 고정되어 있기 때문에 pretrain이 불가함
 """
 
-def get_flops(model, batch_size=None):
-    if batch_size is None:
-        batch_size = 1
-
-    real_model = tf.function(model).get_concrete_function(tf.TensorSpec([batch_size] + model.inputs[0].shape[1:], model.inputs[0].dtype))
-    frozen_func, graph_def = convert_variables_to_constants_v2_as_graph(real_model)
-
-    run_meta = tf.compat.v1.RunMetadata()
-    opts = tf.compat.v1.profiler.ProfileOptionBuilder.float_operation()
-    flops = tf.compat.v1.profiler.profile(graph=frozen_func.graph,
-                                            run_meta=run_meta, cmd='op', options=opts)
-    return flops.total_float_ops
+# def get_flops(model, batch_size=None):
+#     if batch_size is None:
+#         batch_size = 1
+#
+#     real_model = tf.function(model).get_concrete_function(tf.TensorSpec([batch_size] + model.inputs[0].shape[1:], model.inputs[0].dtype))
+#     frozen_func, graph_def = convert_variables_to_constants_v2_as_graph(real_model)
+#
+#     run_meta = tf.compat.v1.RunMetadata()
+#     opts = tf.compat.v1.profiler.ProfileOptionBuilder.float_operation()
+#     flops = tf.compat.v1.profiler.profile(graph=frozen_func.graph,
+#                                             run_meta=run_meta, cmd='op', options=opts)
+#     return flops.total_float_ops
 
 
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [300, 300]
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 MODEL_NAME = 'B0'
-EPOCHS = 200
+EPOCHS = 250
 checkpoint_filepath = './checkpoints/'
-base_lr = 1e-3 if checkpoint_filepath is None else 1e-5
+base_lr = 1e-3
 
 train2012 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
 valid2012 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
@@ -65,12 +65,12 @@ center_variance = 0.1
 size_variance = 0.2
 # train.py에서 priors를 변경하면 model/ssd.py도 수정해야함
 specs = [
-                SSDSpec(38, 8, SSDBoxSizes(30, 60), [2]),
-                SSDSpec(19, 16, SSDBoxSizes(60, 111), [2, 3]),
-                SSDSpec(10, 32, SSDBoxSizes(111, 162), [2, 3]),
-                SSDSpec(5, 64, SSDBoxSizes(162, 213), [2, 3]),
-                SSDSpec(3, 100, SSDBoxSizes(213, 264), [2]),
-                SSDSpec(1, 300, SSDBoxSizes(264, 315), [2])
+                Spec(38, 8, BoxSizes(30, 60), [2]),
+                Spec(19, 16, BoxSizes(60, 111), [2, 3]),
+                Spec(10, 32, BoxSizes(111, 162), [2, 3]),
+                Spec(5, 64, BoxSizes(162, 213), [2, 3]),
+                Spec(3, 100, BoxSizes(213, 264), [2]),
+                Spec(1, 300, BoxSizes(264, 315), [2])
         ]
 
 
@@ -94,8 +94,8 @@ model.summary()
 
 #plot_model(model,'model_b0_ssd.png',show_shapes=True)
 
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=1, min_lr=1e-5, verbose=1)
-checkpoint = ModelCheckpoint(checkpoint_filepath+'0119_home.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-5, verbose=1)
+checkpoint = ModelCheckpoint(checkpoint_filepath+'0122_lab.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
 
 model.compile(
     optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr),
@@ -104,9 +104,9 @@ model.compile(
 
 
 
-history = model.fit(training_dataset, 
+history = model.fit(training_dataset,
                     validation_data=validation_dataset,
-                    steps_per_epoch=steps_per_epoch, 
+                    steps_per_epoch=steps_per_epoch,
                     validation_steps=validation_steps,
                     epochs=EPOCHS,
                     callbacks=[reduce_lr,checkpoint])

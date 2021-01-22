@@ -5,11 +5,13 @@ import tensorflow as tf
 import numpy as np
 from utils.misc import *
 
-SSDBoxSizes = collections.namedtuple('SSDBoxSizes', ['min', 'max'])
+# BoxSizes = collections.namedtuple('SSDBoxSizes', ['min', 'max'])
+BoxSizes = collections.namedtuple('BoxSizes', ['min', 'max'])
 
-SSDSpec = collections.namedtuple('SSDSpec', ['feature_map_size', 'shrinkage', 'box_sizes', 'aspect_ratios'])
+# SSDSpec = collections.namedtuple('SSDSpec', ['feature_map_size', 'shrinkage', 'box_sizes', 'aspect_ratios'])
+Spec = collections.namedtuple('Spec', ['feature_map_size', 'shrinkage', 'box_sizes', 'aspect_ratios'])
 
-def generate_ssd_priors(specs: List[SSDSpec], image_size, clamp=True):
+def generate_ssd_priors(specs: List[Spec], image_size, clamp=True):
     """CSNET Prior Box 생성
     중심, 높이 및 너비값 반환
      사전의 중심, 높이 및 너비를 반환합니다. 값은 이미지 크기에 상대적입니다.
@@ -24,10 +26,9 @@ def generate_ssd_priors(specs: List[SSDSpec], image_size, clamp=True):
                  SSDSpec (1, 300, SSDBoxSizes (264, 315), [2])
              ]
          image_size : 이미지 크기.
-         clamp : 참이면 값을 [0.0, 1.0] 사이로 고정합니다.
+         clamp : 참이면 값을 [0.0, 1.0] 사이로 고정
      보고:
-         priors (num_priors, 4) : [[center_x, center_y, w, h]]로 표시되는 이전 상자입니다. 모든 가치
-             이미지 크기에 상대적입니다.
+         priors (num_priors, 4) : [[center_x, center_y, w, h]]로 표시되는 bbox 좌표
      """
 
   
