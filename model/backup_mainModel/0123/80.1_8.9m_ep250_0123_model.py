@@ -106,43 +106,6 @@ def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300])
 
     return base
 
-def MBConvModule(x, f_padding, s_padding, name, stride=(1, 1)):
-    input_channel = x.shape[3]
-    squeeze_channel = input_channel/2
-    expand_channel = input_channel
-
-    r = Conv2D(squeeze_channel, (1, 1), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
-               padding='same', name=name + '_mbconv_squeeze_1')(x)
-    r = BatchNormalization(axis=3, name=name + '_mbconv_squeeze_bn_1')(r)
-    r = Activation('relu', name=name + '_mbconv_squeeze_relu_1')(r)
-
-    r = DepthwiseConv2D((3, 3), strides=(1, 1), depthwise_regularizer=l2(0.0005), depthwise_initializer='he_normal',
-                        padding=f_padding, name=name + '_mbconv_squeeze_depthwise')(r)
-    r = BatchNormalization(axis=3, name=name + '_mbconv_squeeze_depthwise_bn')(r)
-    r = Activation('relu', name=name + '_mbconv_squeeze_depthwise_relu')(r)
-
-
-    r = SeparableConv2D(filters=squeeze_channel, kernel_size=(1,1),
-                        padding='same', pointwise_regularizer=l2(0.0005), pointwise_initializer='he_normal')(r)
-    r = Activation('relu', name=name + '_mbconv_squeeze_poitnwise_relu')(r)
-
-    ##
-    r = Conv2D(expand_channel, (1, 1), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
-               padding='same', name=name + '_mbconv_squeeze_2')(r)
-    r = BatchNormalization(axis=3, name=name + '_mbconv_squeeze_bn_2')(r)
-    r = Activation('relu', name=name + '_mbconv_squeeze_relu_2')(r)
-
-    r = DepthwiseConv2D((3, 3), strides=stride, depthwise_regularizer=l2(0.0005), depthwise_initializer='he_normal',
-                        padding=s_padding, name=name + '_mbconv_squeeze_stride_depthwise')(r)
-    r = BatchNormalization(axis=3, name=name + '_mbconv_squeeze_stride_depthwise_bn')(r)
-    r = Activation('relu', name=name + '_mbconv_squeeze_stride_depthwise_relu')(r)
-
-    r = SeparableConv2D(filters=expand_channel, kernel_size=(1, 1),
-                        padding='same', pointwise_regularizer=l2(0.0005), pointwise_initializer='he_normal')(r)
-    r = Activation('relu', name=name + '_mbconv_squeeze_stride_poitnwise_relu')(r)
-
-    return r
-
 def strideMBConv(x, name):
     input_channel = x.shape[3]
     expand_channel = input_channel * 2
@@ -295,44 +258,22 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     sa_down_conv19 = convolution(sa_down_conv19, 256, 3, 1, 'SAME', 'conv19_for_predict')
     sa_conv_conv10 = convolution(sa_conv_conv10, 256, 3, 1, 'SAME', 'conv10_for_predict')
 
-
-    conv5 = MBConvModule(sa_conv_conv10, 'same', 'same', 'conv10_to_conv5', (2,2))
-    conv5 = CA(conv5, 512 , 'conv10_CA_to_conv5')
-    conv5 = SA(conv5)
-    # # 필터 개수, 커널크기, stride, 패딩
-    # extra_layers_params = [[(128, 1, 1, 'same'), (256, 3, 2, 'same')],
-    #                        [(128, 1, 1, 'same'), (256, 3, 1, 'valid')],
-    #                        [(128, 1, 1, 'same'), (256, 3, 1, 'valid')]]
-
-    conv3 = MBConvModule(conv5, 'same', 'valid', 'conv5_to_conv3')
-    conv3 = CA(conv3, 512, 'conv5_CA_to_conv3')
-    conv3 = SA(conv3)
-
-    conv1 = MBConvModule(conv3, 'same', 'valid', 'conv3_to_conv1')
-    conv1 = CA(conv1, 512, 'conv3_CA_to_conv1')
-    conv1 = SA(conv1)
-
-    # predict features
+    # fpn conv
     source_layers.append(sa_conv38)
     source_layers.append(sa_down_conv19)
     source_layers.append(sa_conv_conv10)
-    source_layers.append(conv5)
-    source_layers.append(conv3)
-    source_layers.append(conv1)
-
-
 
 
     # original
     # for name in layer_names:
     #     source_layers.append(base.get_layer(name).output)
-    #x = source_layers[-1]
-    ## source_layers_0, # block3b_add/add_1:0    38, 38, 40
+    x = source_layers[-1]
+    # source_layers_0, # block3b_add/add_1:0    38, 38, 40
 
-    ## source_layers_1, # block5c_add/add_1:0    19, 19, 112
+    # source_layers_1, # block5c_add/add_1:0    19, 19, 112
 
-    ## source_layers_2, # block7a_project_bn/cond_1/Identity:0    10, 10, 320
+    # source_layers_2, # block7a_project_bn/cond_1/Identity:0    10, 10, 320
 
-    #source_layers.extend(add_extras(extra_layers_params, x))
+    source_layers.extend(add_extras(extra_layers_params, x))
 
     return base.input, source_layers
