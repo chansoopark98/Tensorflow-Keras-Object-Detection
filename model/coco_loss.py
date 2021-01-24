@@ -30,7 +30,7 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
     return tf.logical_or(pos_mask ,neg_mask)
 
 
-def total_loss(y_true, y_pred, num_classes=21):
+def total_loss(y_true, y_pred, num_classes=81):
     """Compute classification loss and smooth l1 loss.
         Args:
             confidence (batch_size, num_priors, num_classes): class predictions.

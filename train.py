@@ -71,11 +71,13 @@ else :
     test_data = tfds.load('coco', data_dir=DATASET_DIR, split=tfds.Split.TEST)
 
     train_data = train_coco.concatenate(valid_coco)
-    number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
-    print("학습 데이터 개수", number_train)
+    #number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
+    #print("학습 데이터 개수", number_train)
+    number_train = 123287
 
-    number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
-    print("테스트 데이터 개수:", number_test)
+    # number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+    # print("테스트 데이터 개수:", number_test)
+    number_test = 40775
 
 
 iou_threshold = 0.5

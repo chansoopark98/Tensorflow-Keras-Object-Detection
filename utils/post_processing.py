@@ -40,6 +40,7 @@ def batched_nms(boxes, scores, idxs, iou_threshold, top_k=100):
     keep = tf.image.non_max_suppression(boxes_for_nms, scores, top_k, iou_threshold)
     return keep
 
+# coco할 때 수정해야함
 def post_process(detections, target_transform, confidence_threshold=0.01, top_k=100, iou_threshold=0.5):
     batch_boxes = detections[:, :, 21:]
     if not tf.is_tensor(batch_boxes):
