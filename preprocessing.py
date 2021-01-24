@@ -2,6 +2,8 @@ from keras.applications.imagenet_utils import preprocess_input
 import tensorflow as tf
 from utils.augmentations import *
 
+
+
 AUTO = tf.data.experimental.AUTOTUNE
 
 @tf.function
@@ -39,20 +41,26 @@ def prepare_input(sample, convert_to_normal=True):
 
 
 # 타겟 연결
-def join_target(image, bbox, labels, image_size, target_transform):
+def join_target(image, bbox, labels, image_size, target_transform, classes):
   locations, labels = target_transform(tf.cast(bbox, tf.float32), labels)
-  labels = tf.one_hot(labels, 21, axis=1, dtype=tf.float32)
+  labels = tf.one_hot(labels, classes, axis=1, dtype=tf.float32) ### 1 -> classes
   targets = tf.concat([labels, locations], axis=1)
   return (tf.image.resize(image, image_size), targets)
 
 
-def prepare_dataset(dataset, image_size, batch_size, target_transform, train=False):
+def prepare_dataset(dataset, image_size, batch_size, target_transform, TRAIN_MODE, train=False):
+  if TRAIN_MODE == 'pascal':
+    classes = 21
+  else:
+    classes = 81
   dataset = dataset.map(prepare_input, num_parallel_calls=AUTO)
   if train:
     dataset = dataset.shuffle(1000)
     dataset = dataset.repeat()
     dataset = dataset.map(data_augment, num_parallel_calls=AUTO)
-  dataset = dataset.map(lambda image, boxes, labels: join_target(image, boxes, labels, image_size, target_transform), num_parallel_calls=AUTO)
+  dataset = dataset.map(lambda image, boxes,
+                               labels: join_target(image, boxes, labels, image_size, target_transform, classes),
+                        num_parallel_calls=AUTO)
   dataset = dataset.padded_batch(batch_size)
   dataset = dataset.prefetch(AUTO)
   return dataset

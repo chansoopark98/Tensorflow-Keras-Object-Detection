@@ -3,7 +3,7 @@ import tensorflow as tf
 import tensorflow.keras as keras
 import numpy as np
 from utils.priors import *
-from model.ssd import ssd
+from model.pascal_main import ssd
 import matplotlib.pyplot as plt
 from utils.post_processing import post_process
 from matplotlib.image import imread

@@ -3,8 +3,6 @@ import tensorflow as tf
 import tensorflow.keras as keras
 import numpy as np
 from utils.priors import *
-from model.ssd import ssd
-from model.loss import total_loss
 import os
 from preprocessing import prepare_dataset
 from tensorflow.keras.callbacks import LearningRateScheduler, ReduceLROnPlateau, ModelCheckpoint
@@ -39,25 +37,45 @@ IMAGE_SIZE = [300, 300]
 BATCH_SIZE = 32
 MODEL_NAME = 'B0'
 EPOCHS = 250
+TRAIN_MODE = 'coco'
 checkpoint_filepath = './checkpoints/'
 base_lr = 1e-3
 
-train2012 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
-valid2012 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
+if TRAIN_MODE == 'pascal':
+    from model.loss import total_loss
+    from model.pascal_main import ssd
 
-train2007 = tfds.load("voc", data_dir=DATASET_DIR, split='train')
-valid2007 = tfds.load("voc", data_dir=DATASET_DIR, split='validation')
+    train_pascal_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
+    valid_train_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
 
-train_data = train2007.concatenate(valid2007).concatenate(train2012).concatenate(valid2012)
+    train_pascal_07 = tfds.load("voc", data_dir=DATASET_DIR, split='train')
+    valid_train_07 = tfds.load("voc", data_dir=DATASET_DIR, split='validation')
 
-number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
-# number_train = 5011
-print("Number of Training Files:", number_train)
+    train_data = train_pascal_07.concatenate(valid_train_07).concatenate(train_pascal_12).concatenate(valid_train_12)
 
-test_data = tfds.load('voc', data_dir=DATASET_DIR, split='test')
-number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
-# number_test = 4952
-print("Number of Test Files:", number_test)
+    number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
+    # number_train = 5011
+    print("학습 데이터 개수", number_train)
+
+    test_data = tfds.load('voc', data_dir=DATASET_DIR, split='test')
+    number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+    # number_test = 4952
+    print("테스트 데이터 개수:", number_test)
+
+else :
+    from model.coco_loss import total_loss
+    from model.coco_main import ssd
+
+    train_coco = tfds.load('coco', data_dir=DATASET_DIR, split=tfds.Split.TRAIN)
+    valid_coco = tfds.load('coco', data_dir=DATASET_DIR, split=tfds.Split.VALIDATION)
+    test_data = tfds.load('coco', data_dir=DATASET_DIR, split=tfds.Split.TEST)
+
+    train_data = train_coco.concatenate(valid_coco)
+    number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
+    print("학습 데이터 개수", number_train)
+
+    number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+    print("테스트 데이터 개수:", number_test)
 
 
 iou_threshold = 0.5
@@ -78,8 +96,8 @@ priors = generate_ssd_priors(specs, IMAGE_SIZE[0])
 target_transform = MatchPrior(priors, center_variance, size_variance, iou_threshold)
 
 # 데이터세트 인스턴스화 (input은 300x300@3 labels은 8732)
-training_dataset = prepare_dataset(train_data, IMAGE_SIZE, BATCH_SIZE, target_transform, train=True)
-validation_dataset = prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE, target_transform, train=False)
+training_dataset = prepare_dataset(train_data, IMAGE_SIZE, BATCH_SIZE, target_transform, TRAIN_MODE, train=True)
+validation_dataset = prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE, target_transform, TRAIN_MODE ,train=False )
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 model = ssd(MODEL_NAME)

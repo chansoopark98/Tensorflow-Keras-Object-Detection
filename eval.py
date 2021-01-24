@@ -3,7 +3,7 @@ import tensorflow as tf
 import tensorflow.keras as keras
 import numpy as np
 from utils.priors import *
-from model.ssd import ssd
+from model.pascal_main import ssd
 import os
 from preprocessing import prepare_dataset
 from utils.post_processing import post_process

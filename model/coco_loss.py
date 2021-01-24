@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
+# COCO Dataset 기반 loss function ( classes = 81 )
 
 
 def smooth_l1(labels, scores, sigma=1.0):
@@ -37,10 +38,10 @@ def total_loss(y_true, y_pred, num_classes=21):
             labels (batch_size, num_priors): real labels of all the priors.
             gt_locations (batch_size, num_priors, 4): real boxes corresponding all the priors.
     """
-    labels = tf.argmax(y_true[:,:,:21], axis=2)
-    confidence = y_pred[:,:,:21]
-    predicted_locations = y_pred[:,:,21:]
-    gt_locations = y_true[:,:,21:]
+    labels = tf.argmax(y_true[:,:,:81], axis=2)
+    confidence = y_pred[:,:,:81]
+    predicted_locations = y_pred[:,:,81:]
+    gt_locations = y_true[:,:,81:]
     neg_pos_ratio = 3.0 # hard negative mining 음수 샘플 비율  3설정
     # derived from cross_entropy=sum(log(p))
     loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]

@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow import keras
-from model.main_model import csnet_extra_model
-from model.create_classifer import create_classifier
+from model.model import csnet_extra_model
+from model.coco_classifer import create_classifier
 
 # train.py에서 priors를 변경하면 여기도 수정해야함
 
