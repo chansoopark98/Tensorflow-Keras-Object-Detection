@@ -9,9 +9,6 @@ from tensorflow.keras.callbacks import LearningRateScheduler, ReduceLROnPlateau,
 
 from tensorflow.keras.utils import plot_model
 
-#from keras.utils.vis_utils import plot_model
-#from keras.utils import plot_model
-
 from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2_as_graph
 """실험일지
 0928 efficientnetb0_SSD를 BATCH 16 EPOCH 100으로 추가 학습 한 결과 EVAL MAP는 약 74%
@@ -34,7 +31,7 @@ from tensorflow.python.framework.convert_to_constants import convert_variables_t
 
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [300, 300]
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 MODEL_NAME = 'B0'
 EPOCHS = 250
 TRAIN_MODE = 'pascal'
@@ -46,7 +43,7 @@ if TRAIN_MODE == 'pascal':
     from model.loss import total_loss
     from model.pascal_main import ssd
 
-    train_pascal_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
+    train_pascal_12, info = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train', with_info=True)
     valid_train_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
 
     train_pascal_07 = tfds.load("voc", data_dir=DATASET_DIR, split='train')
@@ -64,65 +61,6 @@ if TRAIN_MODE == 'pascal':
     # number_test = 4952
     number_test = 4952
     print("테스트 데이터 개수:", number_test)
-
-else :
-    from model.coco_loss import total_loss
-    from model.coco_main import ssd
-
-    # train_coco = tfds.load('coco', data_dir=DATASET_DIR, split=tfds.Split.TRAIN)
-    # valid_coco = tfds.load('coco', data_dir=DATASET_DIR, split=tfds.Split.VALIDATION)
-    # test_data = tfds.load('coco', data_dir=DATASET_DIR, split=tfds.Split.TEST)
-
-    train_coco = tfds.load('coco', data_dir=coco_path, split='train')
-    valid_coco = tfds.load('coco', data_dir=coco_path, split='validation')
-    test_data = tfds.load('coco', data_dir=coco_path, split='test')
-
-    train_data = train_coco.concatenate(valid_coco)
-
-
-    #number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
-    #print("학습 데이터 개수", number_train)
-    number_train = 123287
-
-    # number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
-    # print("테스트 데이터 개수:", number_test)
-    number_test = 40775
-
-def predicate(x, allowed_labels=tf.constant([0, 1, 2], dtype=tf.int64)):
-    label = x['objects']['label']
-    isallowed = tf.equal(allowed_labels, tf.cast(label, tf.int64))
-    reduced = tf.reduce_sum(tf.cast(isallowed, tf.int64))
-    return tf.greater(reduced, tf.constant(0, dtype=tf.int64))
-
-def check_vaild(x):
-    a = x['objects']['bbox']
-    a = tf.unstack(a, axis=-1)
-    print("unstack", a[0])
-
-
-def survived(x):
-    none_value = tf.constant([], dtype=tf.float32)
-    none_value = tf.reshape(none_value, shape=[0,4])
-    #a = tf.not_equal(x['objects']['bbox'].shape, (0,4) )
-
-    if x['objects']['bbox'].shape == none_value.shape: return tf.constant(False)
-    else: return tf.constant(True)
-    # print(x['objects']['bbox'].shape)
-    # print(none_value.shape)
-    # print(a)
-    # return tf.constant(False)
-
-for line in train_data.take(100):
-  print(line['objects']['bbox'])
-
-
-train_data = train_data.filter(survived)
-
-#number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
-# number_train = 5011
-print("학습 데이터 개수", number_train)
-
-
 
 iou_threshold = 0.5
 center_variance = 0.1
@@ -165,7 +103,6 @@ model.compile(
     optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr),
     loss = total_loss
 )
-
 
 
 history = model.fit(training_dataset,
