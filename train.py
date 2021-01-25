@@ -37,7 +37,8 @@ IMAGE_SIZE = [300, 300]
 BATCH_SIZE = 32
 MODEL_NAME = 'B0'
 EPOCHS = 250
-TRAIN_MODE = 'coco'
+TRAIN_MODE = 'pascal'
+coco_path = './coco/'
 checkpoint_filepath = './checkpoints/'
 base_lr = 1e-3
 
@@ -53,24 +54,32 @@ if TRAIN_MODE == 'pascal':
 
     train_data = train_pascal_07.concatenate(valid_train_07).concatenate(train_pascal_12).concatenate(valid_train_12)
 
-    number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
+    #number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
     # number_train = 5011
+    number_train = 5011
     print("학습 데이터 개수", number_train)
 
     test_data = tfds.load('voc', data_dir=DATASET_DIR, split='test')
-    number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+    #number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
     # number_test = 4952
+    number_test = 4952
     print("테스트 데이터 개수:", number_test)
 
 else :
     from model.coco_loss import total_loss
     from model.coco_main import ssd
 
-    train_coco = tfds.load('coco', data_dir=DATASET_DIR, split=tfds.Split.TRAIN)
-    valid_coco = tfds.load('coco', data_dir=DATASET_DIR, split=tfds.Split.VALIDATION)
-    test_data = tfds.load('coco', data_dir=DATASET_DIR, split=tfds.Split.TEST)
+    # train_coco = tfds.load('coco', data_dir=DATASET_DIR, split=tfds.Split.TRAIN)
+    # valid_coco = tfds.load('coco', data_dir=DATASET_DIR, split=tfds.Split.VALIDATION)
+    # test_data = tfds.load('coco', data_dir=DATASET_DIR, split=tfds.Split.TEST)
+
+    train_coco = tfds.load('coco', data_dir=coco_path, split='train')
+    valid_coco = tfds.load('coco', data_dir=coco_path, split='validation')
+    test_data = tfds.load('coco', data_dir=coco_path, split='test')
 
     train_data = train_coco.concatenate(valid_coco)
+
+
     #number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
     #print("학습 데이터 개수", number_train)
     number_train = 123287
@@ -78,6 +87,41 @@ else :
     # number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
     # print("테스트 데이터 개수:", number_test)
     number_test = 40775
+
+def predicate(x, allowed_labels=tf.constant([0, 1, 2], dtype=tf.int64)):
+    label = x['objects']['label']
+    isallowed = tf.equal(allowed_labels, tf.cast(label, tf.int64))
+    reduced = tf.reduce_sum(tf.cast(isallowed, tf.int64))
+    return tf.greater(reduced, tf.constant(0, dtype=tf.int64))
+
+def check_vaild(x):
+    a = x['objects']['bbox']
+    a = tf.unstack(a, axis=-1)
+    print("unstack", a[0])
+
+
+def survived(x):
+    none_value = tf.constant([], dtype=tf.float32)
+    none_value = tf.reshape(none_value, shape=[0,4])
+    #a = tf.not_equal(x['objects']['bbox'].shape, (0,4) )
+
+    if x['objects']['bbox'].shape == none_value.shape: return tf.constant(False)
+    else: return tf.constant(True)
+    # print(x['objects']['bbox'].shape)
+    # print(none_value.shape)
+    # print(a)
+    # return tf.constant(False)
+
+for line in train_data.take(100):
+  print(line['objects']['bbox'])
+
+
+train_data = train_data.filter(survived)
+
+#number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
+# number_train = 5011
+print("학습 데이터 개수", number_train)
+
 
 
 iou_threshold = 0.5
@@ -107,7 +151,7 @@ steps_per_epoch = number_train // BATCH_SIZE
 validation_steps = number_test // BATCH_SIZE
 print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
-model.summary()
+#model.summary()
 
 #flops = get_flops(model, BATCH_SIZE)
 #print(f"FLOPS: {flops}")
