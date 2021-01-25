@@ -265,8 +265,14 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     print("conv10", efficient_conv10)
 
     conv38 = MBConv(efficient_conv38, 64, 1, 'conv38_resampling')
+    conv38 = MBConv(conv38, 64, 1, 'conv38_resampling_2')
+    conv38 = MBConv(conv38, 64, 1, 'conv38_resampling_3')
     conv19 = MBConv(efficient_conv19, 128, 1, 'conv19_resampling')
+    conv19 = MBConv(conv19, 128, 1, 'conv19_resampling_2')
+    conv19 = MBConv(conv19, 128, 1, 'conv19_resampling_3')
     conv10 = MBConv(efficient_conv10, 256, 1, 'conv10_resampling')
+    conv10 = MBConv(conv10, 256, 1, 'conv10_resampling_2')
+    conv10 = MBConv(conv10, 256, 1, 'conv10_resampling_3')
 
     # bottom-up pathway
     conv10 = CA(conv10, 'conv10_ca') # for top-down

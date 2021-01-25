@@ -97,7 +97,7 @@ print("검증 배치 개수:", validation_steps)
 #plot_model(model,'model_b0_ssd.png',show_shapes=True)
 
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-5, verbose=1)
-checkpoint = ModelCheckpoint(checkpoint_filepath+'0122_lab.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
+checkpoint = ModelCheckpoint(checkpoint_filepath+'0126_home.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
 
 model.compile(
     optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr),
