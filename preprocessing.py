@@ -2,8 +2,6 @@ from keras.applications.imagenet_utils import preprocess_input
 import tensorflow as tf
 from utils.augmentations import *
 
-
-
 AUTO = tf.data.experimental.AUTOTUNE
 
 @tf.function
@@ -24,7 +22,7 @@ def data_augment(image, boxes, labels):
     return (image, boxes, labels)
 
 
-def prepare_input(sample, convert_to_normal=True):
+def pascal_prepare_input(sample, convert_to_normal=True):
   img = tf.cast(sample['image'], tf.float32)
   # img = img - image_mean 이미지 평균
   labels = sample['objects']['label']+1
@@ -40,6 +38,21 @@ def prepare_input(sample, convert_to_normal=True):
   return (img, bbox, labels)
 
 
+def kitti_prepare_input(sample, convert_to_normal=True):
+    img = tf.cast(sample['image'], tf.float32)
+    # img = img - image_mean 이미지 평균
+    labels = sample['objects']['type']
+    bbox = sample['objects']['bbox']
+    if convert_to_normal:
+        bbox = tf.stack([bbox[:, 1], bbox[:, 0], bbox[:, 3], bbox[:, 2]], axis=1)
+
+    img = preprocess_input(img, mode='torch')
+    # img = tf.image.resize(img, IMAGE_SIZE) / 255.0 # 이미지 정규화
+    # img = tf.cast(img, tf.float32) # 형변환
+    # img = (img - image_mean) / image_std # 데이터셋 pascal 평균 분산치 실험
+
+    return (img, bbox, labels)
+
 # 타겟 연결
 def join_target(image, bbox, labels, image_size, target_transform, classes):
   locations, labels = target_transform(tf.cast(bbox, tf.float32), labels)
@@ -48,12 +61,11 @@ def join_target(image, bbox, labels, image_size, target_transform, classes):
   return (tf.image.resize(image, image_size), targets)
 
 
-def prepare_dataset(dataset, image_size, batch_size, target_transform, TRAIN_MODE, train=False):
-  if TRAIN_MODE == 'pascal':
-    classes = 21
-  else:
-    classes = 81
-  dataset = dataset.map(prepare_input, num_parallel_calls=AUTO)
+def prepare_dataset(dataset, image_size, batch_size, target_transform, classes, train=False):
+  if classes == 21:
+    dataset = dataset.map(pascal_prepare_input, num_parallel_calls=AUTO)
+  elif classes == 9:
+    dataset = dataset.map(kitti_prepare_input, num_parallel_calls=AUTO)
   if train:
     dataset = dataset.shuffle(1000)
     dataset = dataset.repeat()

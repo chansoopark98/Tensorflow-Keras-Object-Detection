@@ -1,16 +1,9 @@
-import tensorflow_datasets as tfds
-import tensorflow as tf
-import tensorflow.keras as keras
-import numpy as np
 from utils.priors import *
 from model.pascal_main import ssd
-import matplotlib.pyplot as plt
-from utils.post_processing import post_process
-from matplotlib.image import imread
+from utils.pascal.pascal_post_processing import post_process
 import os
 from preprocessing import prepare_for_prediction
 from tqdm import tqdm
-from PIL import Image
 import time
 import cv2
 

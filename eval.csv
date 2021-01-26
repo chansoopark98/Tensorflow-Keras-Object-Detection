@@ -1,0 +1,9 @@
+Class,Average Precision
+Car,0.0
+Van,0.0
+Truck,0.0
+Pedestrian,0.0
+Person_sitting,nan
+Cyclist,0.0
+Tram,0.0
+DontCare,0.03325391595981257

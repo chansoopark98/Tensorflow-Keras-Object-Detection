@@ -42,10 +42,10 @@ def batched_nms(boxes, scores, idxs, iou_threshold, top_k=100):
 
 # coco할 때 수정해야함
 def post_process(detections, target_transform, confidence_threshold=0.01, top_k=100, iou_threshold=0.5):
-    batch_boxes = detections[:, :, 21:]
+    batch_boxes = detections[:, :, 9:]
     if not tf.is_tensor(batch_boxes):
         batch_boxes = tf.convert_to_tensor(batch_boxes)
-    batch_scores = tf.nn.softmax(detections[:, :, :21], axis=2)
+    batch_scores = tf.nn.softmax(detections[:, :, :9], axis=2)
 
     batch_boxes = convert_locations_to_boxes(batch_boxes, target_transform.center_form_priors, target_transform.center_variance, target_transform.size_variance)
     batch_boxes = center_form_to_corner_form(batch_boxes)

@@ -1,11 +1,6 @@
-import tensorflow_datasets as tfds
-import tensorflow as tf
-import tensorflow.keras as keras
-import numpy as np
 from utils.priors import *
 from model.pascal_main import ssd
-import matplotlib.pyplot as plt
-from utils.post_processing import post_process
+from utils.pascal.pascal_post_processing import post_process
 
 import cv2
 
