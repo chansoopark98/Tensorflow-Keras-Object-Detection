@@ -88,7 +88,7 @@ print("검증 배치 개수:", validation_steps)
 #flops = get_flops(model, BATCH_SIZE)
 #print(f"FLOPS: {flops}")
 
-#plot_model(model,'model_b0_ssd.png',show_shapes=True)
+plot_model(model,'model_b0.png',show_shapes=True)
 
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, min_lr=1e-5, verbose=1)
 checkpoint = ModelCheckpoint(checkpoint_filepath+'test_kitti.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)

@@ -193,6 +193,19 @@ def convolution(input_tensor, channel, size, stride, padding, name):
 
     return conv
 
+def dilated_convolution(input_tensor, channel, size, stride, dilated_rate, padding, name):
+    kernel_size = (size, size)
+    kernel_stride = (stride, stride)
+    dilated_size = (dilated_rate, dilated_rate)
+    conv = Conv2D(channel, kernel_size, kernel_stride, dilation_rate=dilated_size,
+                  padding=padding, kernel_regularizer=l2(0.0005),
+                  kernel_initializer='he_normal', name=name)(input_tensor)
+    conv = BatchNormalization(axis=3, name=name+'_bn')(conv)
+    conv = Activation('relu', name=name+'_relu')(conv)
+
+    return conv
+
+
 def CA(x):
     channel = x.shape[3]
 
@@ -283,15 +296,22 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     print("layer_names : ", layer_names)
 
     # get extra layer
-    #conv75 = base.get_layer('block2b_add').output  # 75 75 24
+    efficient_conv75 = base.get_layer('block2b_add').output  # 75 75 24
     efficient_conv38 = base.get_layer(layer_names[0]).output # 38 38 40
     efficient_conv19 = base.get_layer(layer_names[1]).output # 19 19 112`
     efficient_conv10 = base.get_layer(layer_names[2]).output # 10 10 320
     print("input")
+    print("conv75", efficient_conv75)
     print("conv38", efficient_conv38)
     print("conv19", efficient_conv19)
     print("conv10", efficient_conv10)
 
+    efficient_conv75_2 = dilated_convolution(efficient_conv75, 24, 3, 1, 2, 'same', 'conv75_dilation_2x')
+    efficient_conv75_4 = dilated_convolution(efficient_conv75, 24, 3, 1, 4, 'same', 'conv75_dilation_4x')
+    efficient_conv75_8 = dilated_convolution(efficient_conv75, 24, 3, 1, 8, 'same', 'conv75_dilation_8x')
+    efficient_conv75_concat = Concatenate()([efficient_conv75_2, efficient_conv75_4, efficient_conv75_8 ])
+    efficient_conv75_concat = convolution(efficient_conv75_concat, 40, 3, 2, 'same', 'conv75_concat_conv')
+    efficient_conv38 = Add()([efficient_conv75_concat, efficient_conv38])
     conv38 = MBConv(efficient_conv38, 64, 1, 'conv38_resampling')
     conv19 = MBConv(efficient_conv19, 128, 1, 'conv19_resampling')
     conv10 = MBConv(efficient_conv10, 256, 1, 'conv10_resampling')
