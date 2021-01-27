@@ -306,12 +306,7 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     print("conv19", efficient_conv19)
     print("conv10", efficient_conv10)
 
-    efficient_conv75_2 = dilated_convolution(efficient_conv75, 24, 3, 1, 2, 'same', 'conv75_dilation_2x')
-    efficient_conv75_4 = dilated_convolution(efficient_conv75, 24, 3, 1, 4, 'same', 'conv75_dilation_4x')
-    efficient_conv75_8 = dilated_convolution(efficient_conv75, 24, 3, 1, 8, 'same', 'conv75_dilation_8x')
-    efficient_conv75_concat = Concatenate()([efficient_conv75_2, efficient_conv75_4, efficient_conv75_8 ])
-    efficient_conv75_concat = convolution(efficient_conv75_concat, 40, 3, 2, 'same', 'conv75_concat_conv')
-    efficient_conv38 = Add()([efficient_conv75_concat, efficient_conv38])
+   
     conv38 = MBConv(efficient_conv38, 64, 1, 'conv38_resampling')
     conv19 = MBConv(efficient_conv19, 128, 1, 'conv19_resampling')
     conv10 = MBConv(efficient_conv10, 256, 1, 'conv10_resampling')
