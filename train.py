@@ -1,7 +1,7 @@
 import tensorflow_datasets as tfds
-import tensorflow as tf
-import tensorflow.keras as keras
-import numpy as np
+#import tensorflow as tf
+#import tensorflow.keras as keras
+#import numpy as np
 from utils.priors import *
 import os
 from preprocessing import prepare_dataset
@@ -9,15 +9,15 @@ from tensorflow.keras.callbacks import LearningRateScheduler, ReduceLROnPlateau,
 
 from tensorflow.keras.utils import plot_model
 
-from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2_as_graph
+#from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2_as_graph
 
 CONTINUE_TRAINING = True
-SAVE_MODEL_NAME = '0124_lab_lightweight'
+SAVE_MODEL_NAME = '0129_main'
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [300, 300]
 BATCH_SIZE = 16
 MODEL_NAME = 'B0'
-EPOCHS = 1
+EPOCHS = 200
 TRAIN_MODE = 'pascal' # 'pascal' or 'kitti'
 checkpoint_filepath = './checkpoints/'
 base_lr = 1e-3
@@ -95,7 +95,7 @@ print("검증 배치 개수:", validation_steps)
 
 plot_model(model,'model_b0.png',show_shapes=True)
 
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, min_lr=1e-5, verbose=1)
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-5, verbose=1)
 checkpoint = ModelCheckpoint(checkpoint_filepath+SAVE_MODEL_NAME+'.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
 
 model.compile(
@@ -124,7 +124,7 @@ make_directory(SAVED_MODEL_PATH)
 MODEL_DIR = SAVED_MODEL_PATH
 
 
-version = 1
+version = SAVE_MODEL_NAME
 export_path = os.path.join(MODEL_DIR, str(version))
 print('export_path = {}\n'.format(export_path))
 

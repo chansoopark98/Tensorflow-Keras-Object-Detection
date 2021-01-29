@@ -22,11 +22,6 @@ get_efficient_feature = {
 }
 
 
-# 필터 개수, 커널크기, stride, 패딩
-extra_layers_params = [[(128, 1, 1, 'same'), (256, 3, 2, 'same')],
-                       [(128, 1, 1, 'same'), (256, 3, 1, 'valid')],
-                       [(128, 1, 1, 'same'), (256, 3, 1, 'valid')]]
-
 
 def remove_dropout(model):
     for layer in model.layers:
@@ -40,35 +35,7 @@ def remove_dropout(model):
 
 
 
-
-
-def add_extras(extras, x, regularization=5e-4):
-    # 5,5 / 3,3 / 1,1 세 개 수행
-    features = []
-    for extra_layer in extras:
-        x = add_layer(extra_layer[0], x, regularization)
-        x = add_layer(extra_layer[1], x, regularization)
-        features.append(x)
-
-    return features
-
-
-
-
-
-def add_layer(layer_params, x, regularization=5e-4):
-    filters, kernel_size, stride, padding = layer_params
-    x = Conv2D(filters, kernel_size, stride, padding=padding, kernel_regularizer=l2(regularization))(x)
-    x = Activation('relu')(x)
-
-    return x
-
-
-
-
-
 def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300]):
-    pyramidTimes = 1
     if pretrained is False:
         weights = None
 
@@ -77,34 +44,34 @@ def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300])
 
     if base_model_name == 'B0':
         base = efn.EfficientNetB0(weights=weights, include_top=False, input_shape=[*IMAGE_SIZE, 3])
-        pyramidTimes = 1
+
     elif base_model_name == 'B1':
         base = efn.EfficientNetB1(weights=weights, include_top=False, input_shape=[*IMAGE_SIZE, 3])
-        pyramidTimes = 2
+
     elif base_model_name == 'B2':
         base = efn.EfficientNetB2(weights=weights, include_top=False, input_shape=[*IMAGE_SIZE, 3])
-        pyramidTimes = 3
+
     elif base_model_name == 'B3':
         base = efn.EfficientNetB3(weights=weights, include_top=False, input_shape=[*IMAGE_SIZE, 3])
-        pyramidTimes = 4
+
     elif base_model_name == 'B4':
         base = efn.EfficientNetB4(weights=weights, include_top=False, input_shape=[*IMAGE_SIZE, 3])
-        pyramidTimes = 5
+
     elif base_model_name == 'B5':
         base = efn.EfficientNetB5(weights=weights, include_top=False, input_shape=[*IMAGE_SIZE, 3])
-        pyramidTimes = 6
+
     elif base_model_name == 'B6':
         base = efn.EfficientNetB6(weights=weights, include_top=False, input_shape=[*IMAGE_SIZE, 3])
-        pyramidTimes = 7
+
     elif base_model_name == 'B7':
         base = efn.EfficientNetB7(weights=weights, include_top=False, input_shape=[*IMAGE_SIZE, 3])
-        pyramidTimes = 7
+
 
     base = remove_dropout(base)
 
     base.trainable = True
 
-    return base , pyramidTimes
+    return base
 
 def MBConv(input_tensor, channel, stride, name):
     input_channel = input_tensor.shape[3]
@@ -259,49 +226,22 @@ def upSampling(input_tensor, size, name):
     resized = Resizing(size, size, name=name+'_resizing')(input_tensor)
     return resized
 
-def featurePyramid(conv38, conv19, conv10, name="1"):
-    # bottom-up pathway
-    conv10 = CA(conv10)  # for top-down
-    conv10_upSampling = upSampling(conv10, 19, 'conv10_to_conv19'+'_'+name)  # 10x10@256 to 19x19@256
-
-    concat_conv19 = Concatenate()([conv10_upSampling, conv19])  # 19x19 / @128+256
-    concat_conv19 = MBConv(concat_conv19, 128, 1, 'conv19_upSampling_conv'+'_'+name)  # for top-down
-    ca_conv19 = CA(concat_conv19)
-    ca_conv19 = upSampling(ca_conv19, 38, 'conv19_to_conv38'+'_'+name)  # 10x10@128 to 19x19@128
-
-    concat_conv38 = Concatenate()([conv38, ca_conv19])  # 38x39 / @64+128
-    concat_conv38 = MBConv(concat_conv38, 64, 1, 'conv38_upSampling_conv'+'_'+name)
-    sa_conv38 = SA(concat_conv38)  ### for predict
-
-    # top-down pathway
-    down_conv19 = strideMBConv(sa_conv38, 'conv38_downSampling_conv'+'_'+name)
-    down_concat_conv19 = Concatenate()([concat_conv19, down_conv19])  # 19x19@ 64 + 128
-    down_concat_conv19 = MBConv(down_concat_conv19, 128, 1, 'conv19_down_conv'+'_'+name)
-    sa_down_conv19 = SA(down_concat_conv19)  ### for predict
-
-    down_conv10 = strideMBConv(sa_down_conv19, 'conv10_downSampling_conv'+'_'+name)
-    down_concat_conv10 = Concatenate()([conv10, down_conv10])  # @256+128
-    down_concat_conv10 = MBConv(down_concat_conv10, 256, 1, 'conv10_down_conv'+'_'+name)
-    sa_conv_conv10 = SA(down_concat_conv10)  ### for predict
-
-
-    return sa_conv38, sa_down_conv19, sa_conv_conv10
 
 
 def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], regularization=5e-4):
     source_layers = []
-    base, pyramidTimes = create_efficientNet(base_model_name, pretrained, IMAGE_SIZE)
+    base = create_efficientNet(base_model_name, pretrained, IMAGE_SIZE)
     print(base)
     layer_names = get_efficient_feature[base_model_name]
     print("layer_names : ", layer_names)
 
     # get extra layer
-    efficient_conv75 = base.get_layer('block2b_add').output  # 75 75 24
+    #efficient_conv75 = base.get_layer('block2b_add').output  # 75 75 24
     efficient_conv38 = base.get_layer(layer_names[0]).output # 38 38 40
     efficient_conv19 = base.get_layer(layer_names[1]).output # 19 19 112`
     efficient_conv10 = base.get_layer(layer_names[2]).output # 10 10 320
     print("input")
-    print("conv75", efficient_conv75)
+    #print("conv75", efficient_conv75)
     print("conv38", efficient_conv38)
     print("conv19", efficient_conv19)
     print("conv10", efficient_conv10)
@@ -311,34 +251,31 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     conv19 = MBConv(efficient_conv19, 128, 1, 'conv19_resampling')
     conv10 = MBConv(efficient_conv10, 256, 1, 'conv10_resampling')
 
-    for i in range(pyramidTimes):
-        print(i)
-        conv38, conv19, conv10 = featurePyramid(conv38, conv19, conv10, str(i+1))
 
 
     # bottom-up pathway
-    # conv10 = CA(conv10 ) # for top-down
-    # conv10_upSampling = upSampling(conv10, 19, 'conv10_to_conv19')  # 10x10@256 to 19x19@256
-    #
-    # concat_conv19 = Concatenate()([conv10_upSampling, conv19])  # 19x19 / @128+256
-    # concat_conv19 = MBConv(concat_conv19, 128,  1, 'conv19_upSampling_conv') # for top-down
-    # ca_conv19 = CA(concat_conv19)
-    # ca_conv19 = upSampling(ca_conv19, 38, 'conv19_to_conv38')  # 10x10@128 to 19x19@128
-    #
-    # concat_conv38 = Concatenate()([conv38, ca_conv19])  # 38x39 / @64+128
-    # concat_conv38 = MBConv(concat_conv38, 64, 1, 'conv38_upSampling_conv')
-    # sa_conv38 = SA(concat_conv38) ### for predict
-    #
-    # # top-down pathway
-    # down_conv19 = strideMBConv(sa_conv38, 'conv38_downSampling_conv')
-    # down_concat_conv19 = Concatenate()([concat_conv19, down_conv19]) # 19x19@ 64 + 128
-    # down_concat_conv19 = MBConv(down_concat_conv19, 128, 1, 'conv19_down_conv')
-    # sa_down_conv19 = SA(down_concat_conv19) ### for predict
-    #
-    # down_conv10 = strideMBConv(sa_down_conv19, 'conv10_downSampling_conv')
-    # down_concat_conv10 = Concatenate()([conv10, down_conv10])  # @256+128
-    # down_concat_conv10 = MBConv(down_concat_conv10, 256, 1, 'conv10_down_conv')
-    # sa_conv_conv10 = SA(down_concat_conv10) ### for predict
+    conv10 = CA(conv10 ) # for top-down
+    conv10_upSampling = upSampling(conv10, 19, 'conv10_to_conv19')  # 10x10@256 to 19x19@256
+
+    concat_conv19 = Concatenate()([conv10_upSampling, conv19])  # 19x19 / @128+256
+    concat_conv19 = MBConv(concat_conv19, 128,  1, 'conv19_upSampling_conv') # for top-down
+    ca_conv19 = CA(concat_conv19)
+    ca_conv19 = upSampling(ca_conv19, 38, 'conv19_to_conv38')  # 10x10@128 to 19x19@128
+
+    concat_conv38 = Concatenate()([conv38, ca_conv19])  # 38x39 / @64+128
+    concat_conv38 = MBConv(concat_conv38, 64, 1, 'conv38_upSampling_conv')
+    sa_conv38 = SA(concat_conv38) ### for predict
+
+    # top-down pathway
+    down_conv19 = strideMBConv(sa_conv38, 'conv38_downSampling_conv')
+    down_concat_conv19 = Concatenate()([concat_conv19, down_conv19]) # 19x19@ 64 + 128
+    down_concat_conv19 = MBConv(down_concat_conv19, 128, 1, 'conv19_down_conv')
+    sa_down_conv19 = SA(down_concat_conv19) ### for predict
+
+    down_conv10 = strideMBConv(sa_down_conv19, 'conv10_downSampling_conv')
+    down_concat_conv10 = Concatenate()([conv10, down_conv10])  # @256+128
+    down_concat_conv10 = MBConv(down_concat_conv10, 256, 1, 'conv10_down_conv')
+    sa_conv_conv10 = SA(down_concat_conv10) ### for predict
 
 
     sa_conv38 = MBConv(conv38, 128, 1,  'conv38_for_predict')
