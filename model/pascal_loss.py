@@ -62,4 +62,4 @@ def total_loss(y_true, y_pred, num_classes=21):
     class_loss = classification_loss / num_pos
     # print(num_pos)
     mbox_loss = loc_loss + class_loss
-    return  mbox_loss
+    return mbox_loss

@@ -5,9 +5,8 @@ from keras.activations import sigmoid
 from keras.regularizers import l2
 from keras.layers.experimental.preprocessing import Resizing
 
-
 from keras.layers import GlobalAveragePooling2D, GlobalMaxPooling2D, Reshape, Dense, multiply, Concatenate, \
-    Conv2D, Add, Activation, Dropout ,BatchNormalization, DepthwiseConv2D, Lambda , MaxPool2D
+    Conv2D, Add, Activation, Dropout ,BatchNormalization, DepthwiseConv2D, Lambda , SeparableConv2D
 from keras import backend as K
 
 
@@ -74,58 +73,79 @@ def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300])
 
     return base
 
-def MBConv(input_tensor, stride, name):
-    expansion = 3
-    channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
-    in_channels = K.int_shape(input_tensor)[channel_axis]
+def MBConv(input_tensor, channel, stride, name):
+    input_channel = input_tensor.shape[3]
 
-    if stride == 2 :
-        max_pooled = MaxPool2D(padding='same')(input_tensor)
-    r = Conv2D(expansion * in_channels, (1, 1), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
-               padding='same', name=name + '_mbconv_expansion_conv')(input_tensor)
-    r = BatchNormalization(axis=channel_axis, epsilon=1e-3, momentum=0.999,
-                           name = name + '_mbconv_expansion_bn')(r)
-    r = Activation('relu', name=name + '_mbconv_expansion_relu')(r)
-
-    # r = DepthwiseConv2D((3, 3), strides=stride, depthwise_regularizer=l2(0.0005), depthwise_initializer='he_normal',
-    #                     activation=None, use_bias=False,
-    #                     padding='same', name=name + '_mbconv_squeeze_depthwise')(r)
-    # Default
-    r = DepthwiseConv2D((3, 3), strides=stride, activation=None, use_bias=False,
-                        padding='same', name=name + '_mbconv_squeeze_depthwise')(r)
-    r = BatchNormalization(axis=channel_axis, epsilon=1e-3, momentum=0.999,
-                           name=name + '_mbconv_squeeze_depthwise_bn')(r)
-    r = Activation('relu', name=name + '_mbconv_squeeze_depthwise_relu')(r)
-
-    r = Conv2D(in_channels, (1, 1), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
-               padding='same', name=name + '_mbconv_squeeze_conv')(r)
-    r = BatchNormalization(axis=channel_axis, epsilon=1e-3, momentum=0.999,
-                           name=name + '_mbconv_squeeze_bn')(r)
-    if stride == 2:
-        return Add(name=name + 'residual_add')([max_pooled, r])
-    else:
-        return Add(name=name+'residual_add')([input_tensor, r])
-
-def extraMBConv(x, padding, name, stride=(1, 1)):
-
-    channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
-    in_channels = K.int_shape(x)[channel_axis]
-
-    r = Conv2D(in_channels, (1, 1), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
-               padding='same', name=name + '_mbconv_squeeze_1')(x)
-    r = BatchNormalization(axis=channel_axis, epsilon=1e-3, momentum=0.999,
-                           name=name + '_mbconv_squeeze_bn_1')(r)
+    r = Conv2D(channel, (1, 1), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
+               padding='same', name=name + '_mbconv_squeeze_1')(input_tensor)
+    r = BatchNormalization(axis=3, name=name + '_mbconv_squeeze_bn_1')(r)
     r = Activation('relu', name=name + '_mbconv_squeeze_relu_1')(r)
 
-    r = DepthwiseConv2D((3, 3), strides=stride ,padding=padding, name=name + '_mbconv_squeeze_depthwise')(r)
-    r = BatchNormalization(axis=channel_axis, epsilon=1e-3, momentum=0.999,
-                           name=name + '_mbconv_squeeze_depthwise_bn')(r)
+    r = DepthwiseConv2D((3, 3), strides=stride, depthwise_regularizer=l2(0.0005), depthwise_initializer='he_normal',
+                        padding='same', name=name + '_mbconv_squeeze_depthwise')(r)
+    r = BatchNormalization(axis=3, name=name + '_mbconv_squeeze_depthwise_bn')(r)
     r = Activation('relu', name=name + '_mbconv_squeeze_depthwise_relu')(r)
 
-    r = Conv2D(in_channels, (1, 1), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
-               padding='same', name=name + '_mbconv_squeeze_conv')(r)
-    r = BatchNormalization(axis=channel_axis, epsilon=1e-3, momentum=0.999,
-                           name=name + '_mbconv_squeeze_bn')(r)
+    r = SeparableConv2D(filters=channel, kernel_size=(1, 1),
+                        padding='same', pointwise_regularizer=l2(0.0005), pointwise_initializer='he_normal')(r)
+    r = Activation('relu', name=name + '_mbconv_squeeze_poitnwise_relu')(r)
+
+    return r
+
+def extraMBConv(x, f_padding, s_padding, name, stride=(1, 1)):
+    input_channel = x.shape[3]
+    squeeze_channel = input_channel/2
+    expand_channel = input_channel
+
+    r = Conv2D(squeeze_channel, (1, 1), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
+               padding='same', name=name + '_mbconv_squeeze_1')(x)
+    r = BatchNormalization(axis=3, name=name + '_mbconv_squeeze_bn_1')(r)
+    r = Activation('relu', name=name + '_mbconv_squeeze_relu_1')(r)
+
+    r = DepthwiseConv2D((3, 3), strides=(1, 1), depthwise_regularizer=l2(0.0005), depthwise_initializer='he_normal',
+                        padding=f_padding, name=name + '_mbconv_squeeze_depthwise')(r)
+    r = BatchNormalization(axis=3, name=name + '_mbconv_squeeze_depthwise_bn')(r)
+    r = Activation('relu', name=name + '_mbconv_squeeze_depthwise_relu')(r)
+
+
+    r = SeparableConv2D(filters=squeeze_channel, kernel_size=(1,1),
+                        padding='same', pointwise_regularizer=l2(0.0005), pointwise_initializer='he_normal')(r)
+    r = Activation('relu', name=name + '_mbconv_squeeze_poitnwise_relu')(r)
+
+    ##
+    r = Conv2D(expand_channel, (1, 1), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
+               padding='same', name=name + '_mbconv_squeeze_2')(r)
+    r = BatchNormalization(axis=3, name=name + '_mbconv_squeeze_bn_2')(r)
+    r = Activation('relu', name=name + '_mbconv_squeeze_relu_2')(r)
+
+    r = DepthwiseConv2D((3, 3), strides=stride, depthwise_regularizer=l2(0.0005), depthwise_initializer='he_normal',
+                        padding=s_padding, name=name + '_mbconv_squeeze_stride_depthwise')(r)
+    r = BatchNormalization(axis=3, name=name + '_mbconv_squeeze_stride_depthwise_bn')(r)
+    r = Activation('relu', name=name + '_mbconv_squeeze_stride_depthwise_relu')(r)
+
+    r = SeparableConv2D(filters=expand_channel, kernel_size=(1, 1),
+                        padding='same', pointwise_regularizer=l2(0.0005), pointwise_initializer='he_normal')(r)
+    r = Activation('relu', name=name + '_mbconv_squeeze_stride_poitnwise_relu')(r)
+
+    return r
+
+def strideMBConv(x, name):
+    input_channel = x.shape[3]
+
+    r = Conv2D(input_channel, (1, 1), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
+               padding='same', name=name + '_stride_expand')(x)
+    r = BatchNormalization(axis=3, name=name + '_stride_expand_bn')(r)
+    r = Activation('relu', name=name + '_1x1_relu')(r)
+
+    r = DepthwiseConv2D((3, 3), strides=(2, 2), depthwise_regularizer=l2(0.0005), depthwise_initializer='he_normal',
+                        padding='same', name=name + '_stride_depthwise')(r)
+    r = BatchNormalization(axis=3, name=name + '_stride_depthwise_bn')(r)
+    r = Activation('relu', name=name + '_depthwise_relu')(r)
+
+
+    r = SeparableConv2D(filters=input_channel, kernel_size=(1,1),
+                        padding='same', pointwise_regularizer=l2(0.0005), pointwise_initializer='he_normal')(r)
+    r = Activation('relu', name=name + '_pointwise_relu')(r)
     return r
 
 
@@ -226,95 +246,59 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     print("conv19", efficient_conv19)
     print("conv10", efficient_conv10)
 
+   
+    conv38 = MBConv(efficient_conv38, 64, 1, 'conv38_resampling')
+    conv19 = MBConv(efficient_conv19, 128, 1, 'conv19_resampling')
+    conv10 = MBConv(efficient_conv10, 256, 1, 'conv10_resampling')
 
 
-    conv38 = convolution(efficient_conv38, 64, 3, 1, 'same', 'conv38_channel_64')
-    conv38 = CA(conv38)
-    conv38 = SA(conv38)
-
-    conv19 = convolution(efficient_conv19, 128, 3, 1, 'same', 'conv19_channel_128')
-    conv19 = CA(conv19)
-    conv19 = SA(conv19)
-
-    conv10 = convolution(efficient_conv10, 256, 3, 1, 'same', 'conv10_channel_256')
-    conv10 = CA(conv10)
-    conv10 = SA(conv10)
 
     # bottom-up pathway
-
-
+    conv10 = CA(conv10 ) # for top-down
     conv10_upSampling = upSampling(conv10, 19, 'conv10_to_conv19')  # 10x10@256 to 19x19@256
 
-    concat_conv19 = Concatenate()([conv10_upSampling, conv19])
-    concat_conv19 = convolution(concat_conv19, 128, 1, 1, 'same', 'concat_conv19_1x1_channel')
-    concat_conv19 = MBConv(concat_conv19, 1, 'conv19_upSampling_conv') # for top-down
-    #ca_conv19 = CA(concat_conv19)
-    ca_conv19 = upSampling(concat_conv19, 38, 'conv19_to_conv38')  # 10x10@128 to 19x19@128
+    concat_conv19 = Concatenate()([conv10_upSampling, conv19])  # 19x19 / @128+256
+    concat_conv19 = MBConv(concat_conv19, 128,  1, 'conv19_upSampling_conv') # for top-down
+    ca_conv19 = CA(concat_conv19)
+    ca_conv19 = upSampling(ca_conv19, 38, 'conv19_to_conv38')  # 10x10@128 to 19x19@128
 
     concat_conv38 = Concatenate()([conv38, ca_conv19])  # 38x39 / @64+128
-    concat_conv38 = convolution(concat_conv38, 64, 1, 1, 'same', 'concat_conv38_1x1_channel')
-    concat_conv38 = MBConv(concat_conv38, 1, 'conv38_upSampling_conv')
-    # sa_conv38 = SA(concat_conv38)
-
-
-    # Mid-Bridge pathway
-    bridge_conv38 = MBConv(concat_conv38, 1, 'conv38_bridge_1')
-    bridge_conv38 = MBConv(bridge_conv38, 1, 'conv38_bridge_2') # for predict --------
-    bridge_conv38 = CA(bridge_conv38)
-    bridge_conv38 = SA(bridge_conv38)
-    print(' bridge_conv38 -- ' , bridge_conv38)
-
-    bridge_conv19 = MBConv(concat_conv19, 1, 'conv19_bridge_1')
-    bridge_conv19 = MBConv(bridge_conv19, 1, 'conv19_bridge_2')
-    bridge_conv19 = CA(bridge_conv19)
-    bridge_conv19 = SA(bridge_conv19)
-    print(' bridge_conv39  --  ', bridge_conv19)
-
-    bridge_conv10 = MBConv(conv10, 1, 'conv10_bridge_1')
-    bridge_conv10 = MBConv(bridge_conv10, 1, 'conv10_bridge_2')
-    bridge_conv10 = CA(bridge_conv10)
-    bridge_conv10 = SA(bridge_conv10)
-    print(' bridge_conv10  --  ', bridge_conv10)
-
+    concat_conv38 = MBConv(concat_conv38, 64, 1, 'conv38_upSampling_conv')
+    sa_conv38 = SA(concat_conv38) ### for predict
 
     # top-down pathway
-    down_conv19 = MBConv(bridge_conv38, 2, 'conv38_downSampling_conv') # STRIDE = 2
-    down_concat_conv19 = Concatenate()([bridge_conv19, down_conv19]) # 19x19@ 64 + 128
-    down_concat_conv19 = convolution(down_concat_conv19, 128, 1, 1, 'same', 'concat_conv19_1x1_channel_2')
-    down_concat_conv19 = MBConv(down_concat_conv19, 1, 'conv19_down_conv') # for predict --------
-    #sa_down_conv19 = SA(down_concat_conv19) ### for predict
+    down_conv19 = strideMBConv(sa_conv38, 'conv38_downSampling_conv')
+    down_concat_conv19 = Concatenate()([concat_conv19, down_conv19]) # 19x19@ 64 + 128
+    down_concat_conv19 = MBConv(down_concat_conv19, 128, 1, 'conv19_down_conv')
+    sa_down_conv19 = SA(down_concat_conv19) ### for predict
 
-    down_conv10 = MBConv(down_concat_conv19, 2,  'conv10_downSampling_conv')
-    down_concat_conv10 = Concatenate()([bridge_conv10, down_conv10])  # @256+128
-    down_concat_conv10 = convolution(down_concat_conv10, 256, 1, 1, 'same', 'concat_conv10_1x1_channel_2')
-    down_concat_conv10 = MBConv(down_concat_conv10, 1, 'conv10_down_conv') # for predict -------
-    #sa_conv_conv10 = SA(down_concat_conv10) ### for predict
+    down_conv10 = strideMBConv(sa_down_conv19, 'conv10_downSampling_conv')
+    down_concat_conv10 = Concatenate()([conv10, down_conv10])  # @256+128
+    down_concat_conv10 = MBConv(down_concat_conv10, 256, 1, 'conv10_down_conv')
+    sa_conv_conv10 = SA(down_concat_conv10) ### for predict
 
 
-    #sa_conv38 = MBConv(sa_conv38, 1,  'conv38_for_predict')
-    #sa_down_conv19 = MBConv(sa_down_conv19, 1, 'conv19_for_predict')
-    #sa_conv_conv10 = MBConv(sa_conv_conv10, 1, 'conv10_for_predict')
+    sa_conv38 = MBConv(conv38, 128, 1,  'conv38_for_predict')
+    sa_down_conv19 = MBConv(conv19, 256, 1, 'conv19_for_predict')
+    sa_conv_conv10 = MBConv(conv10, 256, 1, 'conv10_for_predict')
 
 
-    conv5 = extraMBConv(down_concat_conv10, 'same', 'conv10_to_conv5_1', (1, 1))
-    conv5 = extraMBConv(conv5, 'same', 'conv10_to_conv5_2', (2, 2))
-    #conv5 = CA(conv5)
-    #conv5 = SA(conv5)
+    conv5 = extraMBConv(sa_conv_conv10, 'same', 'same', 'conv10_to_conv5', (2, 2))
+    conv5 = CA(conv5)
+    conv5 = SA(conv5)
 
-    conv3 = extraMBConv(conv5, 'same','conv5_to_conv3_1')
-    conv3 = extraMBConv(conv3, 'valid', 'conv5_to_conv3_2')
-    #conv3 = CA(conv3)
-    #conv3 = SA(conv3)
+    conv3 = extraMBConv(conv5, 'same', 'valid', 'conv5_to_conv3')
+    conv3 = CA(conv3)
+    conv3 = SA(conv3)
 
-    conv1 = extraMBConv(conv3, 'same', 'conv3_to_conv1_1')
-    conv1 = extraMBConv(conv1, 'valid', 'conv3_to_conv1_2')
-    #conv1 = CA(conv1)
-    #conv1 = SA(conv1)
+    conv1 = extraMBConv(conv3, 'same', 'valid', 'conv3_to_conv1')
+    conv1 = CA(conv1)
+    conv1 = SA(conv1)
 
     # predict features
-    source_layers.append(bridge_conv38)
-    source_layers.append(down_concat_conv19)
-    source_layers.append(down_concat_conv10)
+    source_layers.append(sa_conv38)
+    source_layers.append(sa_down_conv19)
+    source_layers.append(sa_conv_conv10)
     source_layers.append(conv5)
     source_layers.append(conv3)
     source_layers.append(conv1)
