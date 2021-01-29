@@ -13,7 +13,7 @@ IMAGE_SIZE = [300, 300]
 BATCH_SIZE = 16
 MODEL_NAME = 'B0'
 checkpoint_filepath = './checkpoints/test_kitti.h5'
-EVAL_MODE = 'kitti' # 'pascal' or 'kitti'
+EVAL_MODE = 'pascal' # 'pascal' or 'kitti'
 
 
 if EVAL_MODE == 'pascal':
