@@ -11,11 +11,13 @@ from tensorflow.keras.utils import plot_model
 
 from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2_as_graph
 
+CONTINUE_TRAINING = True
+SAVE_MODEL_NAME = '0124_lab_lightweight'
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [300, 300]
 BATCH_SIZE = 16
 MODEL_NAME = 'B0'
-EPOCHS = 250
+EPOCHS = 1
 TRAIN_MODE = 'pascal' # 'pascal' or 'kitti'
 checkpoint_filepath = './checkpoints/'
 base_lr = 1e-3
@@ -79,6 +81,9 @@ validation_dataset = prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE, target_t
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 model = ssd(MODEL_NAME)
+if CONTINUE_TRAINING is True:
+    model.load_weights(checkpoint_filepath+SAVE_MODEL_NAME+'.h5')
+
 steps_per_epoch = number_train // BATCH_SIZE
 validation_steps = number_test // BATCH_SIZE
 print("학습 배치 개수:", steps_per_epoch)
@@ -91,7 +96,7 @@ print("검증 배치 개수:", validation_steps)
 plot_model(model,'model_b0.png',show_shapes=True)
 
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, min_lr=1e-5, verbose=1)
-checkpoint = ModelCheckpoint(checkpoint_filepath+'test_kitti.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
+checkpoint = ModelCheckpoint(checkpoint_filepath+SAVE_MODEL_NAME+'.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
 
 model.compile(
     optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr),
@@ -106,3 +111,30 @@ history = model.fit(training_dataset,
                     epochs=EPOCHS,
                     callbacks=[reduce_lr,checkpoint])
 
+def make_directory(target_path):
+  if not os.path.exists(target_path):
+    os.mkdir(target_path)
+    print('Directory ', target_path, ' Created ')
+  else:
+    print('Directory ', target_path, ' already exists')
+
+print('TensorFlow version: {}'.format(tf.__version__))
+SAVED_MODEL_PATH = './saved_model'
+make_directory(SAVED_MODEL_PATH)
+MODEL_DIR = SAVED_MODEL_PATH
+
+
+version = 1
+export_path = os.path.join(MODEL_DIR, str(version))
+print('export_path = {}\n'.format(export_path))
+
+tf.keras.models.save_model(
+  model,
+  export_path,
+  overwrite=True,
+  include_optimizer=True,
+  save_format=None,
+  signatures=None,
+  options=None
+)
+print('\nSaved model:')
