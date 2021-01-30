@@ -11,11 +11,11 @@ from tensorflow.keras.utils import plot_model
 
 #from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2_as_graph
 
-CONTINUE_TRAINING = True
-SAVE_MODEL_NAME = '0129_main'
+CONTINUE_TRAINING = False
+SAVE_MODEL_NAME = '0129_main_lab'
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [300, 300]
-BATCH_SIZE = 16
+BATCH_SIZE = 1
 MODEL_NAME = 'B0'
 EPOCHS = 200
 TRAIN_MODE = 'pascal' # 'pascal' or 'kitti'
@@ -88,12 +88,12 @@ steps_per_epoch = number_train // BATCH_SIZE
 validation_steps = number_test // BATCH_SIZE
 print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
-#model.summary()
+model.summary()
 
 #flops = get_flops(model, BATCH_SIZE)
 #print(f"FLOPS: {flops}")
 
-plot_model(model,'model_b0.png',show_shapes=True)
+#plot_model(model,'model_b0.png',show_shapes=True)
 
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-5, verbose=1)
 checkpoint = ModelCheckpoint(checkpoint_filepath+SAVE_MODEL_NAME+'.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
