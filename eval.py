@@ -12,7 +12,7 @@ DATASET_DIR = 'datasets/'
 IMAGE_SIZE = [300, 300]
 BATCH_SIZE = 16
 MODEL_NAME = 'B0'
-checkpoint_filepath = './checkpoints/test_kitti.h5'
+checkpoint_filepath = './checkpoints/0129_main.h5'
 EVAL_MODE = 'pascal' # 'pascal' or 'kitti'
 
 
