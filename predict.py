@@ -1,6 +1,6 @@
 from utils.priors import *
 from model.pascal_main import ssd
-from utils.pascal.pascal_post_processing import post_process
+from utils.pascal_post_processing import post_process
 import os
 from preprocessing import prepare_for_prediction
 from tqdm import tqdm
@@ -11,7 +11,7 @@ from collections import namedtuple
 
 DATASET_DIR = 'datasets'
 IMAGE_SIZE = [300, 300]
-BATCH_SIZE = 2
+BATCH_SIZE = 32
 MODEL_NAME = 'B0'
 checkpoint_filepath = './checkpoints/1112_ep300.h5'
 INPUT_DIR = './inputs'

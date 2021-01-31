@@ -2,7 +2,9 @@ import tensorflow as tf
 import numpy as np
 from collections import namedtuple
 from utils.misc import *
+
 Prediction = namedtuple('Prediction', ('boxes', 'scores', 'labels'))
+
 
 def batched_nms(boxes, scores, idxs, iou_threshold, top_k=100):
     """
@@ -29,7 +31,7 @@ def batched_nms(boxes, scores, idxs, iou_threshold, top_k=100):
         in decreasing order of scores
     """
     if tf.size(boxes) == 0:
-        return tf.convert_to_tensor([],dtype=tf.int32)
+        return tf.convert_to_tensor([], dtype=tf.int32)
     # strategy: in order to perform NMS independently per class.
     # we add an offset to all the boxes. The offset is dependent
     # only on the class idx, and is large enough so that boxes
@@ -40,16 +42,17 @@ def batched_nms(boxes, scores, idxs, iou_threshold, top_k=100):
     keep = tf.image.non_max_suppression(boxes_for_nms, scores, top_k, iou_threshold)
     return keep
 
-# coco할 때 수정해야함
+
 def post_process(detections, target_transform, confidence_threshold=0.01, top_k=100, iou_threshold=0.5):
     batch_boxes = detections[:, :, 21:]
     if not tf.is_tensor(batch_boxes):
         batch_boxes = tf.convert_to_tensor(batch_boxes)
     batch_scores = tf.nn.softmax(detections[:, :, :21], axis=2)
 
-    batch_boxes = convert_locations_to_boxes(batch_boxes, target_transform.center_form_priors, target_transform.center_variance, target_transform.size_variance)
+    batch_boxes = convert_locations_to_boxes(batch_boxes, target_transform.center_form_priors,
+                                             target_transform.center_variance, target_transform.size_variance)
     batch_boxes = center_form_to_corner_form(batch_boxes)
-    
+
     batch_size = tf.shape(batch_scores)[0]
     results = []
     for image_id in range(batch_size):
@@ -67,16 +70,18 @@ def post_process(detections, target_transform, confidence_threshold=0.01, top_k=
         boxes = boxes[:, 1:]
         scores = scores[:, 1:]
         labels = labels[:, 1:]
-        
+
         # batch everything, by making every class prediction be a separate instance
         boxes = tf.reshape(boxes, [-1, 4])
         scores = tf.reshape(scores, [-1])
         labels = tf.reshape(labels, [-1])
-        
+
         # remove low scoring boxes
         low_scoring_mask = scores > confidence_threshold
-        boxes, scores, labels = tf.boolean_mask(boxes, low_scoring_mask), tf.boolean_mask(scores, low_scoring_mask), tf.boolean_mask(labels, low_scoring_mask)
-        
+        boxes, scores, labels = tf.boolean_mask(boxes, low_scoring_mask), tf.boolean_mask(scores,
+                                                                                          low_scoring_mask), tf.boolean_mask(
+            labels, low_scoring_mask)
+
         keep = batched_nms(boxes, scores, labels, iou_threshold, top_k)
         boxes, scores, labels = tf.gather(boxes, keep), tf.gather(scores, keep), tf.gather(labels, keep)
         results.append(Prediction(boxes.numpy(), scores.numpy(), labels.numpy()))

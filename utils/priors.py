@@ -5,11 +5,10 @@ import tensorflow as tf
 import numpy as np
 from utils.misc import *
 
-# BoxSizes = collections.namedtuple('SSDBoxSizes', ['min', 'max'])
-BoxSizes = collections.namedtuple('BoxSizes', ['min', 'max'])
+BoxSizes = collections.namedtuple('SSDBoxSizes', ['min', 'max'])
 
-# SSDSpec = collections.namedtuple('SSDSpec', ['feature_map_size', 'shrinkage', 'box_sizes', 'aspect_ratios'])
-Spec = collections.namedtuple('Spec', ['feature_map_size', 'shrinkage', 'box_sizes', 'aspect_ratios'])
+Spec = collections.namedtuple('SSDSpec', ['feature_map_size', 'shrinkage', 'box_sizes', 'aspect_ratios'])
+
 
 def generate_ssd_priors(specs: List[Spec], image_size, clamp=True):
     """CSNET Prior Box 생성
@@ -26,12 +25,12 @@ def generate_ssd_priors(specs: List[Spec], image_size, clamp=True):
                  SSDSpec (1, 300, SSDBoxSizes (264, 315), [2])
              ]
          image_size : 이미지 크기.
-         clamp : 참이면 값을 [0.0, 1.0] 사이로 고정
+         clamp : 참이면 값을 [0.0, 1.0] 사이로 고정합니다.
      보고:
-         priors (num_priors, 4) : [[center_x, center_y, w, h]]로 표시되는 bbox 좌표
+         priors (num_priors, 4) : [[center_x, center_y, w, h]]로 표시되는 이전 상자입니다. 모든 가치
+             이미지 크기에 상대적입니다.
      """
 
-  
     priors = []
     for spec in specs:
         # specs
@@ -88,6 +87,7 @@ def generate_ssd_priors(specs: List[Spec], image_size, clamp=True):
         np.clip(priors, 0.0, 1.0, out=priors)
     return tf.convert_to_tensor(priors)
 
+
 @tf.function
 def assign_priors(gt_boxes, gt_labels, corner_form_priors,
                   iou_threshold=0.45):
@@ -111,10 +111,14 @@ def assign_priors(gt_boxes, gt_labels, corner_form_priors,
     best_prior_per_target_index = tf.math.argmax(ious, axis=0)
 
     targets = tf.range(tf.shape(best_prior_per_target_index)[0], dtype='int64')
-    
-    best_target_per_prior_index = tf.tensor_scatter_nd_update(best_target_per_prior_index, tf.expand_dims(best_prior_per_target_index, 1), targets)
+
+    best_target_per_prior_index = tf.tensor_scatter_nd_update(best_target_per_prior_index,
+                                                              tf.expand_dims(best_prior_per_target_index, 1), targets)
     # 2.0 is used to make sure every target has a prior assigned
-    best_target_per_prior = tf.tensor_scatter_nd_update(best_target_per_prior, tf.expand_dims(best_prior_per_target_index, 1), tf.ones_like(best_prior_per_target_index, dtype=tf.float32)*2.0)
+    best_target_per_prior = tf.tensor_scatter_nd_update(best_target_per_prior,
+                                                        tf.expand_dims(best_prior_per_target_index, 1),
+                                                        tf.ones_like(best_prior_per_target_index,
+                                                                     dtype=tf.float32) * 2.0)
     # size: num_priors
     labels = tf.gather(gt_labels, best_target_per_prior_index)
 
@@ -123,6 +127,7 @@ def assign_priors(gt_boxes, gt_labels, corner_form_priors,
     # labels[best_target_per_prior < iou_threshold] = 0  # the backgournd id
     boxes = tf.gather(gt_boxes, best_target_per_prior_index)
     return boxes, labels
+
 
 class MatchPrior(object):
     def __init__(self, center_form_priors, center_variance, size_variance, iou_threshold):
@@ -141,5 +146,3 @@ class MatchPrior(object):
         boxes = corner_form_to_center_form(boxes)
         locations = convert_boxes_to_locations(boxes, self.center_form_priors, self.center_variance, self.size_variance)
         return locations, labels
-
-

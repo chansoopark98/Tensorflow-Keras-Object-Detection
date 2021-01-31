@@ -1,6 +1,6 @@
 from utils.priors import *
 from model.pascal_main import ssd
-from utils.pascal.pascal_post_processing import post_process
+from utils.pascal_post_processing import post_process
 
 import cv2
 

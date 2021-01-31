@@ -43,7 +43,7 @@ def bbox_iou(bbox_a, bbox_b):
     return area_i / (area_a[:, None] + area_b - area_i)
 
 
-def eval_detection(
+def eval_detection_voc(
         pred_bboxes,
         pred_labels,
         pred_scores,
@@ -53,13 +53,13 @@ def eval_detection(
         iou_thresh=0.5,
         use_07_metric=False):
     """Calculate average precisions based on evaluation code of PASCAL VOC.
-    This function evaluates predicted bounding boxes obtained from a datasets
+    This function evaluates predicted bounding boxes obtained from a dataset
     which has :math:`N` images by using average precision for each class.
     The code is based on the evaluation code used in PASCAL VOC Challenge.
     Args:
         pred_bboxes (iterable of numpy.ndarray): An iterable of :math:`N`
             sets of bounding boxes.
-            Its index corresponds to an index for the base datasets.
+            Its index corresponds to an index for the base dataset.
             Each element of :obj:`pred_bboxes` is a set of coordinates
             of bounding boxes. This is an array whose shape is :math:`(R, 4)`,
             where :math:`R` corresponds
@@ -68,10 +68,10 @@ def eval_detection(
             :math:`y_{min}, x_{min}, y_{max}, x_{max}` of a bounding box.
         pred_labels (iterable of numpy.ndarray): An iterable of labels.
             Similar to :obj:`pred_bboxes`, its index corresponds to an
-            index for the base datasets. Its length is :math:`N`.
+            index for the base dataset. Its length is :math:`N`.
         pred_scores (iterable of numpy.ndarray): An iterable of confidence
             scores for predicted bounding boxes. Similar to :obj:`pred_bboxes`,
-            its index corresponds to an index for the base datasets.
+            its index corresponds to an index for the base dataset.
             Its length is :math:`N`.
         gt_bboxes (iterable of numpy.ndarray): An iterable of ground truth
             bounding boxes
@@ -123,13 +123,13 @@ def calc_detection_voc_prec_rec(
         iou_thresh=0.5):
     """Calculate precision and recall based on evaluation code of PASCAL VOC.
     This function calculates precision and recall of
-    predicted bounding boxes obtained from a datasets which has :math:`N`
+    predicted bounding boxes obtained from a dataset which has :math:`N`
     images.
     The code is based on the evaluation code used in PASCAL VOC Challenge.
     Args:
         pred_bboxes (iterable of numpy.ndarray): An iterable of :math:`N`
             sets of bounding boxes.
-            Its index corresponds to an index for the base datasets.
+            Its index corresponds to an index for the base dataset.
             Each element of :obj:`pred_bboxes` is a set of coordinates
             of bounding boxes. This is an array whose shape is :math:`(R, 4)`,
             where :math:`R` corresponds
@@ -138,10 +138,10 @@ def calc_detection_voc_prec_rec(
             :math:`y_{min}, x_{min}, y_{max}, x_{max}` of a bounding box.
         pred_labels (iterable of numpy.ndarray): An iterable of labels.
             Similar to :obj:`pred_bboxes`, its index corresponds to an
-            index for the base datasets. Its length is :math:`N`.
+            index for the base dataset. Its length is :math:`N`.
         pred_scores (iterable of numpy.ndarray): An iterable of confidence
             scores for predicted bounding boxes. Similar to :obj:`pred_bboxes`,
-            its index corresponds to an index for the base datasets.
+            its index corresponds to an index for the base dataset.
             Its length is :math:`N`.
         gt_bboxes (iterable of numpy.ndarray): An iterable of ground truth
             bounding boxes

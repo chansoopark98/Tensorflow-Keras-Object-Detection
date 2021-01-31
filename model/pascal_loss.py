@@ -1,8 +1,6 @@
 import tensorflow as tf
 import numpy as np
 
-
-
 def smooth_l1(labels, scores, sigma=1.0):
     diff = scores-labels
     abs_diff = tf.abs(diff)
@@ -11,11 +9,17 @@ def smooth_l1(labels, scores, sigma=1.0):
 
 def hard_negative_mining(loss, labels, neg_pos_ratio):
     """
-         loss (N, num_priors) : 각 샘플에 대한 손실
-         labels (N, num_priors) : 레이블
-         neg_pos_ratio : 음수 샘플이랑 양수 샘플 비율
-     """
-
+    It used to suppress the presence of a large number of negative prediction.
+    It works on image level not batch level.
+    For any example/image, it keeps all the positive predictions and
+     cut the number of negative predictions to make sure the ratio
+     between the negative examples and positive examples is no more
+     the given ratio for an image.
+    Args:
+        loss (N, num_priors): the loss for each example.
+        labels (N, num_priors): the labels.
+        neg_pos_ratio:  the ratio between the negative examples and positive examples.
+    """
     pos_mask = labels > 0
     # print(pos_mask)
     num_pos = tf.math.reduce_sum(tf.cast(pos_mask, tf.float32), axis=1, keepdims=True)
@@ -41,7 +45,7 @@ def total_loss(y_true, y_pred, num_classes=21):
     confidence = y_pred[:,:,:21]
     predicted_locations = y_pred[:,:,21:]
     gt_locations = y_true[:,:,21:]
-    neg_pos_ratio = 3.0 # hard negative mining 음수 샘플 비율  3설정
+    neg_pos_ratio = 3.0
     # derived from cross_entropy=sum(log(p))
     loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]
     loss = tf.stop_gradient(loss)
@@ -56,10 +60,10 @@ def total_loss(y_true, y_pred, num_classes=21):
     predicted_locations = tf.reshape(tf.boolean_mask(predicted_locations, pos_mask), [-1, 4])
     gt_locations = tf.reshape(tf.boolean_mask(gt_locations, pos_mask), [-1, 4])
 
-    smooth_l1_loss = tf.math.reduce_sum(smooth_l1(scores=predicted_locations, labels=gt_locations))
+    smooth_l1_loss = tf.math.reduce_sum(smooth_l1(scores=predicted_locations,labels=gt_locations))
     num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
     loc_loss = smooth_l1_loss / num_pos
     class_loss = classification_loss / num_pos
     # print(num_pos)
     mbox_loss = loc_loss + class_loss
-    return mbox_loss
+    return  mbox_loss
