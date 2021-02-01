@@ -283,19 +283,19 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     bridge_conv38 = MBConv(concat_conv38, 1, 'conv38_bridge_1')
     bridge_conv38 = MBConv(bridge_conv38, 1, 'conv38_bridge_2') # for predict --------
     #bridge_conv38 = CA(bridge_conv38)
-    #bridge_conv38 = SA(bridge_conv38)
+    bridge_conv38 = SA(bridge_conv38)
     print(' bridge_conv38 -- ' , bridge_conv38)
 
     bridge_conv19 = MBConv(concat_conv19, 1, 'conv19_bridge_1')
     bridge_conv19 = MBConv(bridge_conv19, 1, 'conv19_bridge_2')
     #bridge_conv19 = CA(bridge_conv19)
-    #bridge_conv19 = SA(bridge_conv19)
+    bridge_conv19 = SA(bridge_conv19)
     print(' bridge_conv39  --  ', bridge_conv19)
 
     bridge_conv10 = MBConv(conv10, 1, 'conv10_bridge_1')
     bridge_conv10 = MBConv(bridge_conv10, 1, 'conv10_bridge_2')
     #bridge_conv10 = CA(bridge_conv10)
-    #bridge_conv10 = SA(bridge_conv10)
+    bridge_conv10 = SA(bridge_conv10)
     print(' bridge_conv10  --  ', bridge_conv10)
 
 
