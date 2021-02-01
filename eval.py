@@ -32,7 +32,7 @@ DATASET_DIR = './datasets/'
 IMAGE_SIZE = [300, 300]
 BATCH_SIZE = 32
 MODEL_NAME = 'B0'
-checkpoint_filepath = './checkpoints/name.h5'
+checkpoint_filepath = './checkpoints/0201_main.h5'
 
 # train2012 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
 # valid2012 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
@@ -42,7 +42,7 @@ test_data = tfds.load('voc', data_dir=DATASET_DIR, split='test')
 number_test = 4952
 print("Number of Test Files:", number_test)
 
-with open('./labels.txt') as f:
+with open('./pascal_labels.txt') as f:
     CLASSES = f.read().splitlines()
 
 iou_threshold = 0.5

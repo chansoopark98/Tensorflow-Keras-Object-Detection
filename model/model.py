@@ -79,8 +79,6 @@ def MBConv(input_tensor, stride, name):
     channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
     in_channels = K.int_shape(input_tensor)[channel_axis]
 
-    if stride == 2 :
-        max_pooled = MaxPool2D(padding='same')(input_tensor)
     r = Conv2D(expansion * in_channels, (1, 1), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
                padding='same', name=name + '_mbconv_expansion_conv')(input_tensor)
     r = BatchNormalization(axis=channel_axis, epsilon=1e-3, momentum=0.999,
@@ -97,14 +95,35 @@ def MBConv(input_tensor, stride, name):
                            name=name + '_mbconv_squeeze_depthwise_bn')(r)
     r = Activation('relu', name=name + '_mbconv_squeeze_depthwise_relu')(r)
 
+    shared_layer_one = Dense(expansion * in_channels // 16,
+                             activation='relu',
+                             kernel_initializer='he_normal',
+                             use_bias=True,
+                             bias_initializer='zeros')
+    shared_layer_two = Dense(expansion * in_channels,
+                             kernel_initializer='he_normal',
+                             use_bias=True,
+                             bias_initializer='zeros')
+
+    avg_pool = GlobalAveragePooling2D()(r)
+    avg_pool = Reshape((1, 1, expansion * in_channels))(avg_pool)
+    avg_pool = shared_layer_one(avg_pool)
+    avg_pool = shared_layer_two(avg_pool)
+
+    channel_attention = Activation('sigmoid')(avg_pool)
+
+    r = multiply([r, channel_attention])
+
+
+
     r = Conv2D(in_channels, (1, 1), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
                padding='same', name=name + '_mbconv_squeeze_conv')(r)
     r = BatchNormalization(axis=channel_axis, epsilon=1e-3, momentum=0.999,
                            name=name + '_mbconv_squeeze_bn')(r)
+
     if stride == 2:
-        return Add(name=name + 'residual_add')([max_pooled, r])
-    else:
-        return Add(name=name+'residual_add')([input_tensor, r])
+        return r
+    return Add(name=name+'residual_add')([input_tensor, r])
 
 def extraMBConv(x, padding, name, stride=(1, 1)):
 
@@ -228,15 +247,18 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
 
 
 
-    conv38 = convolution(efficient_conv38, 64, 3, 1, 'same', 'conv38_channel_64')
-    conv38 = CA(conv38)
-    conv38 = SA(conv38)
+    #conv38 = convolution(efficient_conv38, 64, 3, 1, 'same', 'conv38_channel_64')
+    conv38 = MBConv(efficient_conv38, 1, 'conv38_channel_64')
+    #conv38 = CA(conv38)
+    #conv38 = SA(conv38)
 
-    conv19 = convolution(efficient_conv19, 128, 3, 1, 'same', 'conv19_channel_128')
+    #conv19 = convolution(efficient_conv19, 128, 3, 1, 'same', 'conv19_channel_128')
+    conv19 = MBConv(efficient_conv19, 1, 'conv19_channel_128')
     conv19 = CA(conv19)
     conv19 = SA(conv19)
 
-    conv10 = convolution(efficient_conv10, 256, 3, 1, 'same', 'conv10_channel_256')
+    #conv10 = convolution(efficient_conv10, 256, 3, 1, 'same', 'conv10_channel_256')
+    conv10 = MBConv(efficient_conv10, 1, 'conv10_channel_256')
     conv10 = CA(conv10)
     conv10 = SA(conv10)
 
@@ -260,20 +282,20 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     # Mid-Bridge pathway
     bridge_conv38 = MBConv(concat_conv38, 1, 'conv38_bridge_1')
     bridge_conv38 = MBConv(bridge_conv38, 1, 'conv38_bridge_2') # for predict --------
-    bridge_conv38 = CA(bridge_conv38)
-    bridge_conv38 = SA(bridge_conv38)
+    #bridge_conv38 = CA(bridge_conv38)
+    #bridge_conv38 = SA(bridge_conv38)
     print(' bridge_conv38 -- ' , bridge_conv38)
 
     bridge_conv19 = MBConv(concat_conv19, 1, 'conv19_bridge_1')
     bridge_conv19 = MBConv(bridge_conv19, 1, 'conv19_bridge_2')
-    bridge_conv19 = CA(bridge_conv19)
-    bridge_conv19 = SA(bridge_conv19)
+    #bridge_conv19 = CA(bridge_conv19)
+    #bridge_conv19 = SA(bridge_conv19)
     print(' bridge_conv39  --  ', bridge_conv19)
 
     bridge_conv10 = MBConv(conv10, 1, 'conv10_bridge_1')
     bridge_conv10 = MBConv(bridge_conv10, 1, 'conv10_bridge_2')
-    bridge_conv10 = CA(bridge_conv10)
-    bridge_conv10 = SA(bridge_conv10)
+    #bridge_conv10 = CA(bridge_conv10)
+    #bridge_conv10 = SA(bridge_conv10)
     print(' bridge_conv10  --  ', bridge_conv10)
 
 

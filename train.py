@@ -14,7 +14,7 @@ from tensorflow.keras.utils import plot_model
 #from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2_as_graph
 
 CONTINUE_TRAINING = False
-SAVE_MODEL_NAME = '0201_main'
+SAVE_MODEL_NAME = '0202_main'
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [300, 300]
 BATCH_SIZE = 16
