@@ -254,13 +254,13 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
 
     #conv19 = convolution(efficient_conv19, 128, 3, 1, 'same', 'conv19_channel_128')
     conv19 = MBConv(efficient_conv19, 1, 'conv19_channel_128')
-    conv19 = CA(conv19)
-    conv19 = SA(conv19)
+    #conv19 = CA(conv19)
+    #conv19 = SA(conv19)
 
     #conv10 = convolution(efficient_conv10, 256, 3, 1, 'same', 'conv10_channel_256')
     conv10 = MBConv(efficient_conv10, 1, 'conv10_channel_256')
-    conv10 = CA(conv10)
-    conv10 = SA(conv10)
+    #conv10 = CA(conv10)
+    #conv10 = SA(conv10)
 
     # bottom-up pathway
 
