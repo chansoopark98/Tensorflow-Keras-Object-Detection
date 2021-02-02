@@ -281,19 +281,19 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
 
     # Mid-Bridge pathway
     bridge_conv38 = MBConv(concat_conv38, 1, 'conv38_bridge_1')
-    bridge_conv38 = MBConv(bridge_conv38, 1, 'conv38_bridge_2') # for predict --------
+    #bridge_conv38 = MBConv(bridge_conv38, 1, 'conv38_bridge_2') # for predict --------
     #bridge_conv38 = CA(bridge_conv38)
     bridge_conv38 = SA(bridge_conv38)
     print(' bridge_conv38 -- ' , bridge_conv38)
 
     bridge_conv19 = MBConv(concat_conv19, 1, 'conv19_bridge_1')
-    bridge_conv19 = MBConv(bridge_conv19, 1, 'conv19_bridge_2')
+    #bridge_conv19 = MBConv(bridge_conv19, 1, 'conv19_bridge_2')
     #bridge_conv19 = CA(bridge_conv19)
     bridge_conv19 = SA(bridge_conv19)
     print(' bridge_conv39  --  ', bridge_conv19)
 
     bridge_conv10 = MBConv(conv10, 1, 'conv10_bridge_1')
-    bridge_conv10 = MBConv(bridge_conv10, 1, 'conv10_bridge_2')
+    #bridge_conv10 = MBConv(bridge_conv10, 1, 'conv10_bridge_2')
     #bridge_conv10 = CA(bridge_conv10)
     bridge_conv10 = SA(bridge_conv10)
     print(' bridge_conv10  --  ', bridge_conv10)
@@ -303,13 +303,13 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     down_conv19 = MBConv(bridge_conv38, 2, 'conv38_downSampling_conv') # STRIDE = 2
     down_concat_conv19 = Concatenate()([bridge_conv19, down_conv19]) # 19x19@ 64 + 128
     down_concat_conv19 = convolution(down_concat_conv19, 128, 1, 1, 'same', 'concat_conv19_1x1_channel_2')
-    down_concat_conv19 = MBConv(down_concat_conv19, 1, 'conv19_down_conv') # for predict --------
+    #down_concat_conv19 = MBConv(down_concat_conv19, 1, 'conv19_down_conv') # for predict --------
     #sa_down_conv19 = SA(down_concat_conv19) ### for predict
 
     down_conv10 = MBConv(down_concat_conv19, 2,  'conv10_downSampling_conv')
     down_concat_conv10 = Concatenate()([bridge_conv10, down_conv10])  # @256+128
     down_concat_conv10 = convolution(down_concat_conv10, 256, 1, 1, 'same', 'concat_conv10_1x1_channel_2')
-    down_concat_conv10 = MBConv(down_concat_conv10, 1, 'conv10_down_conv') # for predict -------
+    #down_concat_conv10 = MBConv(down_concat_conv10, 1, 'conv10_down_conv') # for predict -------
     #sa_conv_conv10 = SA(down_concat_conv10) ### for predict
 
 
