@@ -32,7 +32,7 @@ DATASET_DIR = './datasets/'
 IMAGE_SIZE = [300, 300]
 BATCH_SIZE = 32
 MODEL_NAME = 'B0'
-checkpoint_filepath = './checkpoints/0201_main.h5'
+checkpoint_filepath = './checkpoints/0202_main.h5'
 
 # train2012 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
 # valid2012 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')

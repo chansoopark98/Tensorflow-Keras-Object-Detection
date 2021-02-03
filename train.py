@@ -10,15 +10,15 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from model.pascal_loss import total_loss
 from model.pascal_main import ssd
 from tensorflow.keras.utils import plot_model
-
+from calc_flops import get_flops
 #from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2_as_graph
 
 CONTINUE_TRAINING = False
 SAVE_MODEL_NAME = '0202_main'
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [300, 300]
-BATCH_SIZE = 16
-MODEL_NAME = 'B0'
+BATCH_SIZE = 1
+MODEL_NAME = 'B7'
 EPOCHS = 200
 TRAIN_MODE = 'pascal' # 'pascal' or 'kitti'
 checkpoint_filepath = './checkpoints/'
@@ -75,8 +75,8 @@ print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
 model.summary()
 
-#flops = get_flops(model, BATCH_SIZE)
-#print(f"FLOPS: {flops}")
+flops = get_flops(model, BATCH_SIZE)
+print(f"FLOPS: {flops}")
 
 #plot_model(model,'model_b0.png',show_shapes=True)
 
