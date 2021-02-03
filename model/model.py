@@ -203,9 +203,17 @@ def CA(x):
     return r
 
 def SA(x):
-    avg_pool = Lambda(lambda x: K.mean(x, axis=3, keepdims=True))(x)
+    channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
+    in_channels = K.int_shape(x)[channel_axis]
 
-    max_pool = Lambda(lambda x: K.max(x, axis=3, keepdims=True))(x)
+    dilated_feature = Conv2D(in_channels, (3, 3), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
+               padding='same', dilation_rate=(2, 2))(x)
+
+    depthwise_feature = DepthwiseConv2D((3, 3), strides=(1, 1), padding='same')(x)
+
+    avg_pool = Lambda(lambda x: K.mean(x, axis=3, keepdims=True))(dilated_feature)
+
+    max_pool = Lambda(lambda x: K.max(x, axis=3, keepdims=True))(depthwise_feature)
 
     concat = Concatenate(axis=3)([avg_pool, max_pool])
 
@@ -250,17 +258,17 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     #conv38 = convolution(efficient_conv38, 64, 3, 1, 'same', 'conv38_channel_64')
     conv38 = MBConv(efficient_conv38, 1, 'conv38_channel_64')
     #conv38 = CA(conv38)
-    #conv38 = SA(conv38)
+    conv38 = SA(conv38)
 
     #conv19 = convolution(efficient_conv19, 128, 3, 1, 'same', 'conv19_channel_128')
     conv19 = MBConv(efficient_conv19, 1, 'conv19_channel_128')
-    #conv19 = CA(conv19)
-    #conv19 = SA(conv19)
+    # conv19 = CA(conv19)
+    conv19 = SA(conv19)
 
     #conv10 = convolution(efficient_conv10, 256, 3, 1, 'same', 'conv10_channel_256')
     conv10 = MBConv(efficient_conv10, 1, 'conv10_channel_256')
-    #conv10 = CA(conv10)
-    #conv10 = SA(conv10)
+    # conv10 = CA(conv10)
+    conv10 = SA(conv10)
 
     # bottom-up pathway
 
@@ -303,14 +311,14 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     down_conv19 = MBConv(bridge_conv38, 2, 'conv38_downSampling_conv') # STRIDE = 2
     down_concat_conv19 = Concatenate()([bridge_conv19, down_conv19]) # 19x19@ 64 + 128
     down_concat_conv19 = convolution(down_concat_conv19, 128, 1, 1, 'same', 'concat_conv19_1x1_channel_2')
-    down_concat_conv19 = MBConv(down_concat_conv19, 1, 'conv19_down_conv') # for predict --------
-    #sa_down_conv19 = SA(down_concat_conv19) ### for predict
+    #down_concat_conv19 = MBConv(down_concat_conv19, 1, 'conv19_down_conv') # for predict --------
+    down_concat_conv19 = SA(down_concat_conv19) ### for predict
 
     down_conv10 = MBConv(down_concat_conv19, 2,  'conv10_downSampling_conv')
     down_concat_conv10 = Concatenate()([bridge_conv10, down_conv10])  # @256+128
     down_concat_conv10 = convolution(down_concat_conv10, 256, 1, 1, 'same', 'concat_conv10_1x1_channel_2')
-    down_concat_conv10 = MBConv(down_concat_conv10, 1, 'conv10_down_conv') # for predict -------
-    #sa_conv_conv10 = SA(down_concat_conv10) ### for predict
+    #down_concat_conv10 = MBConv(down_concat_conv10, 1, 'conv10_down_conv') # for predict -------
+    down_concat_conv10 = SA(down_concat_conv10) ### for predict
 
 
     #sa_conv38 = MBConv(sa_conv38, 1,  'conv38_for_predict')
