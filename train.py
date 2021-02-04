@@ -17,7 +17,7 @@ CONTINUE_TRAINING = False
 SAVE_MODEL_NAME = '0202_main'
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [300, 300]
-BATCH_SIZE = 16
+BATCH_SIZE = 1
 MODEL_NAME = 'B0'
 EPOCHS = 200
 TRAIN_MODE = 'pascal' # 'pascal' or 'kitti'
@@ -48,6 +48,7 @@ center_variance = 0.1
 size_variance = 0.2
 # train.py에서 priors를 변경하면 model/ssd.py도 수정해야함
 specs = [
+                Spec(75, 4, BoxSizes(15, 30), [2]),
                 Spec(38, 8, BoxSizes(30, 60), [2]),
                 Spec(19, 16, BoxSizes(60, 111), [2, 3]),
                 Spec(10, 32, BoxSizes(111, 162), [2, 3]),

@@ -243,7 +243,7 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     print("layer_names : ", layer_names)
 
     # get extra layer
-    #efficient_conv75 = base.get_layer('block2b_add').output  # 75 75 24
+    efficient_conv75 = base.get_layer('block2b_add').output  # 75 75 24
     efficient_conv38 = base.get_layer(layer_names[0]).output # 38 38 40
     efficient_conv19 = base.get_layer(layer_names[1]).output # 19 19 112`
     efficient_conv10 = base.get_layer(layer_names[2]).output # 10 10 320
@@ -253,7 +253,8 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     print("conv19", efficient_conv19)
     print("conv10", efficient_conv10)
 
-
+    conv75 = MBConv(efficient_conv75, 1, 'conv75_channel_64')
+    conv75 = SA(conv75)
 
     #conv38 = convolution(efficient_conv38, 64, 3, 1, 'same', 'conv38_channel_64')
     conv38 = MBConv(efficient_conv38, 1, 'conv38_channel_64')
@@ -285,6 +286,12 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     concat_conv38 = convolution(concat_conv38, 64, 1, 1, 'same', 'concat_conv38_1x1_channel')
     concat_conv38 = MBConv(concat_conv38, 1, 'conv38_upSampling_conv')
     # sa_conv38 = SA(concat_conv38)
+
+    concat_conv75 = upSampling(concat_conv38, 75, 'conv38_to_conv75')  # 10x10@128 to 19x19@128
+
+    concat_conv75 = Concatenate()([concat_conv75, conv75])  # 38x39 / @64+128
+    concat_conv75 = convolution(concat_conv75, 32, 1, 1, 'same', 'concat_conv75_1x1_channel')
+    concat_conv75 = MBConv(concat_conv75, 1, 'conv75_upSampling_conv')
 
 
     # Mid-Bridge pathway
@@ -342,6 +349,7 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     #conv1 = SA(conv1)
 
     # predict features
+    source_layers.append(concat_conv75)
     source_layers.append(bridge_conv38)
     source_layers.append(down_concat_conv19)
     source_layers.append(down_concat_conv10)
