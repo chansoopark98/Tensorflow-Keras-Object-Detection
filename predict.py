@@ -22,12 +22,12 @@ center_variance = 0.1
 size_variance = 0.2
 
 specs = [
-                Spec(38, 8, BoxSizes(30, 60), [2]),
-                Spec(19, 16, BoxSizes(60, 111), [2, 3]),
-                Spec(10, 32, BoxSizes(111, 162), [2, 3]),
-                Spec(5, 64, BoxSizes(162, 213), [2, 3]),
-                Spec(3, 100, BoxSizes(213, 264), [2]),
-                Spec(1, 300, BoxSizes(264, 315), [2])
+                Spec(48, 8, BoxSizes(40, 90), [2]),
+                Spec(24, 16, BoxSizes(90, 151), [2, 3]),
+                Spec(12, 32, BoxSizes(151, 212), [2, 3]),
+                Spec(6, 64, BoxSizes(212, 273), [2, 3]),
+                Spec(3, 128, BoxSizes(273, 334), [2]),
+                Spec(1, 384, BoxSizes(334, 395), [2])
         ]
 
 

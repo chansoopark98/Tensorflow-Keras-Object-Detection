@@ -16,7 +16,7 @@ from tensorflow.keras.utils import plot_model
 CONTINUE_TRAINING = False
 SAVE_MODEL_NAME = '0202_main'
 DATASET_DIR = './datasets/'
-IMAGE_SIZE = [300, 300]
+IMAGE_SIZE = [384, 384]
 BATCH_SIZE = 1
 MODEL_NAME = 'B0'
 EPOCHS = 200
@@ -47,14 +47,22 @@ iou_threshold = 0.5
 center_variance = 0.1
 size_variance = 0.2
 # train.py에서 priors를 변경하면 model/ssd.py도 수정해야함
+# specs = [
+#                 Spec(75, 4, BoxSizes(15, 30), [2]),
+#                 Spec(38, 8, BoxSizes(30, 60), [2]),
+#                 Spec(19, 16, BoxSizes(60, 111), [2, 3]),
+#                 Spec(10, 32, BoxSizes(111, 162), [2, 3]),
+#                 Spec(5, 64, BoxSizes(162, 213), [2, 3]),
+#                 Spec(3, 100, BoxSizes(213, 264), [2]),
+#                 Spec(1, 300, BoxSizes(264, 315), [2])
+#         ]
 specs = [
-                Spec(75, 4, BoxSizes(15, 30), [2]),
-                Spec(38, 8, BoxSizes(30, 60), [2]),
-                Spec(19, 16, BoxSizes(60, 111), [2, 3]),
-                Spec(10, 32, BoxSizes(111, 162), [2, 3]),
-                Spec(5, 64, BoxSizes(162, 213), [2, 3]),
-                Spec(3, 100, BoxSizes(213, 264), [2]),
-                Spec(1, 300, BoxSizes(264, 315), [2])
+                Spec(48, 8, BoxSizes(40, 90), [2]),
+                Spec(24, 16, BoxSizes(90, 151), [2, 3]),
+                Spec(12, 32, BoxSizes(151, 212), [2, 3]),
+                Spec(6, 64, BoxSizes(212, 273), [2, 3]),
+                Spec(3, 128, BoxSizes(273, 334), [2]),
+                Spec(1, 384, BoxSizes(334, 395), [2])
         ]
 
 
