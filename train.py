@@ -17,10 +17,10 @@ CONTINUE_TRAINING = False
 SAVE_MODEL_NAME = '0202_main'
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [384, 384]
-BATCH_SIZE = 1
+BATCH_SIZE = 32
 MODEL_NAME = 'B0'
 EPOCHS = 200
-TRAIN_MODE = 'pascal' # 'pascal' or 'kitti'
+TRAIN_MODE = 'pascal'
 checkpoint_filepath = './checkpoints/'
 base_lr = 1e-3
 
@@ -37,10 +37,6 @@ number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
 print("학습 데이터 개수", number_train)
 number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
 print("테스트 데이터 개수:", number_test)
-
-
-
-
 
 
 iou_threshold = 0.5
@@ -64,7 +60,6 @@ specs = [
                 Spec(3, 128, BoxSizes(273, 334), [2]),
                 Spec(1, 384, BoxSizes(334, 395), [2])
         ]
-
 
 priors = generate_ssd_priors(specs, IMAGE_SIZE[0])
 target_transform = MatchPrior(priors, center_variance, size_variance, iou_threshold)

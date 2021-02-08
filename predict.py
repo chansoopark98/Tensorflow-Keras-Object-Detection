@@ -43,7 +43,7 @@ model.load_weights(checkpoint_filepath)
 filenames = os.listdir(INPUT_DIR)
 filenames.sort()
 dataset = tf.data.Dataset.list_files(INPUT_DIR + '/*', shuffle=False)
-dataset = dataset.map(prepare_for_prediction)
+dataset = dataset.map(prepare_for_prediction(IMAGE_SIZE))
 dataset = dataset.batch(BATCH_SIZE)
 
 x, y = 0, BATCH_SIZE

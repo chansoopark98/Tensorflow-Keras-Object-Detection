@@ -6,8 +6,8 @@ from keras.regularizers import l2
 from keras.layers.experimental.preprocessing import Resizing
 
 
-from keras.layers import GlobalAveragePooling2D, GlobalMaxPooling2D, Reshape, Dense, multiply, Concatenate, \
-    Conv2D, Add, Activation, Dropout ,BatchNormalization, DepthwiseConv2D, Lambda , MaxPool2D
+from keras.layers import GlobalAveragePooling2D,  Reshape, Dense, multiply, Concatenate, \
+    Conv2D, Add, Activation, Dropout ,BatchNormalization, DepthwiseConv2D, Lambda ,  UpSampling2D
 from keras import backend as K
 
 
@@ -172,43 +172,12 @@ def dilated_convolution(input_tensor, channel, size, stride, dilated_rate, paddi
     return conv
 
 
-def CA(x):
-    channel = x.shape[3]
-
-    shared_layer_one = Dense(channel // 16,
-                             activation='relu',
-                             kernel_initializer='he_normal',
-                             use_bias=True,
-                             bias_initializer='zeros')
-    shared_layer_two = Dense(channel,
-                             kernel_initializer='he_normal',
-                             use_bias=True,
-                             bias_initializer='zeros')
-
-    avg_pool = GlobalAveragePooling2D()(x)
-    avg_pool = Reshape((1, 1, channel))(avg_pool)
-    avg_pool = shared_layer_one(avg_pool)
-    avg_pool = shared_layer_two(avg_pool)
-
-
-    max_pool = GlobalMaxPooling2D()(x)
-    max_pool = Reshape((1, 1, channel))(max_pool)
-    max_pool = shared_layer_one(max_pool)
-    max_pool = shared_layer_two(max_pool)
-
-    channel_attention = Add()([avg_pool, max_pool])
-    channel_attention = Activation('sigmoid')(channel_attention)
-
-    r = multiply([x, channel_attention])
-    return r
 
 def SA(x):
     channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
     in_channels = K.int_shape(x)[channel_axis]
 
-    dilated_feature = Conv2D(in_channels, (3, 3), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
-               padding='same', dilation_rate=(2, 2))(x)
-
+    dilated_feature = DepthwiseConv2D((3, 3), strides=(1, 1), dilation_rate=(3, 3), padding='same')(x)
     depthwise_feature = DepthwiseConv2D((3, 3), strides=(1, 1), padding='same')(x)
 
     avg_pool = Lambda(lambda x: K.mean(x, axis=3, keepdims=True))(dilated_feature)
@@ -230,7 +199,8 @@ def SA(x):
 
 
 def upSampling(input_tensor, size, name):
-    resized = Resizing(size, size, name=name+'_resizing')(input_tensor)
+    # resized = Resizing(size, size, name=name+'_resizing')(input_tensor)
+    resized = UpSampling2D(size=(2,2), interpolation='bilinear')(input_tensor)
     return resized
 
 
@@ -272,8 +242,6 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     conv10 = SA(conv10)
 
     # bottom-up pathway
-
-
     conv10_upSampling = upSampling(conv10, 24, 'conv10_to_conv19')  # 10x10@256 to 19x19@256
 
     concat_conv19 = Concatenate()([conv10_upSampling, conv19])
