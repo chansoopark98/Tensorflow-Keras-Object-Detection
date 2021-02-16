@@ -24,18 +24,23 @@ TRAIN_MODE = 'pascal'
 checkpoint_filepath = './checkpoints/'
 base_lr = 1e-3
 
+train_coco = tfds.load('coco/2017', data_dir=DATASET_DIR, split='train')
+valid_coco = tfds.load('coco/2017', data_dir=DATASET_DIR, split='validation')
+test_coco = tfds.load('coco/2017', data_dir=DATASET_DIR, split='test')
+train_data = train_coco.concatenate(valid_coco)
+test_data = test_coco
 
-train_pascal_12, info = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train', with_info=True)
-valid_train_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
+# train_pascal_12, info = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train', with_info=True)
+# valid_train_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
+#
+# train_pascal_07 = tfds.load("voc", data_dir=DATASET_DIR, split='train')
+# valid_train_07 = tfds.load("voc", data_dir=DATASET_DIR, split='validation')
+# test_data = tfds.load('voc', data_dir=DATASET_DIR, split='test')
+# train_data = train_pascal_07.concatenate(valid_train_07).concatenate(train_pascal_12).concatenate(valid_train_12)
 
-train_pascal_07 = tfds.load("voc", data_dir=DATASET_DIR, split='train')
-valid_train_07 = tfds.load("voc", data_dir=DATASET_DIR, split='validation')
-test_data = tfds.load('voc', data_dir=DATASET_DIR, split='test')
-train_data = train_pascal_07.concatenate(valid_train_07).concatenate(train_pascal_12).concatenate(valid_train_12)
-
-number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
+number_train = 123287
 print("학습 데이터 개수", number_train)
-number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+number_test = 40670
 print("테스트 데이터 개수:", number_test)
 
 
@@ -65,8 +70,8 @@ priors = generate_ssd_priors(specs, IMAGE_SIZE[0])
 target_transform = MatchPrior(priors, center_variance, size_variance, iou_threshold)
 
 # 데이터세트 인스턴스화 (input은 300x300@3 labels은 8732)
-training_dataset = prepare_dataset(train_data, IMAGE_SIZE, BATCH_SIZE, target_transform, train=True)
-validation_dataset = prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE, target_transform, train=False)
+training_dataset = prepare_dataset(train_data, IMAGE_SIZE, BATCH_SIZE, target_transform, 'coco',train=True)
+validation_dataset = prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE, target_transform, 'coco', train=False)
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 model = ssd(MODEL_NAME)

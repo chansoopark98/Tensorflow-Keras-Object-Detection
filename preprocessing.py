@@ -25,7 +25,11 @@ def data_augment(image, boxes, labels):
 def pascal_prepare_input(sample, convert_to_normal=True):
   img = tf.cast(sample['image'], tf.float32)
   # img = img - image_mean 이미지 평균
+  # label이 None인 경우 labels = 0
   labels = sample['objects']['label']+1
+  if tf.equal(tf.size(labels), 0) :
+
+      print("empty")
   bbox = sample['objects']['bbox']
   if convert_to_normal:
     bbox = tf.stack([bbox[:,1], bbox[:,0], bbox[:,3], bbox[:,2]], axis=1)
@@ -37,36 +41,70 @@ def pascal_prepare_input(sample, convert_to_normal=True):
 
   return (img, bbox, labels)
 
+@tf.function
+def coco_prepare_input(sample, convert_to_normal=True):
+    img = tf.cast(sample['image'], tf.float32)
+    # img = img - image_mean 이미지 평균
+    # label이 None인 경우 labels = 0
+    #labels = sample['objects']['label'] + 1
+    if tf.equal(tf.size(sample['objects']['label']), 0):
+        #labels = 0
+
+        labels = 1
+        labels = tf.cast(labels, tf.int64)
+        print("empty")
+    else:
+        labels = sample['objects']['label']+1
+        print("normal")
+    bbox = sample['objects']['bbox']
+    if convert_to_normal:
+        bbox = tf.stack([bbox[:, 1], bbox[:, 0], bbox[:, 3], bbox[:, 2]], axis=1)
+
+    img = preprocess_input(img, mode='torch')
+    # img = tf.image.resize(img, IMAGE_SIZE) / 255.0 # 이미지 정규화
+    # img = tf.cast(img, tf.float32) # 형변환
+    # img = (img - image_mean) / image_std # 데이터셋 pascal 평균 분산치 실험
+
+    return (img, bbox, labels)
+
 
 # 타겟 연결
-def join_target(image, bbox, labels, image_size, target_transform):
+def join_target(image, bbox, labels, image_size, target_transform, train_mode):
+  if train_mode == 'coco':
+      classes = 81
+  else :
+      classes = 21
   locations, labels = target_transform(tf.cast(bbox, tf.float32), labels)
-  labels = tf.one_hot(labels, 21, axis=1, dtype=tf.float32) ### 1 -> classes
+  labels = tf.one_hot(labels, classes, axis=1, dtype=tf.float32) ### 1 -> classes
   targets = tf.concat([labels, locations], axis=1)
   return (tf.image.resize(image, image_size), targets)
 
 
-def prepare_dataset(dataset, image_size, batch_size, target_transform, train=False):
-  dataset = dataset.map(pascal_prepare_input, num_parallel_calls=AUTO)
+def prepare_dataset(dataset, image_size, batch_size, target_transform, train_mode, train=False):
+  if train_mode == 'coco':
+      dataset = dataset.map(coco_prepare_input, num_parallel_calls=AUTO)
+  else :
+      dataset = dataset.map(pascal_prepare_input, num_parallel_calls=AUTO)
+
   if train:
     dataset = dataset.shuffle(1000)
     dataset = dataset.repeat()
     dataset = dataset.map(data_augment, num_parallel_calls=AUTO)
   dataset = dataset.map(lambda image, boxes,
-                               labels: join_target(image, boxes, labels, image_size, target_transform),
+                               labels: join_target(image, boxes, labels, image_size, target_transform, train_mode),
                         num_parallel_calls=AUTO)
   dataset = dataset.padded_batch(batch_size)
   dataset = dataset.prefetch(AUTO)
   return dataset
 
 # predict 할 때
-def prepare_for_prediction(file_path, image_size=[300, 300]):
+def prepare_for_prediction(file_path, image_size=[384, 384]):
     img = tf.io.read_file(file_path)
     img = decode_img(img, image_size)
     img = preprocess_input(img, mode='torch')
     return img
     
-def decode_img(img,  image_size=[300, 300]):
+def decode_img(img,  image_size=[384, 384]):
     # 텐서 변환
     img = tf.image.decode_jpeg(img, channels=3)
     # 이미지 리사이징

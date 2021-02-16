@@ -33,7 +33,7 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
     return tf.logical_or(pos_mask ,neg_mask)
 
 
-def total_loss(y_true, y_pred, num_classes=21):
+def total_loss(y_true, y_pred, num_classes=81):
     """Compute classification loss and smooth l1 loss.
         Args:
             confidence (batch_size, num_priors, num_classes): class predictions.
@@ -41,10 +41,10 @@ def total_loss(y_true, y_pred, num_classes=21):
             labels (batch_size, num_priors): real labels of all the priors.
             gt_locations (batch_size, num_priors, 4): real boxes corresponding all the priors.
     """
-    labels = tf.argmax(y_true[:,:,:21], axis=2)
-    confidence = y_pred[:,:,:21]
-    predicted_locations = y_pred[:,:,21:]
-    gt_locations = y_true[:,:,21:]
+    labels = tf.argmax(y_true[:,:,:num_classes], axis=2)
+    confidence = y_pred[:,:,:num_classes]
+    predicted_locations = y_pred[:,:,num_classes:]
+    gt_locations = y_true[:,:,num_classes:]
     neg_pos_ratio = 3.0
     # derived from cross_entropy=sum(log(p))
     loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]
