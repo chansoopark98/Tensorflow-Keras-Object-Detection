@@ -25,9 +25,9 @@ def create_classifier(source_layers, num_priors, normalizations, num_classes=81,
     mbox_conf = []
     mbox_loc = []
     for i, layer in enumerate(source_layers):
-        # source_layers
-        # name='block3b_add/add_1:0  shape=(batch, 38, 38, 40)
-        # name='block5c_add/add_1:0 shape=(batch, 19, 19, 112)
+        # source_layers, 40)
+        #         # name='block5c_add/add_1:0 shape=(batch, 19,
+        # name='block3b_add/add_1:0  shape=(batch, 38, 3819, 112)
         # name='block7a_project_bn/cond_1/Identity:0' shape=(batch, 10, 10, 320)
         # name='activation_1/Relu:0' shape=(batch, 5, 5, 256)
         # name='activation_3/Relu:0' shape=(batch, 3, 3, 256)

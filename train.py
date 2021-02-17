@@ -24,11 +24,14 @@ TRAIN_MODE = 'pascal'
 checkpoint_filepath = './checkpoints/'
 base_lr = 1e-3
 
+
 train_coco = tfds.load('coco/2017', data_dir=DATASET_DIR, split='train')
 valid_coco = tfds.load('coco/2017', data_dir=DATASET_DIR, split='validation')
 test_coco = tfds.load('coco/2017', data_dir=DATASET_DIR, split='test')
 train_data = train_coco.concatenate(valid_coco)
 test_data = test_coco
+# a = train_data['objects']['label']
+# print(a)a = train_data
 
 # train_pascal_12, info = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train', with_info=True)
 # valid_train_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
@@ -42,6 +45,7 @@ number_train = 123287
 print("학습 데이터 개수", number_train)
 number_test = 40670
 print("테스트 데이터 개수:", number_test)
+
 
 
 iou_threshold = 0.5

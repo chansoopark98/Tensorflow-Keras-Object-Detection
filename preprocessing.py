@@ -45,20 +45,13 @@ def pascal_prepare_input(sample, convert_to_normal=True):
 def coco_prepare_input(sample, convert_to_normal=True):
     img = tf.cast(sample['image'], tf.float32)
     # img = img - image_mean 이미지 평균
-    # label이 None인 경우 labels = 0
-    #labels = sample['objects']['label'] + 1
-    if tf.equal(tf.size(sample['objects']['label']), 0):
-        #labels = 0
 
-        labels = 1
-        labels = tf.cast(labels, tf.int64)
-        print("empty")
-    else:
-        labels = sample['objects']['label']+1
-        print("normal")
+    labels = sample['objects']['label'] + 1
     bbox = sample['objects']['bbox']
+
     if convert_to_normal:
         bbox = tf.stack([bbox[:, 1], bbox[:, 0], bbox[:, 3], bbox[:, 2]], axis=1)
+
 
     img = preprocess_input(img, mode='torch')
     # img = tf.image.resize(img, IMAGE_SIZE) / 255.0 # 이미지 정규화

@@ -30,6 +30,7 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
     indexes = tf.argsort(loss, axis=1, direction='DESCENDING')
     orders = tf.argsort(indexes, axis=1)
     neg_mask = tf.cast(orders, tf.float32) < num_neg
+
     return tf.logical_or(pos_mask ,neg_mask)
 
 
@@ -41,10 +42,25 @@ def total_loss(y_true, y_pred, num_classes=81):
             labels (batch_size, num_priors): real labels of all the priors.
             gt_locations (batch_size, num_priors, 4): real boxes corresponding all the priors.
     """
+    # y_true[:, :, :num_classes] = None, 13792, None )
+    test_label = y_true[:, :, :num_classes]
+
+        #test_label = tf.concat(1, dtype=tf.int64)
     labels = tf.argmax(y_true[:,:,:num_classes], axis=2)
+    if labels == None :
+        labels = 0
     confidence = y_pred[:,:,:num_classes]
+
+
+    # Reduction axis 1 is empty in shape [13792,0]
+
     predicted_locations = y_pred[:,:,num_classes:]
     gt_locations = y_true[:,:,num_classes:]
+    a = gt_locations[3]
+    print(a)
+
+
+
     neg_pos_ratio = 3.0
     # derived from cross_entropy=sum(log(p))
     loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]
@@ -67,3 +83,4 @@ def total_loss(y_true, y_pred, num_classes=81):
     # print(num_pos)
     mbox_loss = loc_loss + class_loss
     return  mbox_loss
+
