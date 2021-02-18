@@ -34,6 +34,8 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
     return tf.logical_or(pos_mask ,neg_mask)
 
 
+
+
 def total_loss(y_true, y_pred, num_classes=81):
     """Compute classification loss and smooth l1 loss.
         Args:
@@ -45,10 +47,21 @@ def total_loss(y_true, y_pred, num_classes=81):
     # y_true[:, :, :num_classes] = None, 13792, None )
     test_label = y_true[:, :, :num_classes]
 
-        #test_label = tf.concat(1, dtype=tf.int64)
-    labels = tf.argmax(y_true[:,:,:num_classes], axis=2)
-    if labels == None :
-        labels = 0
+    a = test_label[:,]
+    b = test_label[:,:,]
+    c = test_label[:,:,:,]
+    test_label_unstack = tf.unstack(test_label, 1, 0) # 13792, None
+    #test_label_unstack = tf.unstack(y_true_unstack, None, -1)
+    # None, 1 = 1, None ( 13792개 )
+
+    test_classes = test_label[2][1]
+
+    label = tf.where(tf.equal(tf.size(test_label[2][1]), 0), test_label[2][1], tf.constant(1., dtype=tf.float32) )
+
+
+
+
+    labels = tf.argmax(test_label, axis=2)
     confidence = y_pred[:,:,:num_classes]
 
 
@@ -57,7 +70,9 @@ def total_loss(y_true, y_pred, num_classes=81):
     predicted_locations = y_pred[:,:,num_classes:]
     gt_locations = y_true[:,:,num_classes:]
     a = gt_locations[3]
-    print(a)
+    ex = tf.where(tf.equal(tf.size(test_label[2][1]), 0), test_label[2][1], tf.constant([1.,1.,1.,1.], dtype=tf.float32))
+    print(ex)
+    gt_locations[3] = ex
 
 
 
