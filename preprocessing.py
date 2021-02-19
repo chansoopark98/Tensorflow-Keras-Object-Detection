@@ -41,14 +41,20 @@ def pascal_prepare_input(sample, convert_to_normal=True):
 
   return (img, bbox, labels)
 
-@tf.function
+
 def coco_prepare_input(sample, convert_to_normal=True):
     img = tf.cast(sample['image'], tf.float32)
     # img = img - image_mean 이미지 평균
 
-    labels = sample['objects']['label'] + 1
-    bbox = sample['objects']['bbox']
 
+    #labels = sample['objects']['label'] + 1
+    #bbox = sample['objects']['bbox']
+    print(sample['objects']['label'], "tfsize ")
+    print(sample['objects']['label']+1, "tfsize ")
+    out = tf.where(tf.equal(tf.size(sample['objects']['label']),0), tf.constant(1, dtype=tf.int64), sample['objects']['label'] + 1)
+    out_bbox = tf.where(tf.size(sample['objects']['bbox'])==0, tf.constant([1.,1.,1.,1.,], dtype=tf.float32), sample['objects']['bbox'])
+    labels = out
+    bbox = out_bbox
     if convert_to_normal:
         bbox = tf.stack([bbox[:, 1], bbox[:, 0], bbox[:, 3], bbox[:, 2]], axis=1)
 

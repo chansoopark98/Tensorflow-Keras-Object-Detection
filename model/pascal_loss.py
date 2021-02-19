@@ -45,34 +45,44 @@ def total_loss(y_true, y_pred, num_classes=81):
             gt_locations (batch_size, num_priors, 4): real boxes corresponding all the priors.
     """
     # y_true[:, :, :num_classes] = None, 13792, None )
-    test_label = y_true[:, :, :num_classes]
+    test_label = y_true[:, :, :num_classes] # (None, 13792, None)
 
     a = test_label[:,]
     b = test_label[:,:,]
     c = test_label[:,:,:,]
-    test_label_unstack = tf.unstack(test_label, 1, 0) # 13792, None
+    #test_label_unstack = tf.unstack(test_label, 1, axis=0) # 13792, None
     #test_label_unstack = tf.unstack(y_true_unstack, None, -1)
     # None, 1 = 1, None ( 13792개 )
 
-    test_classes = test_label[2][1]
+    test_classes = test_label[2][1] # (None, )
 
     label = tf.where(tf.equal(tf.size(test_label[2][1]), 0), test_label[2][1], tf.constant(1., dtype=tf.float32) )
 
 
 
 
-    labels = tf.argmax(test_label, axis=2)
-    confidence = y_pred[:,:,:num_classes]
+    labels = tf.argmax(test_label, axis=2) # (None, 13792)
+    confidence = y_pred[:,:,:num_classes] # (None, None, 81)
 
 
     # Reduction axis 1 is empty in shape [13792,0]
 
-    predicted_locations = y_pred[:,:,num_classes:]
-    gt_locations = y_true[:,:,num_classes:]
-    a = gt_locations[3]
-    ex = tf.where(tf.equal(tf.size(test_label[2][1]), 0), test_label[2][1], tf.constant([1.,1.,1.,1.], dtype=tf.float32))
-    print(ex)
-    gt_locations[3] = ex
+    predicted_locations = y_pred[:,:,num_classes:] # (None, None, 81 )
+    gt_locations = y_true[:,:,num_classes:] # ( None, 13792, None)+
+    unstack_gt_locations_axis0 = tf.unstack(gt_locations, 1, axis=0)
+
+    #unstack_gt_locations_axis1 = tf.unstack(gt_locations, 0, axis=1)
+    unstack_gt_locations_axis2 = tf.unstack(gt_locations, 1, axis=2)
+    a = gt_locations[:,0] # (13792, None)
+    b = gt_locations[:,-1] # (13792, None)
+    c = gt_locations[:,:,0] # (13792, None)
+    d = gt_locations[:,:,-1] # (13792, None)
+    e = gt_locations[:,:,0:] [0][0] # (13792, None)
+
+
+    #gt_locations[:, :, 0:][0][0] = ex
+    #print(ex)
+    #gt_locations[3] = ex
 
 
 
