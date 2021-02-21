@@ -38,8 +38,8 @@ checkpoint_filepath = './checkpoints/0201_main.h5'
 # valid2012 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
 print("Loading Test Data..")
 test_data = tfds.load('voc', data_dir=DATASET_DIR, split='test')
-# number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
-number_test = 4952
+number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+
 print("Number of Test Files:", number_test)
 
 with open('./pascal_labels.txt') as f:

@@ -46,6 +46,8 @@ def total_loss(y_true, y_pred, num_classes=81):
     """
     # y_true[:, :, :num_classes] = None, 13792, None )
     test_label = y_true[:, :, :num_classes] # (None, 13792, None)
+    test_labe2 = y_true[:, :, :-1] # (None, 13792, None)
+    test_labe3 = y_true[:, :, :1] # (None, 13792, None)
 
     a = test_label[:,]
     b = test_label[:,:,]

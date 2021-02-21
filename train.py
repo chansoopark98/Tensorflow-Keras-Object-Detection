@@ -11,8 +11,9 @@ from model.pascal_loss import total_loss
 from model.pascal_main import ssd
 from tensorflow.keras.utils import plot_model
 from calc_flops import get_flops
-#from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2_as_graph
 
+#from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2_as_graph
+tf.autograph.set_verbosity(3, True)
 CONTINUE_TRAINING = False
 SAVE_MODEL_NAME = '0202_main'
 DATASET_DIR = './datasets/'
@@ -25,14 +26,28 @@ checkpoint_filepath = './checkpoints/'
 base_lr = 1e-3
 
 
-train_coco = tfds.load('coco/2017', data_dir=DATASET_DIR, split='train')
+train_coco, t_info = tfds.load('coco/2017', data_dir=DATASET_DIR, split='train',with_info=True)
+set = t_info.features
+name=t_info.features['objects']['label'].num_classes
+empty = tf.raw_ops.Empty(
+    shape=(1,), dtype=tf.float32,
+)
+allowed = tf.constant(1, dtype=tf.int64)
+# train_coco = train_coco.filter(lambda x: x['objects']['label'] == empty)
+train_coco = train_coco.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']),0)))
+# 123287
+
+
 valid_coco = tfds.load('coco/2017', data_dir=DATASET_DIR, split='validation')
+# valid_coco = valid_coco.filter(lambda x: x['objects']['label'] == allowed )
+valid_coco = valid_coco.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']),0)))
 test_coco = tfds.load('coco/2017', data_dir=DATASET_DIR, split='test')
 train_data = train_coco.concatenate(valid_coco)
 test_data = test_coco
 # a = train_data['objects']['label']
 # print(a)a = train_data
 
+# labels = train_coco['objects']['label']
 # train_pascal_12, info = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train', with_info=True)
 # valid_train_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
 #

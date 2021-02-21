@@ -4,8 +4,10 @@ from utils.augmentations import *
 
 AUTO = tf.data.experimental.AUTOTUNE
 
+
 @tf.function
 def data_augment(image, boxes, labels):
+    #image, boxes, labels = data_checksum(image, boxes, labels)  # 빈 값 삭제
     if tf.random.uniform([]) > 0.5:
         image = tf.image.random_saturation(image, lower=0.5, upper=1.5) # 랜덤 채도
     if tf.random.uniform([]) > 0.5:
@@ -47,14 +49,11 @@ def coco_prepare_input(sample, convert_to_normal=True):
     # img = img - image_mean 이미지 평균
 
 
-    #labels = sample['objects']['label'] + 1
-    #bbox = sample['objects']['bbox']
-    print(sample['objects']['label'], "tfsize ")
-    print(sample['objects']['label']+1, "tfsize ")
-    out = tf.where(tf.equal(tf.size(sample['objects']['label']),0), tf.constant(1, dtype=tf.int64), sample['objects']['label'] + 1)
-    out_bbox = tf.where(tf.size(sample['objects']['bbox'])==0, tf.constant([1.,1.,1.,1.,], dtype=tf.float32), sample['objects']['bbox'])
-    labels = out
-    bbox = out_bbox
+    labels = sample['objects']['label'] + 1
+    bbox = sample['objects']['bbox']
+
+
+
     if convert_to_normal:
         bbox = tf.stack([bbox[:, 1], bbox[:, 0], bbox[:, 3], bbox[:, 2]], axis=1)
 
@@ -65,6 +64,8 @@ def coco_prepare_input(sample, convert_to_normal=True):
     # img = (img - image_mean) / image_std # 데이터셋 pascal 평균 분산치 실험
 
     return (img, bbox, labels)
+
+
 
 
 # 타겟 연결
@@ -80,6 +81,10 @@ def join_target(image, bbox, labels, image_size, target_transform, train_mode):
 
 
 def prepare_dataset(dataset, image_size, batch_size, target_transform, train_mode, train=False):
+  # dataset = dataset.filter(lambda dataset: dataset is None)
+
+  # dataset = dataset.filter(lambda dataset: dataset['objects']['label'] < 1 )
+
   if train_mode == 'coco':
       dataset = dataset.map(coco_prepare_input, num_parallel_calls=AUTO)
   else :
@@ -92,7 +97,9 @@ def prepare_dataset(dataset, image_size, batch_size, target_transform, train_mod
   dataset = dataset.map(lambda image, boxes,
                                labels: join_target(image, boxes, labels, image_size, target_transform, train_mode),
                         num_parallel_calls=AUTO)
+
   dataset = dataset.padded_batch(batch_size)
+
   dataset = dataset.prefetch(AUTO)
   return dataset
 
