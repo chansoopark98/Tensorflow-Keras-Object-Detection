@@ -13,14 +13,14 @@ from tensorflow.keras.utils import plot_model
 from calc_flops import get_flops
 
 #from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2_as_graph
-tf.autograph.set_verbosity(3, True)
+# tf.autograph.set_verbosity(3, True)
 CONTINUE_TRAINING = False
-SAVE_MODEL_NAME = '0202_main'
+SAVE_MODEL_NAME = 'coco_test'
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [384, 384]
-BATCH_SIZE = 1
+BATCH_SIZE = 16
 MODEL_NAME = 'B0'
-EPOCHS = 200
+EPOCHS = 1
 TRAIN_MODE = 'pascal'
 checkpoint_filepath = './checkpoints/'
 base_lr = 1e-3
@@ -41,9 +41,11 @@ train_coco = train_coco.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['o
 valid_coco = tfds.load('coco/2017', data_dir=DATASET_DIR, split='validation')
 # valid_coco = valid_coco.filter(lambda x: x['objects']['label'] == allowed )
 valid_coco = valid_coco.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']),0)))
-test_coco = tfds.load('coco/2017', data_dir=DATASET_DIR, split='test')
+test_data = tfds.load('coco/2017', data_dir=DATASET_DIR, split='test')
 train_data = train_coco.concatenate(valid_coco)
-test_data = test_coco
+
+number_train = 122218
+number_test = 40670
 # a = train_data['objects']['label']
 # print(a)a = train_data
 
@@ -56,9 +58,10 @@ test_data = test_coco
 # test_data = tfds.load('voc', data_dir=DATASET_DIR, split='test')
 # train_data = train_pascal_07.concatenate(valid_train_07).concatenate(train_pascal_12).concatenate(valid_train_12)
 
-number_train = 123287
+#학습 데이터 개수 122218
+#테스트 데이터 개수: 40670
 print("학습 데이터 개수", number_train)
-number_test = 40670
+
 print("테스트 데이터 개수:", number_test)
 
 

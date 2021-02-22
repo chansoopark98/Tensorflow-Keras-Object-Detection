@@ -27,8 +27,7 @@ def random_crop(image, bbox, labels):
         bounding_boxes=tf.expand_dims(bbox, 0),
         min_object_covered=min_object_covered,
         area_range=[0.1, 1],
-        aspect_ratio_range=[0.5, 2],
-        use_image_if_no_bounding_boxes=True
+        aspect_ratio_range=[0.5, 2]
     )
     clip_box = bbox_for_draw[0][0]
     distorted_image = tf.slice(image, begin, size)
