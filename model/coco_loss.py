@@ -21,7 +21,7 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
     return tf.logical_or(pos_mask ,neg_mask)
 
 
-def total_loss(y_true, y_pred, num_classes=21):
+def total_loss(y_true, y_pred, num_classes=81):
     labels = tf.argmax(y_true[:,:,:num_classes], axis=2)
     confidence = y_pred[:,:,:num_classes]
     predicted_locations = y_pred[:,:,num_classes:]

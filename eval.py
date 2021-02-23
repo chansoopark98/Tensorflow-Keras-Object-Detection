@@ -6,36 +6,23 @@ from utils.priors import *
 from model.pascal_main import ssd
 import os
 from preprocessing import prepare_dataset
-from utils.pascal_post_processing import post_process
+from utils.pascal_post_processing import post_process #
 from utils.voc_evaluation import eval_detection_voc
 from tqdm import tqdm
 from pprint import pprint
 import csv
 
-from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2_as_graph
 
-def get_flops(model, batch_size=None):
-    if batch_size is None:
-        batch_size = 1
-
-    real_model = tf.function(model).get_concrete_function(tf.TensorSpec([batch_size] + model.inputs[0].shape[1:], model.inputs[0].dtype))
-    frozen_func, graph_def = convert_variables_to_constants_v2_as_graph(real_model)
-
-    run_meta = tf.compat.v1.RunMetadata()
-    opts = tf.compat.v1.profiler.ProfileOptionBuilder.float_operation()
-    flops = tf.compat.v1.profiler.profile(graph=frozen_func.graph,
-                                            run_meta=run_meta, cmd='op', options=opts)
-    return flops.total_float_ops
 
 
 DATASET_DIR = './datasets/'
-IMAGE_SIZE = [300, 300]
-BATCH_SIZE = 32
+IMAGE_SIZE = [384, 384]
+BATCH_SIZE = 48
 MODEL_NAME = 'B0'
-checkpoint_filepath = './checkpoints/0202_main.h5'
+checkpoint_filepath = './checkpoints/0218.h5'
 
-# train2012 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
-# valid2012 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
+#train2012 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
+#valid2012 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
 print("Loading Test Data..")
 test_data = tfds.load('voc', data_dir=DATASET_DIR, split='test')
 # number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
@@ -50,13 +37,14 @@ center_variance = 0.1
 size_variance = 0.2
 
 specs = [
-                Spec(38, 8, BoxSizes(30, 60), [2]),
-                Spec(19, 16, BoxSizes(60, 111), [2, 3]),
-                Spec(10, 32, BoxSizes(111, 162), [2, 3]),
-                Spec(5, 64, BoxSizes(162, 213), [2, 3]),
-                Spec(3, 100, BoxSizes(213, 264), [2]),
-                Spec(1, 300, BoxSizes(264, 315), [2])
+                Spec(48, 8, BoxSizes(40, 90), [2]),
+                Spec(24, 16, BoxSizes(90, 151), [2, 3]),
+                Spec(12, 32, BoxSizes(151, 212), [2, 3]),
+                Spec(6, 64, BoxSizes(212, 273), [2, 3]),
+                Spec(3, 128, BoxSizes(273, 334), [2]),
+                Spec(1, 384, BoxSizes(334, 395), [2])
         ]
+
 
 
 priors = generate_ssd_priors(specs, IMAGE_SIZE[0])
@@ -92,8 +80,8 @@ print("Evaluating..")
 pred_bboxes = []
 pred_labels = []
 pred_scores = []
-for batch in tqdm(validation_dataset, total=validation_steps):
-    pred = model.predict_on_batch(batch)
+for x, y in tqdm(validation_dataset, total=validation_steps):
+    pred = model.predict_on_batch(x)
     predictions = post_process(pred, target_transform)
     for prediction in predictions:
         boxes, scores, labels = prediction
