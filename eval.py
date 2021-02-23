@@ -13,24 +13,29 @@ from pprint import pprint
 import csv
 
 
-
-
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [384, 384]
-BATCH_SIZE = 48
+BATCH_SIZE = 16
 MODEL_NAME = 'B0'
 checkpoint_filepath = './checkpoints/0218.h5'
+TRAIN_MODE = 'voc' # 'voc' or 'coco'
 
-#train2012 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
-#valid2012 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
-print("Loading Test Data..")
-test_data = tfds.load('voc', data_dir=DATASET_DIR, split='test')
-# number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
-number_test = 4952
-print("Number of Test Files:", number_test)
+if TRAIN_MODE == 'voc':
+    test_data = tfds.load('voc', data_dir=DATASET_DIR, split='test')
+    number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+    print("테스트 데이터 개수:", number_test)
 
-with open('./pascal_labels.txt') as f:
-    CLASSES = f.read().splitlines()
+    with open('./pascal_labels.txt') as f:
+        CLASSES = f.read().splitlines()
+
+else :
+    test_data = tfds.load('coco/2017', data_dir=DATASET_DIR, split='validation')
+    test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
+    number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+    print("테스트 데이터 개수:", number_test)
+
+    with open('./coco_labels.txt') as f:
+        CLASSES = f.read().splitlines()
 
 iou_threshold = 0.5
 center_variance = 0.1
@@ -46,41 +51,47 @@ specs = [
         ]
 
 
-
 priors = generate_ssd_priors(specs, IMAGE_SIZE[0])
 target_transform = MatchPrior(priors, center_variance, size_variance, iou_threshold)
 
 # instantiate the datasets
-validation_dataset = prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE, target_transform, train=False)
+validation_dataset = prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE, target_transform, TRAIN_MODE, train=False)
 
-print("Building CSNet Model with EfficientNet{0} backbone..".format(MODEL_NAME))
-model = ssd(MODEL_NAME, pretrained=False)
+print("백본 EfficientNet{0} .".format(MODEL_NAME))
+model = ssd(TRAIN_MODE, MODEL_NAME, pretrained=False)
 
 print("Loading Checkpoint..")
 model.load_weights(checkpoint_filepath)
 model.summary()
-validation_steps = number_test // BATCH_SIZE + 1
-print("Number of Test Batches:", validation_steps)
+test_steps = number_test // BATCH_SIZE + 1
+print("테스트 배치 개수:", test_steps)
 #flops = get_flops(model, BATCH_SIZE)
 #print(f"FLOPS: {flops}")
 
 test_bboxes = []
 test_labels = []
-test_difficults = []
+if TRAIN_MODE == 'COCO':
+    test_difficults = None
+    use_07_metric= False
+else :
+    test_difficults = []
+    use_07_metric = True
+
 for sample in test_data:
     label = sample['objects']['label'].numpy()
     bbox = sample['objects']['bbox'].numpy()[:,[1, 0, 3, 2]]
-    is_difficult = sample['objects']['is_difficult'].numpy()
-
+    if TRAIN_MODE == 'voc' :
+        is_difficult = sample['objects']['is_difficult'].numpy()
+        test_difficults.append(is_difficult)
     test_bboxes.append(bbox)
     test_labels.append(label)
-    test_difficults.append(is_difficult)
+
 
 print("Evaluating..")
 pred_bboxes = []
 pred_labels = []
 pred_scores = []
-for x, y in tqdm(validation_dataset, total=validation_steps):
+for x, y in tqdm(validation_dataset, total=test_steps):
     pred = model.predict_on_batch(x)
     predictions = post_process(pred, target_transform)
     for prediction in predictions:
@@ -95,7 +106,7 @@ answer = eval_detection_voc(pred_bboxes=pred_bboxes,
                    gt_bboxes=test_bboxes,
                    gt_labels=test_labels,
                    gt_difficults=test_difficults,
-                   use_07_metric=True)
+                   use_07_metric=use_07_metric)
 #print("*"*100)
 print("AP 결과")
 ap_dict = dict(zip(CLASSES, answer['ap']))

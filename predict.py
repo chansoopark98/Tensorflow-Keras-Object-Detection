@@ -4,16 +4,16 @@ from utils.pascal_post_processing import post_process
 import os
 from preprocessing import prepare_for_prediction
 from tqdm import tqdm
-import time
 import cv2
 
 from collections import namedtuple
 
-DATASET_DIR = 'datasets'
-IMAGE_SIZE = [300, 300]
-BATCH_SIZE = 32
+DATASET_DIR = './datasets/'
+IMAGE_SIZE = [384, 384]
+BATCH_SIZE = 16
 MODEL_NAME = 'B0'
-checkpoint_filepath = './checkpoints/1112_ep300.h5'
+checkpoint_filepath = './checkpoints/0218.h5'
+TRAIN_MODE = 'voc' # 'voc' or 'coco'
 INPUT_DIR = './inputs'
 OUTPUT_DIR = './outputs'
 
@@ -34,8 +34,8 @@ specs = [
 priors = generate_ssd_priors(specs, IMAGE_SIZE[0])
 target_transform = MatchPrior(priors, center_variance, size_variance, iou_threshold)
 
-print("Building SSD Model with EfficientNet{0} backbone..".format(MODEL_NAME))
-model = ssd(MODEL_NAME, pretrained=False)
+print("백본 EfficientNet{0} .".format(MODEL_NAME))
+model = ssd(TRAIN_MODE ,MODEL_NAME, pretrained=False)
 model.summary()
 print("모델로드")
 model.load_weights(checkpoint_filepath)
@@ -99,7 +99,6 @@ def draw_bounding(img , bboxes, labels, img_size):
         cv2.addWeighted(img_box, alpha, img, 1. - alpha, 0, img)
 
 
-start = time.time()
 for batch in tqdm(dataset, total=test_steps):
 
     pred = model.predict_on_batch(batch)
@@ -117,6 +116,3 @@ for batch in tqdm(dataset, total=test_steps):
 
     x = y
     y += BATCH_SIZE
-end = time.time()
-
-print(((end - start)/4952)*1000)
