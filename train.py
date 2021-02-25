@@ -10,10 +10,10 @@ from calc_flops import get_flops
 
 
 CONTINUE_TRAINING = False
-SAVE_MODEL_NAME = '0223'
+SAVE_MODEL_NAME = '0225'
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [384, 384]
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 MODEL_NAME = 'B0'
 EPOCHS = 50
 TRAIN_MODE = 'coco' # 'voc' or 'coco'
@@ -47,9 +47,9 @@ else :
     test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
 
     number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
-    print("학습 데이터 개수", number_train)
+    print("학습 데이터 개수", 1)
     number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
-    print("테스트 데이터 개수:", number_test)
+    print("테스트 데이터 개수:", 2)
 
 
 iou_threshold = 0.5

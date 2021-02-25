@@ -41,7 +41,7 @@ def prepare_input(sample, convert_to_normal=True):
 
 
 # 타겟 연결
-def join_target(image, bbox, labels, image_size, target_transform, classes=21):
+def join_target(image, bbox, labels, image_size, target_transform, classes):
   locations, labels = target_transform(tf.cast(bbox, tf.float32), labels)
   labels = tf.one_hot(labels, classes, axis=1, dtype=tf.float32) ### 1 -> classes
   targets = tf.concat([labels, locations], axis=1)
