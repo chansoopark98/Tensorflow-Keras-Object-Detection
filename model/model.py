@@ -11,6 +11,9 @@ from keras.layers import GlobalAveragePooling2D,  Reshape, Dense, multiply, Conc
 from keras import backend as K
 
 
+activation = tf.keras.activations.swish
+
+
 get_efficient_feature = {
     'B0': ['block3b_add', 'block5c_add', 'block7a_project_bn'],
     'B1': ['block3c_add', 'block5d_add', 'block7b_add'],
@@ -83,7 +86,7 @@ def MBConv(input_tensor, stride, name):
                padding='same', name=name + '_mbconv_expansion_conv')(input_tensor)
     r = BatchNormalization(axis=channel_axis, epsilon=1e-3, momentum=0.999,
                            name = name + '_mbconv_expansion_bn')(r)
-    r = Activation('relu', name=name + '_mbconv_expansion_relu')(r)
+    r = Activation(activation, name=name + '_mbconv_expansion_relu')(r)
 
     # r = DepthwiseConv2D((3, 3), strides=stride, depthwise_regularizer=l2(0.0005), depthwise_initializer='he_normal',
     #                     activation=None, use_bias=False,
@@ -93,10 +96,10 @@ def MBConv(input_tensor, stride, name):
                         padding='same', name=name + '_mbconv_squeeze_depthwise')(r)
     r = BatchNormalization(axis=channel_axis, epsilon=1e-3, momentum=0.999,
                            name=name + '_mbconv_squeeze_depthwise_bn')(r)
-    r = Activation('relu', name=name + '_mbconv_squeeze_depthwise_relu')(r)
+    r = Activation(activation, name=name + '_mbconv_squeeze_depthwise_relu')(r)
 
     shared_layer_one = Dense(expansion * in_channels // 16,
-                             activation='relu',
+                             activation=activation,
                              kernel_initializer='he_normal',
                              use_bias=True,
                              bias_initializer='zeros')
@@ -134,12 +137,12 @@ def extraMBConv(x, padding, name, stride=(1, 1)):
                padding='same', name=name + '_mbconv_squeeze_1')(x)
     r = BatchNormalization(axis=channel_axis, epsilon=1e-3, momentum=0.999,
                            name=name + '_mbconv_squeeze_bn_1')(r)
-    r = Activation('relu', name=name + '_mbconv_squeeze_relu_1')(r)
+    r = Activation(activation, name=name + '_mbconv_squeeze_relu_1')(r)
 
     r = DepthwiseConv2D((3, 3), strides=stride ,padding=padding, name=name + '_mbconv_squeeze_depthwise')(r)
     r = BatchNormalization(axis=channel_axis, epsilon=1e-3, momentum=0.999,
                            name=name + '_mbconv_squeeze_depthwise_bn')(r)
-    r = Activation('relu', name=name + '_mbconv_squeeze_depthwise_relu')(r)
+    r = Activation(activation, name=name + '_mbconv_squeeze_depthwise_relu')(r)
 
     r = Conv2D(in_channels, (1, 1), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
                padding='same', name=name + '_mbconv_squeeze_conv')(r)
@@ -155,7 +158,7 @@ def convolution(input_tensor, channel, size, stride, padding, name):
     conv = Conv2D(channel, kernel_size, kernel_stride, padding=padding, kernel_regularizer=l2(0.0005),
            kernel_initializer='he_normal', name=name)(input_tensor)
     conv = BatchNormalization(axis=3, name=name+'_bn')(conv)
-    conv = Activation('relu', name=name+'_relu')(conv)
+    conv = Activation(activation, name=name+'_relu')(conv)
 
     return conv
 
@@ -167,7 +170,7 @@ def dilated_convolution(input_tensor, channel, size, stride, dilated_rate, paddi
                   padding=padding, kernel_regularizer=l2(0.0005),
                   kernel_initializer='he_normal', name=name)(input_tensor)
     conv = BatchNormalization(axis=3, name=name+'_bn')(conv)
-    conv = Activation('relu', name=name+'_relu')(conv)
+    conv = Activation(activation, name=name+'_relu')(conv)
 
     return conv
 

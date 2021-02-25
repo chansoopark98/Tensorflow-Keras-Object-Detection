@@ -15,10 +15,10 @@ import csv
 
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [384, 384]
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 MODEL_NAME = 'B0'
-checkpoint_filepath = './checkpoints/0218.h5'
-TRAIN_MODE = 'voc' # 'voc' or 'coco'
+checkpoint_filepath = './checkpoints/0225.h5'
+TRAIN_MODE = 'coco' # 'voc' or 'coco'
 
 if TRAIN_MODE == 'voc':
     test_data = tfds.load('voc', data_dir=DATASET_DIR, split='test')
@@ -71,7 +71,7 @@ print("테스트 배치 개수:", test_steps)
 test_bboxes = []
 test_labels = []
 if TRAIN_MODE == 'COCO':
-    test_difficults = None
+    test_difficults = []
     use_07_metric= False
 else :
     test_difficults = []
@@ -80,9 +80,9 @@ else :
 for sample in test_data:
     label = sample['objects']['label'].numpy()
     bbox = sample['objects']['bbox'].numpy()[:,[1, 0, 3, 2]]
-    if TRAIN_MODE == 'voc' :
-        is_difficult = sample['objects']['is_difficult'].numpy()
-        test_difficults.append(is_difficult)
+
+    is_difficult = sample['objects']['is_crowd'].numpy()
+    test_difficults.append(is_difficult)
     test_bboxes.append(bbox)
     test_labels.append(label)
 
