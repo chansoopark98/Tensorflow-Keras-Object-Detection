@@ -33,8 +33,10 @@ def prepare_input(sample, convert_to_normal=True):
   img = preprocess_input(img, mode='torch')
   # img = tf.image.resize(img, IMAGE_SIZE) / 255.0 # 이미지 정규화
   # img = tf.cast(img, tf.float32) # 형변환
-  # img = (img - image_mean) / image_std # 데이터셋 pascal 평균 분산치 실험
 
+  image_mean = (0.485, 0.456, 0.406)
+  image_std = (0.229, 0.224, 0.225)
+  img = (img - image_mean) / image_std # 데이터셋 pascal 평균 분산치 실험
   return (img, bbox, labels)
 
 

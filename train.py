@@ -18,7 +18,7 @@ MODEL_NAME = 'B0'
 EPOCHS = 50
 TRAIN_MODE = 'coco' # 'voc' or 'coco'
 checkpoint_filepath = './checkpoints/'
-base_lr = 1e-3
+base_lr = 0.00075
 
 if TRAIN_MODE == 'voc':
     from model.pascal_loss import total_loss
