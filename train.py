@@ -47,9 +47,9 @@ else :
     test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
 
     number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
-    print("학습 데이터 개수", 1)
+    print("학습 데이터 개수", number_train)
     number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
-    print("테스트 데이터 개수:", 2)
+    print("테스트 데이터 개수:", number_test)
 
 
 iou_threshold = 0.5
