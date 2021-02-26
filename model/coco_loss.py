@@ -4,7 +4,7 @@ import numpy as np
 def smooth_l1(labels, scores, sigma=1.0):
     diff = scores-labels
     abs_diff = tf.abs(diff)
-    return tf.where(tf.less(abs_diff, 1/(sigma**2)), 0.5*(sigma*diff)**2, abs_diff-1/(2*sigma**2))
+    return tf.where(tf.less(abs_diff, 1/(sigma**2)), (0.5*(sigma*diff)**2)+1e-10, (abs_diff-1/(2*sigma**2))+1e-10)
 
 
 def hard_negative_mining(loss, labels, neg_pos_ratio):
@@ -49,8 +49,6 @@ def total_loss(y_true, y_pred, num_classes=81):
     smooth_l1_loss = tf.math.reduce_sum(smooth_l1(scores=predicted_locations,labels=gt_locations))
     num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
     loc_loss = smooth_l1_loss / num_pos
-    loc_loss += 1e-10
-    classification_loss += 1e-10
     class_loss = classification_loss / num_pos
     # print(num_pos)
     mbox_loss = loc_loss + class_loss

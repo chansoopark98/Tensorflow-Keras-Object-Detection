@@ -51,7 +51,8 @@ def join_target(image, bbox, labels, image_size, target_transform, classes):
 def prepare_dataset(dataset, image_size, batch_size, target_transform, train_mode, train=False):
   if train_mode == 'voc':
       classes = 21
-  else : classes = 81
+  elif train_mode == 'coco' :
+      classes = 81
 
   dataset = dataset.map(prepare_input, num_parallel_calls=AUTO)
   if train:
