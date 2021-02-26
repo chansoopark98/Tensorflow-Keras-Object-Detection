@@ -32,9 +32,11 @@ def prepare_input(sample, convert_to_normal=True):
     bbox = tf.abs(bbox)
   
   img = preprocess_input(img, mode='torch')
-  # img = tf.image.resize(img, IMAGE_SIZE) / 255.0 # 이미지 정규화
+  img = img / 255.0 # 이미지 정규화
+
   # img = tf.cast(img, tf.float32) # 형변환
 
+  # coco
   image_mean = (0.485, 0.456, 0.406)
   image_std = (0.229, 0.224, 0.225)
   img = (img - image_mean) / image_std # 데이터셋 pascal 평균 분산치 실험
@@ -52,7 +54,7 @@ def join_target(image, bbox, labels, image_size, target_transform, classes):
 def prepare_dataset(dataset, image_size, batch_size, target_transform, train_mode, train=False):
   if train_mode == 'voc':
       classes = 21
-  elif train_mode == 'coco' :
+  elif train_mode == 'coco':
       classes = 81
 
   dataset = dataset.map(prepare_input, num_parallel_calls=AUTO)
@@ -66,6 +68,7 @@ def prepare_dataset(dataset, image_size, batch_size, target_transform, train_mod
   dataset = dataset.padded_batch(batch_size)
   dataset = dataset.prefetch(AUTO)
   return dataset
+
 
 # predict 할 때
 def prepare_for_prediction(file_path, image_size=[384, 384]):
