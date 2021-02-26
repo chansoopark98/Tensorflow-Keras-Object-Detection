@@ -1,46 +1,42 @@
 from typing import List
 import itertools
 import collections
-import tensorflow as tf
-import numpy as np
 from utils.misc import *
 
-BoxSizes = collections.namedtuple('SSDBoxSizes', ['min', 'max'])
+"""CSNET Prior Box 생성 (= Default box)
+중심, 높이 및 너비값 반환
+ 사전의 중심, 높이 및 너비를 반환합니다. 값은 이미지 크기에 상대적입니다.
+ Args :
+     specs : 이전 상자의 크기 모양에 대한 SSDSpecs
+         spec = [
+             SSDSpec (38, 8, SSDBoxSizes (30, 60), [2]),
+             SSDSpec (19, 16, SSDBoxSizes (60, 111), [2, 3]),
+             SSDSpec (10, 32, SSDBoxSizes (111, 162), [2, 3]),
+             SSDSpec (5, 64, SSDBoxSizes (162, 213), [2, 3]),
+             SSDSpec (3, 100, SSDBoxSizes (213, 264), [2]),
+             SSDSpec (1, 300, SSDBoxSizes (264, 315), [2])
+         ]
+     image_size : 이미지 크기.
+     clamp : 참이면 값을 [0.0, 1.0] 사이로 고정합니다.
+ returns:
+     priors (num_priors, 4) : [[center_x, center_y, w, h]] priors box
+ """
 
-Spec = collections.namedtuple('SSDSpec', ['feature_map_size', 'shrinkage', 'box_sizes', 'aspect_ratios'])
+BoxSizes = collections.namedtuple('Boxsizes', ['min', 'max'])
+Spec = collections.namedtuple('Specs', ['feature_map_size', 'shrinkage', 'box_sizes', 'aspect_ratios'])
 
 
 def generate_ssd_priors(specs: List[Spec], image_size, clamp=True):
-    """CSNET Prior Box 생성
-    중심, 높이 및 너비값 반환
-     사전의 중심, 높이 및 너비를 반환합니다. 값은 이미지 크기에 상대적입니다.
-     Args :
-         specs : 이전 상자의 크기 모양에 대한 SSDSpecs. 즉
-             spec = [
-                 SSDSpec (38, 8, SSDBoxSizes (30, 60), [2]),
-                 SSDSpec (19, 16, SSDBoxSizes (60, 111), [2, 3]),
-                 SSDSpec (10, 32, SSDBoxSizes (111, 162), [2, 3]),
-                 SSDSpec (5, 64, SSDBoxSizes (162, 213), [2, 3]),
-                 SSDSpec (3, 100, SSDBoxSizes (213, 264), [2]),
-                 SSDSpec (1, 300, SSDBoxSizes (264, 315), [2])
-             ]
-         image_size : 이미지 크기.
-         clamp : 참이면 값을 [0.0, 1.0] 사이로 고정합니다.
-     보고:
-         priors (num_priors, 4) : [[center_x, center_y, w, h]]로 표시되는 이전 상자입니다. 모든 가치
-             이미지 크기에 상대적입니다.
-     """
-
     priors = []
     for spec in specs:
         # specs
-        # index 0 >> size-(38, 38) shrinkage-8 SSD
+        # index 0 >> size-(48,438) shrinkage-8 CSNet
         scale = image_size / spec.shrinkage
         for j, i in itertools.product(range(spec.feature_map_size), repeat=2):
             x_center = (i + 0.5) / scale
             y_center = (j + 0.5) / scale
 
-            # small sized square box
+            # 작은 bbox
             size = spec.box_sizes.min
             h = w = size / image_size
             priors.append([
@@ -50,7 +46,7 @@ def generate_ssd_priors(specs: List[Spec], image_size, clamp=True):
                 h
             ])
 
-            # big sized square box
+            # 큰 bbox
             size = np.sqrt(spec.box_sizes.max * spec.box_sizes.min)
             h = w = size / image_size
             priors.append([
@@ -60,7 +56,7 @@ def generate_ssd_priors(specs: List[Spec], image_size, clamp=True):
                 h
             ])
 
-            # change h/w ratio of the small sized box
+            # 작은 bbox 높이, 너비 비율 변경
             size = spec.box_sizes.min
             h = w = size / image_size
             for ratio in spec.aspect_ratios:
@@ -78,8 +74,8 @@ def generate_ssd_priors(specs: List[Spec], image_size, clamp=True):
                     h * ratio
                 ])
 
-    # priors > shape(Batch, 8732)
-    # 2차원 배열이고 각 배열마다 4개씩 존재(x_center, y_center, w, h) * 8732
+    # priors > shape(Batch, 13792)
+    # 2차원 배열이고 각 배열마다 4개씩 존재(x_center, y_center, w, h) * 13792
     priors = np.array(priors, dtype=np.float32)
 
     print(priors)
@@ -91,14 +87,14 @@ def generate_ssd_priors(specs: List[Spec], image_size, clamp=True):
 @tf.function
 def assign_priors(gt_boxes, gt_labels, corner_form_priors,
                   iou_threshold=0.45):
-    """Assign ground truth boxes and targets to priors.
+    """Ground truth <-> priors(default box) 할당
     Args:
-        gt_boxes (num_targets, 4): ground truth boxes.
-        gt_labels (num_targets): labels of targets.
-        priors (num_priors, 4): corner form priors
+        gt_boxes (num_targets, 4): ground truth boxes
+        gt_labels (num_targets): class labels
+        priors (num_priors, 4): priors
     Returns:
-        boxes (num_priors, 4): real values for priors.
-        labels (num_priors): labels for priors.
+        boxes (num_priors, 4): ground bbox
+        labels (num_priors): ground label
     """
     # size: num_priors x num_targets
     ious = iou_of(tf.expand_dims(gt_boxes, axis=0), tf.expand_dims(corner_form_priors, axis=1))
@@ -124,7 +120,7 @@ def assign_priors(gt_boxes, gt_labels, corner_form_priors,
 
     labels = tf.where(tf.less(best_target_per_prior, iou_threshold), tf.constant(0, dtype='int64'), labels)
 
-    # labels[best_target_per_prior < iou_threshold] = 0  # the backgournd id
+    # 라벨이 임계값을 넘기 않는 경우 background(배경) 처리
     boxes = tf.gather(gt_boxes, best_target_per_prior_index)
     return boxes, labels
 

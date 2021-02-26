@@ -3,11 +3,11 @@ import tensorflow as tf
 import tensorflow.keras as keras
 import numpy as np
 from utils.priors import *
-from model.pascal_main import ssd
+from model.model_builder import ssd
 import os
 from preprocessing import prepare_dataset
-from utils.pascal_post_processing import post_process #
-from utils.voc_evaluation import eval_detection_voc
+from utils.model_post_processing import post_process #
+from utils.model_evaluation import eval_detection_voc
 from tqdm import tqdm
 from pprint import pprint
 import csv
@@ -24,7 +24,7 @@ if TRAIN_MODE == 'voc':
     test_data = tfds.load('voc', data_dir=DATASET_DIR, split='test')
     number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
     print("테스트 데이터 개수:", number_test)
-
+    CLASSES_NUM = 21
     with open('./pascal_labels.txt') as f:
         CLASSES = f.read().splitlines()
 
@@ -33,9 +33,10 @@ else :
     test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
     number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
     print("테스트 데이터 개수:", number_test)
-
+    CLASSES_NUM = 81
     with open('./coco_labels.txt') as f:
         CLASSES = f.read().splitlines()
+
 
 iou_threshold = 0.5
 center_variance = 0.1
@@ -93,7 +94,7 @@ pred_labels = []
 pred_scores = []
 for x, y in tqdm(validation_dataset, total=test_steps):
     pred = model.predict_on_batch(x)
-    predictions = post_process(pred, target_transform)
+    predictions = post_process(pred, target_transform, classes=CLASSES_NUM)
     for prediction in predictions:
         boxes, scores, labels = prediction
         pred_bboxes.append(boxes)

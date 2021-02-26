@@ -3,39 +3,30 @@ import numpy as np
 from collections import namedtuple
 from utils.misc import *
 
-Prediction = namedtuple('Prediction', ('boxes', 'scores', 'labels'))
-
+Predictions = namedtuple('Prediction', ('boxes', 'scores', 'labels'))
 
 def batched_nms(boxes, scores, idxs, iou_threshold, top_k=100):
     """
-    Performs non-maximum suppression in a batched fashion.
-    Each index value correspond to a category, and NMS
-    will not be applied between elements of different categories.
-    Parameters
-    ----------
+    :Args(bbox, scores, idxs, iou_threshold)
+    NMS
+    각 인덱스는 각 category에 매핑
+
     boxes : Tensor[N, 4]
-        boxes where NMS will be performed. They
-        are expected to be in (x1, y1, x2, y2) format
+        NMS가 적용될 bbox list
+        shape = (x1,y1, x2, y2)
     scores : Tensor[N]
-        scores for each one of the boxes
+        각 박스별  confidence score
     idxs : Tensor[N]
-        indices of the categories for each one of the boxes.
+        category 인덱스
     iou_threshold : float
-        discards all overlapping boxes
-        with IoU < iou_threshold
-    Returns
-    -------
-    keep : Tensor
-        int64 tensor with the indices of
-        the elements that have been kept by NMS, sorted
-        in decreasing order of scores
+        임계값
+
+    :return Tensor
     """
+
     if tf.size(boxes) == 0:
         return tf.convert_to_tensor([], dtype=tf.int32)
-    # strategy: in order to perform NMS independently per class.
-    # we add an offset to all the boxes. The offset is dependent
-    # only on the class idx, and is large enough so that boxes
-    # from different classes do not overlap
+
     max_coordinate = tf.reduce_max(boxes)
     offsets = idxs * (max_coordinate + 1)
     boxes_for_nms = boxes + offsets[:, None]
@@ -43,11 +34,11 @@ def batched_nms(boxes, scores, idxs, iou_threshold, top_k=100):
     return keep
 
 
-def post_process(detections, target_transform, confidence_threshold=0.01, top_k=100, iou_threshold=0.5):
-    batch_boxes = detections[:, :, 81:]
+def post_process(detections, target_transform, confidence_threshold=0.01, top_k=100, iou_threshold=0.5, classes=21):
+    batch_boxes = detections[:, :, classes:]
     if not tf.is_tensor(batch_boxes):
         batch_boxes = tf.convert_to_tensor(batch_boxes)
-    batch_scores = tf.nn.softmax(detections[:, :, :81], axis=2)
+    batch_scores = tf.nn.softmax(detections[:, :, :classes], axis=2)
 
     batch_boxes = convert_locations_to_boxes(batch_boxes, target_transform.center_form_priors,
                                              target_transform.center_variance, target_transform.size_variance)
@@ -66,17 +57,17 @@ def post_process(detections, target_transform, confidence_threshold=0.01, top_k=
         labels = tf.reshape(labels, [1, num_classes])
         labels = tf.broadcast_to(labels, tf.shape(scores))
 
-        # remove predictions with the background label
+        # 배경 라벨이 있는 예측값 제거
         boxes = boxes[:, 1:]
         scores = scores[:, 1:]
         labels = labels[:, 1:]
 
-        # batch everything, by making every class prediction be a separate instance
+        # 모든 클래스 예측을 별도의 인스턴스로 만들어 모든 것을 일괄 처리 과정
         boxes = tf.reshape(boxes, [-1, 4])
         scores = tf.reshape(scores, [-1])
         labels = tf.reshape(labels, [-1])
 
-        # remove low scoring boxes
+        # confidence  점수가 낮은 predict bbox 제거
         low_scoring_mask = scores > confidence_threshold
         boxes, scores, labels = tf.boolean_mask(boxes, low_scoring_mask), tf.boolean_mask(scores,
                                                                                           low_scoring_mask), tf.boolean_mask(
@@ -84,5 +75,5 @@ def post_process(detections, target_transform, confidence_threshold=0.01, top_k=
 
         keep = batched_nms(boxes, scores, labels, iou_threshold, top_k)
         boxes, scores, labels = tf.gather(boxes, keep), tf.gather(scores, keep), tf.gather(labels, keep)
-        results.append(Prediction(boxes.numpy(), scores.numpy(), labels.numpy()))
+        results.append(Predictions(boxes.numpy(), scores.numpy(), labels.numpy()))
     return results

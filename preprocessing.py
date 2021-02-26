@@ -1,6 +1,6 @@
 from keras.applications.imagenet_utils import preprocess_input
 import tensorflow as tf
-from utils.augmentations import *
+from utils.data_augmentations import *
 
 AUTO = tf.data.experimental.AUTOTUNE
 
@@ -29,6 +29,7 @@ def prepare_input(sample, convert_to_normal=True):
   bbox = sample['objects']['bbox']
   if convert_to_normal:
     bbox = tf.stack([bbox[:,1], bbox[:,0], bbox[:,3], bbox[:,2]], axis=1)
+    bbox = tf.abs(bbox)
   
   img = preprocess_input(img, mode='torch')
   # img = tf.image.resize(img, IMAGE_SIZE) / 255.0 # 이미지 정규화

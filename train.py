@@ -4,7 +4,7 @@ import os
 from preprocessing import prepare_dataset
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 
-from model.pascal_main import ssd
+from model.model_builder import ssd
 from tensorflow.keras.utils import plot_model
 from calc_flops import get_flops
 
@@ -13,7 +13,7 @@ CONTINUE_TRAINING = False
 SAVE_MODEL_NAME = '0225'
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [384, 384]
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 MODEL_NAME = 'B0'
 EPOCHS = 50
 TRAIN_MODE = 'coco' # 'voc' or 'coco'
@@ -48,12 +48,14 @@ else :
     test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
     test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
 
-    number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
+    # number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
+    number_train = 117266
     print("학습 데이터 개수", number_train)
-    number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+    # number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+    number_test = 4952
     print("테스트 데이터 개수:", number_test)
 
-    optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
 
 iou_threshold = 0.5
 center_variance = 0.1

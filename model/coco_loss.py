@@ -2,9 +2,10 @@ import tensorflow as tf
 import numpy as np
 
 def smooth_l1(labels, scores, sigma=1.0):
-    diff = scores-labels
+    diff = (scores-labels) + 1e-10
     abs_diff = tf.abs(diff)
-    return tf.where(tf.less(abs_diff, 1/(sigma**2)), (0.5*(sigma*diff)**2)+1e-10, (abs_diff-1/(2*sigma**2))+1e-10)
+    abs_diff = tf.where(tf.equal(abs_diff, 0), abs_diff+1e-10, abs_diff)
+    return tf.where(tf.less(abs_diff, 1/(sigma**2)), 0.5*(sigma*diff)**2, abs_diff-1/(2*sigma**2))
 
 
 def hard_negative_mining(loss, labels, neg_pos_ratio):
@@ -29,7 +30,7 @@ def total_loss(y_true, y_pred, num_classes=81):
     neg_pos_ratio = 3.0
     # derived from cross_entropy=sum(log(p))
     loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]
-    loss += 1e-15
+    loss += 1e-10
     loss = tf.stop_gradient(loss)
     # print(loss)
     mask = hard_negative_mining(loss, labels, neg_pos_ratio)
@@ -40,6 +41,7 @@ def total_loss(y_true, y_pred, num_classes=81):
     classification_loss = tf.math.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(
         logits = tf.reshape(confidence, [-1, num_classes]),
         labels = tf.boolean_mask(labels, mask)))
+
 
     # return classification_loss
     pos_mask = labels > 0
