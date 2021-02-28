@@ -21,7 +21,7 @@ class Normalize(Layer):
         return self.gamma * K.l2_normalize(x, axis=-1)
 
 # create_classifier build
-def create_classifier(source_layers, num_priors, normalizations, num_classes=21, regularization=5e-4):
+def create_classifier(source_layers, num_priors, normalizations, num_classes=81):
     mbox_conf = []
     mbox_loc = []
     for i, layer in enumerate(source_layers):
@@ -45,7 +45,7 @@ def create_classifier(source_layers, num_priors, normalizations, num_classes=21,
 
         ## original ----
         # x1 = Conv2D(num_priors[i] * num_classes, 3, padding='same', kernel_regularizer=l2(regularization) ,name= name + '_mbox_conf')(x)
-        x1 = SeparableConv2D(num_priors[i] * num_classes, 3, padding='same', kernel_regularizer=l2(regularization) ,name= name + '_mbox_conf')(x)
+        x1 = SeparableConv2D(num_priors[i] * num_classes, 3, padding='same', name= name + '_mbox_conf')(x)
         x1 = Flatten(name=name + '_mbox_conf_flat')(x1)
 
 
@@ -53,7 +53,7 @@ def create_classifier(source_layers, num_priors, normalizations, num_classes=21,
         mbox_conf.append(x1)
 
         # x2 = Conv2D(num_priors[i] * 4, 3, padding='same', kernel_regularizer=l2(regularization) ,name= name + '_mbox_loc')(x)
-        x2 = SeparableConv2D(num_priors[i] * 4, 3, padding='same', kernel_regularizer=l2(regularization) ,name= name + '_mbox_loc')(x)
+        x2 = SeparableConv2D(num_priors[i] * 4, 3, padding='same', name= name + '_mbox_loc')(x)
         x2 = Flatten(name=name + '_mbox_loc_flat')(x2)
         # x2 = activation_b5_mbox_loc_flat/Reshape:0 , shape=(Batch , 16)
         mbox_loc.append(x2)

@@ -30,22 +30,23 @@ def prepare_input(sample, convert_to_normal=True):
   if convert_to_normal:
     bbox = tf.stack([bbox[:,1], bbox[:,0], bbox[:,3], bbox[:,2]], axis=1)
   
-  img = preprocess_input(img, mode='torch')
+  img = preprocess_input(img, mode='tf')
   # img = tf.image.resize(img, IMAGE_SIZE) / 255.0 # 이미지 정규화
   # img = tf.cast(img, tf.float32) # 형변환
 
-  image_mean = (0.485, 0.456, 0.406)
-  image_std = (0.229, 0.224, 0.225)
-  img = (img - image_mean) / image_std # 데이터셋 pascal 평균 분산치 실험
+  #image_mean = (0.485, 0.456, 0.406)
+  #image_std = (0.229, 0.224, 0.225)
+  #img = (img - image_mean) / image_std # 데이터셋 pascal 평균 분산치 실험
   return (img, bbox, labels)
 
 
-# 타겟 연결
+# 타겟 연결 오리지날
 def join_target(image, bbox, labels, image_size, target_transform, classes):
   locations, labels = target_transform(tf.cast(bbox, tf.float32), labels)
   labels = tf.one_hot(labels, classes, axis=1, dtype=tf.float32) ### 1 -> classes
   targets = tf.concat([labels, locations], axis=1)
   return (tf.image.resize(image, image_size), targets)
+
 
 
 def prepare_dataset(dataset, image_size, batch_size, target_transform, train_mode, train=False):

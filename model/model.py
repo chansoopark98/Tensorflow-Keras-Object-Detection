@@ -25,7 +25,27 @@ get_efficient_feature = {
     'B7': ['block3g_add', 'block5j_add', 'block7d_add'],
 }
 
+conv_kernel_initializing = {
+    'class_name': 'VarianceScaling',
+    'config': {
+        'scale': 2.0,
+        'mode': 'fan_out',
+        # EfficientNet actually uses an untruncated normal distribution for
+        # initializing conv layers, but keras.initializers.VarianceScaling use
+        # a truncated distribution.
+        # We decided against a custom initializer for better serializability.
+        'distribution': 'normal'
+    }
+}
 
+DENSE_KERNEL_INITIALIZER = {
+    'class_name': 'VarianceScaling',
+    'config': {
+        'scale': 1. / 3.,
+        'mode': 'fan_out',
+        'distribution': 'uniform'
+    }
+}
 
 def remove_dropout(model):
     for layer in model.layers:
@@ -82,7 +102,7 @@ def MBConv(input_tensor, stride, name):
     channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
     in_channels = K.int_shape(input_tensor)[channel_axis]
 
-    r = Conv2D(expansion * in_channels, (1, 1), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
+    r = Conv2D(expansion * in_channels, (1, 1), kernel_initializer=conv_kernel_initializing,
                padding='same', name=name + '_mbconv_expansion_conv')(input_tensor)
     r = BatchNormalization(axis=channel_axis, epsilon=1e-3, momentum=0.999,
                            name = name + '_mbconv_expansion_bn')(r)
@@ -92,7 +112,7 @@ def MBConv(input_tensor, stride, name):
     #                     activation=None, use_bias=False,
     #                     padding='same', name=name + '_mbconv_squeeze_depthwise')(r)
     # Default
-    r = DepthwiseConv2D((3, 3), strides=stride, activation=None, use_bias=False,
+    r = DepthwiseConv2D((3, 3), strides=stride, activation=None, use_bias=False, kernel_initializer=conv_kernel_initializing,
                         padding='same', name=name + '_mbconv_squeeze_depthwise')(r)
     r = BatchNormalization(axis=channel_axis, epsilon=1e-3, momentum=0.999,
                            name=name + '_mbconv_squeeze_depthwise_bn')(r)
@@ -100,11 +120,11 @@ def MBConv(input_tensor, stride, name):
 
     shared_layer_one = Dense(expansion * in_channels // 16,
                              activation=activation,
-                             kernel_initializer='he_normal',
+                             kernel_initializer=DENSE_KERNEL_INITIALIZER,
                              use_bias=True,
                              bias_initializer='zeros')
     shared_layer_two = Dense(expansion * in_channels,
-                             kernel_initializer='he_normal',
+                             kernel_initializer=DENSE_KERNEL_INITIALIZER,
                              use_bias=True,
                              bias_initializer='zeros')
 
@@ -119,7 +139,7 @@ def MBConv(input_tensor, stride, name):
 
 
 
-    r = Conv2D(in_channels, (1, 1), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
+    r = Conv2D(in_channels, (1, 1), kernel_initializer=conv_kernel_initializing,
                padding='same', name=name + '_mbconv_squeeze_conv')(r)
     r = BatchNormalization(axis=channel_axis, epsilon=1e-3, momentum=0.999,
                            name=name + '_mbconv_squeeze_bn')(r)
@@ -133,18 +153,18 @@ def extraMBConv(x, padding, name, stride=(1, 1)):
     channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
     in_channels = K.int_shape(x)[channel_axis]
 
-    r = Conv2D(in_channels, (1, 1), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
+    r = Conv2D(in_channels, (1, 1),  kernel_initializer=conv_kernel_initializing,
                padding='same', name=name + '_mbconv_squeeze_1')(x)
     r = BatchNormalization(axis=channel_axis, epsilon=1e-3, momentum=0.999,
                            name=name + '_mbconv_squeeze_bn_1')(r)
     r = Activation(activation, name=name + '_mbconv_squeeze_relu_1')(r)
 
-    r = DepthwiseConv2D((3, 3), strides=stride ,padding=padding, name=name + '_mbconv_squeeze_depthwise')(r)
+    r = DepthwiseConv2D((3, 3), strides=stride ,padding=padding, kernel_initializer=conv_kernel_initializing , name = name + '_mbconv_squeeze_depthwise')(r)
     r = BatchNormalization(axis=channel_axis, epsilon=1e-3, momentum=0.999,
                            name=name + '_mbconv_squeeze_depthwise_bn')(r)
     r = Activation(activation, name=name + '_mbconv_squeeze_depthwise_relu')(r)
 
-    r = Conv2D(in_channels, (1, 1), kernel_regularizer=l2(0.0005), kernel_initializer='he_normal',
+    r = Conv2D(in_channels, (1, 1), kernel_initializer=conv_kernel_initializing,
                padding='same', name=name + '_mbconv_squeeze_conv')(r)
     r = BatchNormalization(axis=channel_axis, epsilon=1e-3, momentum=0.999,
                            name=name + '_mbconv_squeeze_bn')(r)
@@ -155,8 +175,8 @@ def extraMBConv(x, padding, name, stride=(1, 1)):
 def convolution(input_tensor, channel, size, stride, padding, name):
     kernel_size = (size, size)
     kernel_stride = (stride, stride)
-    conv = Conv2D(channel, kernel_size, kernel_stride, padding=padding, kernel_regularizer=l2(0.0005),
-           kernel_initializer='he_normal', name=name)(input_tensor)
+    conv = Conv2D(channel, kernel_size, kernel_stride, padding=padding,
+           kernel_initializer=conv_kernel_initializing, name=name)(input_tensor)
     conv = BatchNormalization(axis=3, name=name+'_bn')(conv)
     conv = Activation(activation, name=name+'_relu')(conv)
 
@@ -167,8 +187,8 @@ def dilated_convolution(input_tensor, channel, size, stride, dilated_rate, paddi
     kernel_stride = (stride, stride)
     dilated_size = (dilated_rate, dilated_rate)
     conv = Conv2D(channel, kernel_size, kernel_stride, dilation_rate=dilated_size,
-                  padding=padding, kernel_regularizer=l2(0.0005),
-                  kernel_initializer='he_normal', name=name)(input_tensor)
+                  padding=padding,
+                  kernel_initializer=conv_kernel_initializing, name=name)(input_tensor)
     conv = BatchNormalization(axis=3, name=name+'_bn')(conv)
     conv = Activation(activation, name=name+'_relu')(conv)
 
@@ -180,8 +200,8 @@ def SA(x):
     channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
     in_channels = K.int_shape(x)[channel_axis]
 
-    dilated_feature = DepthwiseConv2D((3, 3), strides=(1, 1), dilation_rate=(3, 3), padding='same')(x)
-    depthwise_feature = DepthwiseConv2D((3, 3), strides=(1, 1), padding='same')(x)
+    dilated_feature = DepthwiseConv2D((3, 3), strides=(1, 1), dilation_rate=(3, 3), padding='same', kernel_initializer=conv_kernel_initializing)(x)
+    depthwise_feature = DepthwiseConv2D((3, 3), strides=(1, 1), padding='same', kernel_initializer=conv_kernel_initializing)(x)
 
     avg_pool = Lambda(lambda x: K.mean(x, axis=3, keepdims=True))(dilated_feature)
 
@@ -194,7 +214,7 @@ def SA(x):
                           strides=1,
                           padding='same',
                           activation='sigmoid',
-                          kernel_initializer='he_normal',
+                          kernel_initializer=DENSE_KERNEL_INITIALIZER,
                           use_bias=False)(concat)
 
     return multiply([x, sa_feature])
