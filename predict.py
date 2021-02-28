@@ -1,6 +1,6 @@
 from utils.priors import *
-from model.pascal_main import ssd
-from utils.pascal_post_processing import post_process
+from model.model_builder import ssd
+from utils.model_post_processing import post_process
 import os
 from preprocessing import prepare_for_prediction
 from tqdm import tqdm
