@@ -90,11 +90,11 @@ def assign_priors(gt_boxes, gt_labels, corner_form_priors,
     """Ground truth <-> priors(default box) 할당
     Args:
         gt_boxes (num_targets, 4): ground truth boxes
-        gt_labels (num_targets): class labels
+        gt_labels (num_targets): ground truth class labels
         priors (num_priors, 4): priors
     Returns:
-        boxes (num_priors, 4): ground bbox
-        labels (num_priors): ground label
+        boxes (num_priors, 4): gt 박스
+        labels (num_priors): gt 라벨
     """
     # size: num_priors x num_targets
     ious = iou_of(tf.expand_dims(gt_boxes, axis=0), tf.expand_dims(corner_form_priors, axis=1))

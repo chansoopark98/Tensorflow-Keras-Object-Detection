@@ -6,7 +6,7 @@ import itertools
 import numpy as np
 import six
 
-
+# official PASCAL VOC 07 평가 코드
 def bbox_iou(bbox_a, bbox_b):
     """Calculate the Intersection of Unions (IoUs) between bounding boxes.
     IoU is calculated as a ratio of area of the intersection

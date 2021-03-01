@@ -7,7 +7,7 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from model.model_builder import ssd
 from tensorflow.keras.utils import plot_model
 from calc_flops import get_flops
-
+import argparse
 
 CONTINUE_TRAINING = False
 SAVE_MODEL_NAME = '0225'
@@ -19,6 +19,22 @@ EPOCHS = 50
 TRAIN_MODE = 'voc' # 'voc' or 'coco'
 checkpoint_filepath = './checkpoints/'
 base_lr = 0.00075
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument("-v", "--verbose", action="store_true", help="parser 출력을 하시겠습니까?")
+parser.add_argument("--batch_size", type=int, help="배치 사이즈값 설정", default=32)
+parser.add_argument("--image_size", type=int, help="모델 입력 이미지 크기 설정", default=384)
+parser.add_argument("--lr", type=float, help="Learning rate 설정", default=0.001)
+parser.add_argument("--dataset_dir", type=str, help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
+parser.add_argument("--checkpoint_dir", type=str, help="모델 저장 디렉토리 설정", default='./checkpoints/')
+args = parser.parse_args()
+answer = args.square**2
+if args.verbose:
+    print("the square of {} equals {}".format(args.square, answer))
+else:
+    print(answer)
+
 
 if TRAIN_MODE == 'voc':
     from model.pascal_loss import total_loss
