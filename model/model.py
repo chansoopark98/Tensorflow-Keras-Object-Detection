@@ -59,7 +59,7 @@ def remove_dropout(model):
 
 
 
-def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300]):
+def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[384, 384]):
     if pretrained is False:
         weights = None
 
