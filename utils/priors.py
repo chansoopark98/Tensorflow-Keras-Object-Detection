@@ -23,7 +23,7 @@ from utils.misc import *
  """
 
 BoxSizes = collections.namedtuple('Boxsizes', ['min', 'max'])
-Spec = collections.namedtuple('Specs', ['feature_map_size', 'shrinkage', 'box_sizes', 'aspect_ratios'])
+Spec = collections.namedtuple('Spec', ['feature_map_size', 'shrinkage', 'box_sizes', 'aspect_ratios'])
 
 
 def generate_ssd_priors(specs: List[Spec], image_size, clamp=True):
