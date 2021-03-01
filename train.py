@@ -10,10 +10,10 @@ from calc_flops import get_flops
 
 
 CONTINUE_TRAINING = False
-SAVE_MODEL_NAME = '0225'
+SAVE_MODEL_NAME = '0302'
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [384, 384]
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 MODEL_NAME = 'B0'
 EPOCHS = 50
 TRAIN_MODE = 'coco' # 'voc' or 'coco'
@@ -56,6 +56,9 @@ else :
     print("테스트 데이터 개수:", number_test)
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
+
+    a= iter(train_data.take(1))
+    print(a)
 
 iou_threshold = 0.5
 center_variance = 0.1
