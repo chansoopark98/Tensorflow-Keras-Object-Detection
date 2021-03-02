@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-import tensorflow_addons as tfa
+
 def smooth_l1(labels, scores, sigma=1.0):
 
     diff = (labels-scores)
