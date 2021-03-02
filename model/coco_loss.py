@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-
+import tensorflow_addons as tfa
 def smooth_l1(labels, scores, sigma=1.0):
 
     diff = (labels-scores)
@@ -13,11 +13,11 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
     pos_mask = labels > 0
     # print(pos_mask)
     num_pos = tf.math.reduce_sum(tf.cast(pos_mask, tf.float32), axis=1, keepdims=True)
-    num_pos = tf.where(tf.equal(num_pos, tf.cast(0, dtype=tf.float32)), tf.cast(1, dtype=tf.float32), num_pos)
+    #num_pos = tf.where(tf.equal(num_pos, tf.cast(0, dtype=tf.float32)), tf.cast(1, dtype=tf.float32), num_pos)
     num_neg = num_pos * neg_pos_ratio
 
-    loss = tf.where(pos_mask, tf.convert_to_tensor(np.NINF), loss)
-    # loss = tf.where(pos_mask, tf.convert_to_tensor(np.Inf), loss)
+    loss = tf.where(pos_mask,tf.cast(-10000000, dtype=tf.float32), loss)
+    # loss = tf.where(pos_mask, tf.convert_to_tensor(np.NINF), loss)
 
     indexes = tf.argsort(loss, axis=1, direction='DESCENDING')
     orders = tf.argsort(indexes, axis=1)
@@ -74,26 +74,30 @@ def total_loss(y_true, y_pred, num_classes=81):
     confidence = y_pred[:,:,:num_classes] # batch, None, 81
     predicted_locations = y_pred[:,:,num_classes:] # None, None, 4
     gt_locations = y_true[:,:,num_classes:] # None, 13792, None
-    neg_pos_ratio = 3.0
+    neg_pos_ratio = 5.0
     # derived from cross_entropy=sum(log(p))
-    loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]
+    loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0] # (None, None)
     loss = tf.stop_gradient(loss)
     # print(loss)
-    mask = hard_negative_mining(loss, labels, neg_pos_ratio)
+
+
+    mask = hard_negative_mining(loss, labels, neg_pos_ratio) #mask = (None, 13792)
     mask = tf.stop_gradient(mask)
     # return mask
     confidence = tf.boolean_mask(confidence, mask)
+
 
     # classification_loss = tf.math.reduce_sum(tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)(
     #     y_pred=tf.reshape(confidence, [-1, num_classes]),
     #     y_true = tf.boolean_mask(labels, mask))
     # )
+
     cross_entropy_loss =tf.nn.sparse_softmax_cross_entropy_with_logits(
         logits=tf.reshape(confidence, [-1, num_classes]),
         labels=tf.boolean_mask(labels, mask))
 
-    classification_loss = tf.math.reduce_sum(tf.clip_by_value(cross_entropy_loss, 1e-10, tf.reduce_max(cross_entropy_loss))
-    )
+    #classification_loss = tf.math.reduce_sum(tf.clip_by_value(cross_entropy_loss, 1e-10, tf.reduce_max(cross_entropy_loss)))
+    classification_loss = tf.math.reduce_sum(cross_entropy_loss)
 
 
     # return classification_loss

@@ -8,10 +8,10 @@ from model.model_builder import ssd
 from tensorflow.keras.utils import plot_model
 from calc_flops import get_flops
 #
-tf.debugging.experimental.enable_dump_debug_info(
-    "/tmp/tfdbg2_logdir",
-    tensor_debug_mode="FULL_HEALTH",
-    circular_buffer_size=-1)
+# tf.debugging.experimental.enable_dump_debug_info(
+#     "/tmp/tfdbg2_logdir",
+#     tensor_debug_mode="FULL_HEALTH",
+#     circular_buffer_size=-1)
 
 CONTINUE_TRAINING = False
 SAVE_MODEL_NAME = '0302'
@@ -22,7 +22,7 @@ MODEL_NAME = 'B0'
 EPOCHS = 50
 TRAIN_MODE = 'coco' # 'voc' or 'coco'
 checkpoint_filepath = './checkpoints/'
-base_lr = 0.00075
+base_lr = 0.001
 
 
 
