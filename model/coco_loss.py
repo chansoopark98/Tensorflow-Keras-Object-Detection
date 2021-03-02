@@ -88,10 +88,12 @@ def total_loss(y_true, y_pred, num_classes=81):
     #     y_pred=tf.reshape(confidence, [-1, num_classes]),
     #     y_true = tf.boolean_mask(labels, mask))
     # )
+    cross_entropy_loss =tf.nn.sparse_softmax_cross_entropy_with_logits(
+        logits=tf.reshape(confidence, [-1, num_classes]),
+        labels=tf.boolean_mask(labels, mask))
 
-    classification_loss = tf.math.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(
-        logits = tf.reshape(confidence, [-1, num_classes]),
-        labels = tf.boolean_mask(labels, mask)))
+    classification_loss = tf.math.reduce_sum(tf.clip_by_value(cross_entropy_loss, 1e-10, tf.reduce_max(cross_entropy_loss))
+    )
 
 
     # return classification_loss
@@ -100,11 +102,14 @@ def total_loss(y_true, y_pred, num_classes=81):
     gt_locations = tf.reshape(tf.boolean_mask(gt_locations, pos_mask), [-1, 4])
 
     # smooth_l1_loss = tf.math.reduce_sum(smooth_l1(scores=predicted_locations,labels=gt_locations))
-    smooth_l1_loss = tf.math.reduce_sum(tf.keras.losses.Huber()(y_true=gt_locations , y_pred=predicted_locations))
+    huber_loss = tf.keras.losses.Huber()(y_true=gt_locations , y_pred=predicted_locations)
+    smooth_l1_loss = tf.math.reduce_sum(tf.clip_by_value(huber_loss
+                                        , 1e-10, tf.reduce_max(huber_loss))
+                                        )
 
 
     num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
-    num_pos = tf.where(tf.equal(num_pos, tf.cast(0, tf.float32)), tf.cast(1, tf.float32), num_pos)  ## << add
+    num_pos = tf.where(tf.equal(num_pos, tf.cast(0, tf.float32)), tf.cast(0.001, tf.float32), num_pos)  ## << add
     loc_loss = smooth_l1_loss / num_pos
 
 

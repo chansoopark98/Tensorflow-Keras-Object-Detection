@@ -30,10 +30,6 @@ conv_kernel_initializing = {
     'config': {
         'scale': 2.0,
         'mode': 'fan_out',
-        # EfficientNet actually uses an untruncated normal distribution for
-        # initializing conv layers, but keras.initializers.VarianceScaling use
-        # a truncated distribution.
-        # We decided against a custom initializer for better serializability.
         'distribution': 'normal'
     }
 }
@@ -214,7 +210,7 @@ def SA(x):
                           strides=1,
                           padding='same',
                           activation='sigmoid',
-                          kernel_initializer=DENSE_KERNEL_INITIALIZER,
+                          kernel_initializer=conv_kernel_initializing,
                           use_bias=False)(concat)
 
     return multiply([x, sa_feature])
@@ -222,13 +218,13 @@ def SA(x):
 
 
 def upSampling(input_tensor, size, name):
-    # resized = Resizing(size, size, name=name+'_resizing')(input_tensor)
-    resized = UpSampling2D(size=(2,2), interpolation='bilinear')(input_tensor)
+    resized = Resizing(size, size, name=name+'_resizing')(input_tensor)
+    # resized = UpSampling2D(size=(2,2), interpolation='bilinear')(input_tensor)
     return resized
 
 
 
-def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], regularization=5e-4):
+def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[384, 384], regularization=5e-4):
     source_layers = []
     base = create_efficientNet(base_model_name, pretrained, IMAGE_SIZE)
     print(base)
@@ -268,13 +264,13 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     conv10 = SA(conv10)
 
     # bottom-up pathway
-    conv10_upSampling = upSampling(conv10, 24, 'conv10_to_conv19')  # 10x10@256 to 19x19@256
+    conv10_upSampling = upSampling(conv10, 19, 'conv10_to_conv19')  # 10x10@256 to 19x19@256
 
     concat_conv19 = Concatenate()([conv10_upSampling, conv19])
     concat_conv19 = convolution(concat_conv19, 128, 1, 1, 'same', 'concat_conv19_1x1_channel')
     concat_conv19 = MBConv(concat_conv19, 1, 'conv19_upSampling_conv') # for top-down
     #ca_conv19 = CA(concat_conv19)
-    ca_conv19 = upSampling(concat_conv19, 48, 'conv19_to_conv38')  # 10x10@128 to 19x19@128
+    ca_conv19 = upSampling(concat_conv19, 38, 'conv19_to_conv38')  # 10x10@128 to 19x19@128
 
     concat_conv38 = Concatenate()([conv38, ca_conv19])  # 38x39 / @64+128
     concat_conv38 = convolution(concat_conv38, 64, 1, 1, 'same', 'concat_conv38_1x1_channel')
