@@ -7,6 +7,9 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from model.model_builder import ssd
 from tensorflow.keras.utils import plot_model
 from calc_flops import get_flops
+
+import cProfile
+
 #
 # tf.debugging.experimental.enable_dump_debug_info(
 #     "/tmp/tfdbg2_logdir",
@@ -17,7 +20,7 @@ CONTINUE_TRAINING = False
 SAVE_MODEL_NAME = '0302'
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [384, 384]
-BATCH_SIZE = 16
+BATCH_SIZE = 1
 MODEL_NAME = 'B0'
 EPOCHS = 50
 TRAIN_MODE = 'coco' # 'voc' or 'coco'
@@ -115,7 +118,7 @@ model.summary()
 
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-5, verbose=1)
 checkpoint = ModelCheckpoint(checkpoint_filepath+SAVE_MODEL_NAME+'.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
-
+isNanCheck = tf.keras.callbacks.TerminateOnNaN()
 
 
 
@@ -129,7 +132,7 @@ history = model.fit(training_dataset,
                     steps_per_epoch=steps_per_epoch,
                     validation_steps=validation_steps,
                     epochs=EPOCHS,
-                    callbacks=[reduce_lr,checkpoint])
+                    callbacks=[reduce_lr,checkpoint,isNanCheck])
 
 # def make_directory(target_path):
 #   if not os.path.exists(target_path):
