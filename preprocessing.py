@@ -22,7 +22,7 @@ def data_augment(image, boxes, labels):
     return (image, boxes, labels)
 
 
-def prepare_input(sample, convert_to_normal=False):
+def prepare_input(sample, convert_to_normal=True):
   img = tf.cast(sample['image'], dtype=tf.float32)
   # img = img - image_mean 이미지 평균
   labels = sample['objects']['label']+1
@@ -35,7 +35,6 @@ def prepare_input(sample, convert_to_normal=False):
   # filter_nan = lambda x: not tf.reduce_any(tf.math.is_nan(img)) and not tf.math.is_nan(img)
   #
   # train_data = train_data.filter(filter_nan)
-  img = tf.image.resize(img, [300, 300])  # 이미지 리사이즈
   img = preprocess_input(img, mode='torch')
 
   # img = tf.cast(img, tf.float32) # 형변환

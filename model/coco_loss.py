@@ -117,9 +117,20 @@ def total_loss(y_true, y_pred, num_classes=81):
 
     class_loss = classification_loss / num_pos
 
+    class_check = tf.where(tf.math.is_nan(class_loss), 1 , 2)
+    if class_check == 1 :
+        raise ValueError('class_loss nan')
+
+    loc_check = tf.where(tf.math.is_nan(loc_loss), 1 , 2)
+    if loc_check == 1 :
+        raise ValueError('loc_loss nan')
+
     # print(num_pos)
     mbox_loss = loc_loss + class_loss
 
     # mbox_loss = tf.where(tf.math.is_nan(mbox_loss), tf.constant(1., dtype=tf.float32), mbox_loss)
+    check = tf.where(tf.math.is_nan(mbox_loss), 1 , 2)
+    if check == 1 :
+        raise ValueError('mbox_loss nan')
 
     return mbox_loss
