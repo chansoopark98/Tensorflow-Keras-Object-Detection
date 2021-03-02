@@ -7,13 +7,17 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from model.model_builder import ssd
 from tensorflow.keras.utils import plot_model
 from calc_flops import get_flops
-
+#
+tf.debugging.experimental.enable_dump_debug_info(
+    "/tmp/tfdbg2_logdir",
+    tensor_debug_mode="FULL_HEALTH",
+    circular_buffer_size=-1)
 
 CONTINUE_TRAINING = False
 SAVE_MODEL_NAME = '0302'
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [384, 384]
-BATCH_SIZE = 8
+BATCH_SIZE = 16
 MODEL_NAME = 'B0'
 EPOCHS = 50
 TRAIN_MODE = 'coco' # 'voc' or 'coco'
