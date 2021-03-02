@@ -126,7 +126,6 @@ def total_loss(y_true, y_pred, num_classes=81):
     tf.print("   //  num_pos: ", num_pos,
              "   //  class_loss: ", classification_loss,
              "   //  loc_loss: ", smooth_l1_loss,
-             "   //  softmax_loss: ", loss,
              output_stream = sys.stdout)
              #output_stream="file:///tmp/test.txt")
 
