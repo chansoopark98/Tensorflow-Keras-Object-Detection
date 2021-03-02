@@ -35,11 +35,9 @@ def prepare_input(sample, convert_to_normal=False):
   # filter_nan = lambda x: not tf.reduce_any(tf.math.is_nan(img)) and not tf.math.is_nan(img)
   #
   # train_data = train_data.filter(filter_nan)
-
+  img = tf.image.resize(img, [300, 300])  # 이미지 리사이즈
   img = preprocess_input(img, mode='torch')
 
-
-  # img = tf.image.resize(img, IMAGE_SIZE) / 255.0 # 이미지 정규화
   # img = tf.cast(img, tf.float32) # 형변환
 
   #image_mean = (0.485, 0.456, 0.406)
@@ -49,11 +47,18 @@ def prepare_input(sample, convert_to_normal=False):
 
 
 # 타겟 연결 오리지날
+# def join_target(image, bbox, labels, image_size, target_transform, classes):
+#   locations, labels = target_transform(tf.cast(bbox, tf.float32), labels)
+#   labels = tf.one_hot(labels, classes, axis=1, dtype=tf.float32) ### 1 -> classes
+#   targets = tf.concat([labels, locations], axis=1)
+#   return (tf.image.resize(image, image_size), targets)
+
 def join_target(image, bbox, labels, image_size, target_transform, classes):
   locations, labels = target_transform(tf.cast(bbox, tf.float32), labels)
   labels = tf.one_hot(labels, classes, axis=1, dtype=tf.float32) ### 1 -> classes
   targets = tf.concat([labels, locations], axis=1)
-  return (tf.image.resize(image, image_size), targets)
+  return image, targets
+
 
 
 
