@@ -114,5 +114,8 @@ def expand(image, boxes, expand_prob=tf.constant(0.5)):
     xmax = (boxes[:, 2] * image_shape[1] + left) / new_width
     ymax = (boxes[:, 3] * image_shape[0] + top) / new_height
 
+    xmin  = tf.where(tf.greater(xmin, xmax), tf.cast(0., dtype=tf.float32), xmin)
+    ymin = tf.where(tf.greater(ymin, ymax), tf.cast(0., dtype=tf.float32), ymin)
+
     boxes = tf.stack([xmin, ymin, xmax, ymax], axis=1)
     return image, boxes
