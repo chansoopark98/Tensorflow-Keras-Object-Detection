@@ -47,7 +47,7 @@ def create_classifier(source_layers, num_priors, normalizations, num_classes=81)
 
         ## original ----
         # x1 = Conv2D(num_priors[i] * num_classes, 3, padding='same', kernel_regularizer=l2(5e-4) ,name= name + '_mbox_conf')(x)
-        x1 = SeparableConv2D(num_priors[i] * num_classes, 3, padding='same', use_bias=False,
+        x1 = SeparableConv2D(num_priors[i] * num_classes, 3, padding='same', use_bias=False, kernel_regularizer=l2(5e-4),
                              name= name + '_mbox_conf')(x)
         x1 = Flatten(name=name + '_mbox_conf_flat')(x1)
 
@@ -56,7 +56,7 @@ def create_classifier(source_layers, num_priors, normalizations, num_classes=81)
         mbox_conf.append(x1)
 
         # x2 = Conv2D(num_priors[i] * 4, 3, padding='same', kernel_regularizer=l2(5e-4) ,name= name + '_mbox_loc')(x)
-        x2 = SeparableConv2D(num_priors[i] * 4, 3, padding='same', use_bias=False,
+        x2 = SeparableConv2D(num_priors[i] * 4, 3, padding='same', use_bias=False, kernel_regularizer=l2(5e-4),
                              name= name + '_mbox_loc')(x)
         x2 = Flatten(name=name + '_mbox_loc_flat')(x2)
         # x2 = activation_b5_mbox_loc_flat/Reshape:0 , shape=(Batch , 16)

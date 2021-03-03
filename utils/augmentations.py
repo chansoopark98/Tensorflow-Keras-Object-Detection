@@ -1,5 +1,5 @@
 import tensorflow as tf
-
+import sys
 
 @tf.function
 def random_lighting_noise(image):
@@ -36,7 +36,15 @@ def random_crop(image, bbox, labels):
     x_min = bbox[:, 0] - clip_box[1]
     y_max = bbox[:, 3] - clip_box[0]
     x_max = bbox[:, 2] - clip_box[1]
+
+    x_min = tf.where(tf.greater_equal(x_min, x_max), tf.cast(0, dtype=tf.float32), x_min)
+    y_min = tf.where(tf.greater_equal(y_min, y_max), tf.cast(0, dtype=tf.float32), y_min)
+    x_max = tf.where(tf.greater_equal(x_min, x_max), tf.cast(x_min+0.1, dtype=tf.float32), x_max)
+    y_max = tf.where(tf.greater_equal(y_min, y_max), tf.cast(y_min+0.1, dtype=tf.float32), y_max)
+
+
     new_bbox = tf.stack([x_min, y_min, x_max, y_max], axis=1)
+
 
     centers_x = (bbox[:, 0] + bbox[:, 2]) / 2
     centers_y = (bbox[:, 1] + bbox[:, 3]) / 2
@@ -114,8 +122,10 @@ def expand(image, boxes, expand_prob=tf.constant(0.5)):
     xmax = (boxes[:, 2] * image_shape[1] + left) / new_width
     ymax = (boxes[:, 3] * image_shape[0] + top) / new_height
 
-    xmin  = tf.where(tf.greater(xmin, xmax), tf.cast(0., dtype=tf.float32), xmin)
-    ymin = tf.where(tf.greater(ymin, ymax), tf.cast(0., dtype=tf.float32), ymin)
+    xmin = tf.where(tf.greater_equal(xmin, xmax), tf.cast(0, dtype=tf.float32), xmin)
+    ymin = tf.where(tf.greater_equal(ymin, ymax), tf.cast(0, dtype=tf.float32), ymin)
+    xmax = tf.where(tf.greater_equal(xmin, xmax), tf.cast(xmin+0.1, dtype=tf.float32), xmax)
+    ymax = tf.where(tf.greater_equal(ymin, ymax), tf.cast(ymin+0.1, dtype=tf.float32), ymax)
 
     boxes = tf.stack([xmin, ymin, xmax, ymax], axis=1)
     return image, boxes
