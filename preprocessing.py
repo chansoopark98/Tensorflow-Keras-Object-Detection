@@ -1,4 +1,5 @@
-from keras.applications.imagenet_utils import preprocess_input
+from tensorflow.keras.applications.imagenet_utils import preprocess_input
+
 import tensorflow as tf
 from utils.augmentations import *
 
@@ -35,7 +36,7 @@ def prepare_input(sample, convert_to_normal=True):
   # filter_nan = lambda x: not tf.reduce_any(tf.math.is_nan(img)) and not tf.math.is_nan(img)
   #
   # train_data = train_data.filter(filter_nan)
-  img = preprocess_input(img, mode='torch')
+  img = preprocess_input(img, mode='tf')
 
   # img = tf.cast(img, tf.float32) # 형변환
 
@@ -43,7 +44,6 @@ def prepare_input(sample, convert_to_normal=True):
   #image_std = (0.229, 0.224, 0.225)
   #img = (img - image_mean) / image_std # 데이터셋 pascal 평균 분산치 실험
   return (img, bbox, labels)
-
 
 # 타겟 연결 오리지날
 def join_target(image, bbox, labels, image_size, target_transform, classes):
@@ -82,7 +82,7 @@ def prepare_dataset(dataset, image_size, batch_size, target_transform, train_mod
 def prepare_for_prediction(file_path, image_size=[384, 384]):
     img = tf.io.read_file(file_path)
     img = decode_img(img, image_size)
-    img = preprocess_input(img, mode='torch')
+    img = preprocess_input(img, mode='tf')
     return img
     
 def decode_img(img,  image_size=[384, 384]):

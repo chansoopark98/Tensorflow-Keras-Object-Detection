@@ -1,6 +1,7 @@
 import tensorflow_datasets as tfds
 from utils.priors import *
 import argparse
+import time
 from preprocessing import prepare_dataset
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 
@@ -16,16 +17,31 @@ import cProfile
 #     tensor_debug_mode="FULL_HEALTH",
 #     circular_buffer_size=-1)
 
-CONTINUE_TRAINING = False
-SAVE_MODEL_NAME = '0302'
-DATASET_DIR = './datasets/'
-IMAGE_SIZE = [384, 384]
-BATCH_SIZE = 16
-MODEL_NAME = 'B0'
-EPOCHS = 50
-TRAIN_MODE = 'coco' # 'voc' or 'coco'
-checkpoint_filepath = './checkpoints/'
-base_lr = 0.001
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
+parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
+parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=384)
+parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
+parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름", default=str(time.strftime('%m%d', time.localtime(time.time()))))
+parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
+parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 가중치 로드", default=False)
+
+args = parser.parse_args()
+BATCH_SIZE = args.batch_size
+EPOCHS = args.epoch
+IMAGE_SIZE = [args.image_size, args.image_size]
+base_lr = args.lr
+SAVE_MODEL_NAME = args.model_name
+DATASET_DIR = args.dataset_dir
+checkpoint_filepath = args.checkpoint_dir
+MODEL_NAME = args.backbone_model
+TRAIN_MODE = args.train_dataset
+CONTINUE_TRAINING = args.pretrain_mode
 
 
 
@@ -134,30 +150,3 @@ history = model.fit(training_dataset,
                     epochs=EPOCHS,
                     callbacks=[reduce_lr,checkpoint,isNanCheck])
 
-# def make_directory(target_path):
-#   if not os.path.exists(target_path):
-#     os.mkdir(target_path)
-#     print('Directory ', target_path, ' Created ')
-#   else:
-#     print('Directory ', target_path, ' already exists')
-#
-# print('TensorFlow version: {}'.format(tf.__version__))
-# SAVED_MODEL_PATH = './saved_model'
-# make_directory(SAVED_MODEL_PATH)
-# MODEL_DIR = SAVED_MODEL_PATH
-#
-#
-# version = SAVE_MODEL_NAME
-# export_path = os.path.join(MODEL_DIR, str(version))
-# print('export_path = {}\n'.format(export_path))
-#
-# tf.keras.models.save_model(
-#   model,
-#   export_path,
-#   overwrite=True,
-#   include_optimizer=True,
-#   save_format=None,
-#   signatures=None,
-#   options=None
-# )
-# print('\nSaved model:')

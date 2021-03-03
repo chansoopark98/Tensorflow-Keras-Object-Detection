@@ -1,17 +1,15 @@
 import efficientnet.keras as efn
 import tensorflow as tf
 from tensorflow import keras
-from keras.activations import sigmoid
-from keras.regularizers import l2
-from keras.layers.experimental.preprocessing import Resizing
-
-
-from keras.layers import GlobalAveragePooling2D,  Reshape, Dense, multiply, Concatenate, \
+from tensorflow.keras.regularizers import l2
+import tensorflow_addons as tfa
+from tensorflow.keras.layers import GlobalAveragePooling2D,  Reshape, Dense, multiply, Concatenate, \
     Conv2D, Add, Activation, Dropout ,BatchNormalization, DepthwiseConv2D, Lambda ,  UpSampling2D
-from keras import backend as K
+from tensorflow.keras import backend as K
 
 
-activation = tf.keras.activations.swish
+# activation = tf.keras.activations.mish
+activation = tfa.activations.mish
 
 
 get_efficient_feature = {

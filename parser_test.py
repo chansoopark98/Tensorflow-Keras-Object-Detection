@@ -8,32 +8,35 @@ from model.model_builder import ssd
 from tensorflow.keras.utils import plot_model
 from calc_flops import get_flops
 import argparse
+import time
 
-CONTINUE_TRAINING = False
-SAVE_MODEL_NAME = '0225'
-DATASET_DIR = './datasets/'
-IMAGE_SIZE = [384, 384]
-BATCH_SIZE = 16
-MODEL_NAME = 'B0'
-EPOCHS = 50
-TRAIN_MODE = 'voc' # 'voc' or 'coco'
-checkpoint_filepath = './checkpoints/'
-base_lr = 0.00075
+
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("-v", "--verbose", action="store_true", help="parser 출력을 하시겠습니까?")
-parser.add_argument("--batch_size", type=int, help="배치 사이즈값 설정", default=32)
-parser.add_argument("--image_size", type=int, help="모델 입력 이미지 크기 설정", default=384)
-parser.add_argument("--lr", type=float, help="Learning rate 설정", default=0.001)
-parser.add_argument("--dataset_dir", type=str, help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
-parser.add_argument("--checkpoint_dir", type=str, help="모델 저장 디렉토리 설정", default='./checkpoints/')
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=32)
+parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
+parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=384)
+parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
+parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름", default=str(time.strftime('%m%d', time.localtime(time.time()))))
+parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
+parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 가중치 로드", default=False)
+
 args = parser.parse_args()
-answer = args.square**2
-if args.verbose:
-    print("the square of {} equals {}".format(args.square, answer))
-else:
-    print(answer)
+BATCH_SIZE = args.batch_size
+EPOCHS = args.epoch
+IMAGE_SIZE = [args.image_size, args.image_size]
+base_lr = args.lr
+SAVE_MODEL_NAME = args.model_name
+DATASET_DIR = args.dataset_dir
+checkpoint_filepath = args.checkpoint_dir
+MODEL_NAME = args.backbone_model
+TRAIN_MODE = args.train_dataset
+CONTINUE_TRAINING = args.pretrain_mode
+
 
 
 if TRAIN_MODE == 'voc':

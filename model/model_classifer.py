@@ -1,7 +1,7 @@
-from keras.layers import Conv2D, BatchNormalization, Activation, Dense, Concatenate, Flatten, Reshape, Dropout, SeparableConv2D
-from keras.regularizers import l2
+from tensorflow.keras.layers import Conv2D, BatchNormalization, Activation, Dense, Concatenate, Flatten, Reshape, Dropout, SeparableConv2D, GlobalAveragePooling2D
+from tensorflow.keras.regularizers import l2
 from keras.engine.topology import Layer
-from keras.initializers import Constant
+from tensorflow.keras.initializers import Constant
 import tensorflow.keras.backend as K
 
 # l2 normalize
@@ -47,7 +47,7 @@ def create_classifier(source_layers, num_priors, normalizations, num_classes=81)
 
         ## original ----
         # x1 = Conv2D(num_priors[i] * num_classes, 3, padding='same', kernel_regularizer=l2(5e-4) ,name= name + '_mbox_conf')(x)
-        x1 = SeparableConv2D(num_priors[i] * num_classes, 3, padding='same', use_bias=False, kernel_regularizer=l2(5e-4) ,
+        x1 = SeparableConv2D(num_priors[i] * num_classes, 3, padding='same', use_bias=False,
                              name= name + '_mbox_conf')(x)
         x1 = Flatten(name=name + '_mbox_conf_flat')(x1)
 
@@ -56,7 +56,7 @@ def create_classifier(source_layers, num_priors, normalizations, num_classes=81)
         mbox_conf.append(x1)
 
         # x2 = Conv2D(num_priors[i] * 4, 3, padding='same', kernel_regularizer=l2(5e-4) ,name= name + '_mbox_loc')(x)
-        x2 = SeparableConv2D(num_priors[i] * 4, 3, padding='same', use_bias=False, kernel_regularizer=l2(5e-4),
+        x2 = SeparableConv2D(num_priors[i] * 4, 3, padding='same', use_bias=False,
                              name= name + '_mbox_loc')(x)
         x2 = Flatten(name=name + '_mbox_loc_flat')(x2)
         # x2 = activation_b5_mbox_loc_flat/Reshape:0 , shape=(Batch , 16)
