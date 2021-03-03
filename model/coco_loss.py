@@ -138,7 +138,8 @@ def total_loss(y_true, y_pred, num_classes=81):
              "   //  loc_loss: ", smooth_l1_loss,
              "   //  gt_location: ", tf.reduce_sum(tf.where(tf.math.is_nan(gt_locations),1,0)),
              "   //  predict_location: ", tf.reduce_sum(tf.where(tf.math.is_nan(predicted_locations),1,0)),
-             "   //  y_pred: ", tf.reduce_sum(tf.where(tf.math.is_nan(y_pred),1,0)),
+             "   //  y_pred_nan: ", tf.reduce_sum(tf.where(tf.math.is_nan(y_pred),1,0)),
+             "   //  y_pred_inf: ", tf.reduce_sum(tf.where(tf.math.is_inf(y_pred),1,0)),
              "   //  huber_loss: ", huber_loss,
              output_stream = sys.stdout)
 
