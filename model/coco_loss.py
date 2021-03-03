@@ -107,8 +107,8 @@ def total_loss(y_true, y_pred, num_classes=81):
     gt_locations = tf.reshape(tf.boolean_mask(gt_locations, pos_mask), [-1, 4])
 
     # smooth_l1_loss = tf.math.reduce_sum(smooth_l1(scores=predicted_locations,labels=gt_locations))
-    # huber_loss = tf.keras.losses.Huber()(y_true=gt_locations , y_pred=predicted_locations)
-    smooth_l1_loss = tf.math.reduce_sum(tf.keras.losses.Huber(reduction='sum')(y_true=gt_locations , y_pred=predicted_locations))
+    huber_loss = tf.keras.losses.Huber(reduction='sum')(y_true=gt_locations , y_pred=predicted_locations)
+    smooth_l1_loss = tf.where(tf.math.is_inf(huber_loss), tf.cast(0., dtype=tf.float32),huber_loss)
 
 
 
@@ -138,9 +138,13 @@ def total_loss(y_true, y_pred, num_classes=81):
              "   //  loc_loss: ", smooth_l1_loss,
              "   //  gt_location: ", tf.reduce_sum(tf.where(tf.math.is_nan(gt_locations),1,0)),
              "   //  predict_location: ", tf.reduce_sum(tf.where(tf.math.is_nan(predicted_locations),1,0)),
+             "   //  y_pred: ", tf.reduce_sum(tf.where(tf.math.is_nan(y_pred),1,0)),
+             "   //  huber_loss: ", huber_loss,
              output_stream = sys.stdout)
 
-
+    # tf.estimator.NanTensorHook(
+    #     mbox_loss, fail_on_nan_loss=True
+    # )
 
     # tf.print("   //  num_pos: ", num_pos,
     #          "   //  class_loss: ", classification_loss,
