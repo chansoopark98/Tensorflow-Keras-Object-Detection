@@ -43,7 +43,7 @@ MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
 CONTINUE_TRAINING = args.pretrain_mode
 
-
+# TODO https://www.tensorflow.org/datasets/api_docs/python/tfds/testing/mock_data VOC+COCO 무작위 데이터 생성
 
 if TRAIN_MODE == 'voc':
     from model.pascal_loss import total_loss

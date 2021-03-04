@@ -15,7 +15,7 @@ import csv
 
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [384, 384]
-BATCH_SIZE = 32
+BATCH_SIZE = 1
 MODEL_NAME = 'B0'
 checkpoint_filepath = './checkpoints/0225.h5'
 TRAIN_MODE = 'coco' # 'voc' or 'coco'
@@ -29,8 +29,19 @@ if TRAIN_MODE == 'voc':
         CLASSES = f.read().splitlines()
 
 else :
-    test_data = tfds.load('coco/2017', data_dir=DATASET_DIR, split='validation')
-    test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
+    test_data, test_info = tfds.load('coco/2017', data_dir=DATASET_DIR, split='test', with_info=True)
+
+    # TODO TEST 데이터셋 다운로드 후 재구축
+    # test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
+    # test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
+
+    a = test_data.take(1)
+    a = a.as_numpy_iterator()
+    for i in a:
+        bbox_test = i['objects']['bbox']
+        label_test = i['objects']['label']
+
+
     number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
     print("테스트 데이터 개수:", number_test)
     CLASSES_NUM = 81
