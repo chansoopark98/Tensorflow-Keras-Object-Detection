@@ -1,5 +1,4 @@
 import tensorflow_datasets as tfds
-from utils.priors import *
 import argparse
 
 parser = argparse.ArgumentParser()

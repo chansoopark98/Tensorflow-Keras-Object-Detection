@@ -30,16 +30,21 @@ if TRAIN_MODE == 'voc':
 
 else :
     test_data, test_info = tfds.load('coco/2017', data_dir=DATASET_DIR, split='test', with_info=True)
+    train_data, train_info = tfds.load('coco/2017', data_dir=DATASET_DIR, split='train', with_info=True)
 
     # TODO TEST 데이터셋 다운로드 후 재구축
-    # test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
-    # test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
+    # test_data = test_data.filter(lambda x: tf.reduce_all(tf.equal(tf.size(x['objects']['bbox']), 0)))
+    # test_data = test_data.filter(lambda x: tf.reduce_all(tf.equal(tf.size(x['objects']['label']), 0)))
+    #test_data = test_data.filter(lambda x: tf.reduce_all(tf.less_equal(tf.size(x['objects']['bbox']), 0)))
+    #test_data = test_data.filter(lambda x: tf.reduce_all(tf.less_equal(tf.size(x['objects']['label']), 0)))
+
+
 
     a = test_data.take(1)
     a = a.as_numpy_iterator()
-    for i in a:
-        bbox_test = i['objects']['bbox']
-        label_test = i['objects']['label']
+
+    bbox_test = a['objects']['bbox']
+    label_test = a['objects']['label']
 
 
     number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
@@ -54,17 +59,17 @@ center_variance = 0.1
 size_variance = 0.2
 
 specs = [
-                Spec(48, 8, BoxSizes(40, 90), [2]),
-                Spec(24, 16, BoxSizes(90, 151), [2, 3]),
-                Spec(12, 32, BoxSizes(151, 212), [2, 3]),
-                Spec(6, 64, BoxSizes(212, 273), [2, 3]),
-                Spec(3, 128, BoxSizes(273, 334), [2]),
-                Spec(1, 384, BoxSizes(334, 395), [2])
+                Spec(48, 8, BoxSizes(38, 77), [2]), # 0.1
+                Spec(24, 16, BoxSizes(77, 142), [2, 3]), # 0.2
+                Spec(12, 32, BoxSizes(142, 207), [2, 3]), # 0.37
+                Spec(6, 64, BoxSizes(207, 273), [2, 3]), # 0.54
+                Spec(3, 128, BoxSizes(273, 337), [2]), # 0.71
+                Spec(1, 384, BoxSizes(337, 403), [2]) # 0.88 , max 1.05
         ]
 
 
-priors = generate_ssd_priors(specs, IMAGE_SIZE[0])
-target_transform = MatchPrior(priors, center_variance, size_variance, iou_threshold)
+priors = create_priors_boxes(specs, IMAGE_SIZE[0])
+target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
 # instantiate the datasets
 validation_dataset = prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE, target_transform, TRAIN_MODE, train=False)

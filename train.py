@@ -108,8 +108,8 @@ specs = [
 
 
 
-priors = generate_ssd_priors(specs, IMAGE_SIZE[0])
-target_transform = MatchPrior(priors, center_variance, size_variance, iou_threshold)
+priors = create_priors_boxes(specs, IMAGE_SIZE[0])
+target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
 # 데이터세트 인스턴스화 (input은 300x300@3 labels은 8732)
 training_dataset = prepare_dataset(train_data, IMAGE_SIZE, BATCH_SIZE, target_transform, TRAIN_MODE, train=True)

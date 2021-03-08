@@ -26,7 +26,7 @@ BoxSizes = collections.namedtuple('Boxsizes', ['min', 'max'])
 Spec = collections.namedtuple('Spec', ['feature_map_size', 'shrinkage', 'box_sizes', 'aspect_ratios'])
 
 
-def generate_ssd_priors(specs: List[Spec], image_size, clamp=True):
+def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
     priors = []
     for spec in specs:
         # specs
@@ -85,8 +85,8 @@ def generate_ssd_priors(specs: List[Spec], image_size, clamp=True):
 
 
 @tf.function
-def assign_priors(gt_boxes, gt_labels, corner_form_priors,
-                  iou_threshold=0.45):
+def assign_gt2_priors(gt_boxes, gt_labels, corner_form_priors,
+                      iou_threshold=0.45):
     """Ground truth <-> priors(default box) 할당
     Args:
         gt_boxes (num_targets, 4): ground truth boxes
@@ -125,7 +125,7 @@ def assign_priors(gt_boxes, gt_labels, corner_form_priors,
     return boxes, labels
 
 
-class MatchPrior(object):
+class MatchingPriors(object):
     def __init__(self, center_form_priors, center_variance, size_variance, iou_threshold):
         self.center_form_priors = center_form_priors
         self.corner_form_priors = center_form_to_corner_form(center_form_priors)
@@ -138,7 +138,7 @@ class MatchPrior(object):
             gt_boxes = tf.convert_to_tensor(gt_boxes)
         if type(gt_labels) is np.ndarray:
             gt_labels = tf.convert_to_tensor(gt_labels)
-        boxes, labels = assign_priors(gt_boxes, gt_labels, self.corner_form_priors, self.iou_threshold)
+        boxes, labels = assign_gt2_priors(gt_boxes, gt_labels, self.corner_form_priors, self.iou_threshold)
         boxes = corner_form_to_center_form(boxes)
         locations = convert_boxes_to_locations(boxes, self.center_form_priors, self.center_variance, self.size_variance)
         return locations, labels

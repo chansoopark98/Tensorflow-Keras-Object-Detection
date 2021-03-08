@@ -22,17 +22,16 @@ center_variance = 0.1
 size_variance = 0.2
 
 specs = [
-                Spec(48, 8, BoxSizes(40, 90), [2]),
-                Spec(24, 16, BoxSizes(90, 151), [2, 3]),
-                Spec(12, 32, BoxSizes(151, 212), [2, 3]),
-                Spec(6, 64, BoxSizes(212, 273), [2, 3]),
-                Spec(3, 128, BoxSizes(273, 334), [2]),
-                Spec(1, 384, BoxSizes(334, 395), [2])
+                Spec(48, 8, BoxSizes(38, 77), [2]), # 0.1
+                Spec(24, 16, BoxSizes(77, 142), [2, 3]), # 0.2
+                Spec(12, 32, BoxSizes(142, 207), [2, 3]), # 0.37
+                Spec(6, 64, BoxSizes(207, 273), [2, 3]), # 0.54
+                Spec(3, 128, BoxSizes(273, 337), [2]), # 0.71
+                Spec(1, 384, BoxSizes(337, 403), [2]) # 0.88 , max 1.05
         ]
 
-
-priors = generate_ssd_priors(specs, IMAGE_SIZE[0])
-target_transform = MatchPrior(priors, center_variance, size_variance, iou_threshold)
+priors = create_priors_boxes(specs, IMAGE_SIZE[0])
+target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 model = ssd(TRAIN_MODE ,MODEL_NAME, pretrained=False)
