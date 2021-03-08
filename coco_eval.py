@@ -1,7 +1,7 @@
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 annType = 'bbox'
-cocoGt=COCO('person_keypoints_val2017.json')
+cocoGt=COCO('datasets/captions_val2017.json')
 cocoDt=cocoGt.loadRes('coco_predictions.json')
 imgIds=sorted(cocoGt.getImgIds())
 # running evaluation

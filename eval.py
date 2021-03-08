@@ -30,7 +30,7 @@ if TRAIN_MODE == 'voc':
         CLASSES = f.read().splitlines()
 
 else :
-    test_data, test_info = tfds.load('coco/2017', data_dir=DATASET_DIR, split='test', with_info=True)
+    test_data, test_info = tfds.load('coco/2017', data_dir=DATASET_DIR, split='validation', with_info=True)
 
 
     # TODO TEST 데이터셋 다운로드 후 재구축
@@ -40,15 +40,10 @@ else :
     #test_data = test_data.filter(lambda x: tf.reduce_all(tf.less_equal(tf.size(x['objects']['label']), 0)))
 
 
-    #
-    a = test_data.take(1)
-    a = a.as_numpy_iterator()
-    for i in a:
-        ids = i['objects']['id']
 
 
-
-    number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+    # number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+    number_test = 40670
     print("테스트 데이터 개수:", number_test)
     CLASSES_NUM = 81
     with open('./coco_labels.txt') as f:
@@ -129,15 +124,17 @@ if TRAIN_MODE == 'coco':
     for sample in test_data:
         img_id.append(np.int(sample['image/id'].numpy().astype('int32').item()))
         # cat_id.append(np.int(sample['objects']['id'].numpy()))
-        cat_id.append(sample['objects']['id'].numpy().astype('int32').item())
+        cat_id.append(sample['objects']['label'].numpy().tolist())
+        print(cat_id)
 
     for x in tqdm(coco_dataset, total=test_steps):
 
         pred = model.predict_on_batch(x)
         predictions = post_process(pred, target_transform, classes=CLASSES_NUM)
         for boxes, scores, labels in predictions:
-            pred_boxes.append(np.round(boxes, 2).tolist())
-            pred_scores.append(np.round(scores, 2).tolist())
+            pred_boxes.append(np.round(boxes.tolist(),2))
+            pred_scores.append(np.round(scores.tolist(),2))
+            print(pred_boxes)
 
 
 
@@ -155,7 +152,7 @@ if TRAIN_MODE == 'coco':
         print('pred_boxes  ', pred_boxes[index])
         print('pred_scores  ', pred_scores[index])
     dumps = json.dumps(pred_list , cls=NumpyEncoder)
-    with open('coco_predictions.json', 'w', encoding='utf-8') as f:
+    with open('datasets/coco_predictions.json', 'w', encoding='utf-8') as f:
         json.dump(dumps, f, indent="\t")
 
 
