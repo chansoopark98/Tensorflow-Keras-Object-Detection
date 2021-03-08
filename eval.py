@@ -127,17 +127,17 @@ if TRAIN_MODE == 'coco':
     pred_scores = []
     pred_list = []  # << TODO
     for sample in test_data:
-        img_id.append(np.int(sample['image/id'].numpy()))
+        img_id.append(np.int(sample['image/id'].numpy().astype('int32').item()))
         # cat_id.append(np.int(sample['objects']['id'].numpy()))
-        cat_id.append(sample['objects']['id'].numpy().astype('int32'))
+        cat_id.append(sample['objects']['id'].numpy().astype('int32').item())
 
     for x in tqdm(coco_dataset, total=test_steps):
 
         pred = model.predict_on_batch(x)
         predictions = post_process(pred, target_transform, classes=CLASSES_NUM)
         for boxes, scores, labels in predictions:
-            pred_boxes.append(np.round(boxes, 2))
-            pred_scores.append(np.round(scores, 2))
+            pred_boxes.append(np.round(boxes, 2).tolist())
+            pred_scores.append(np.round(scores, 2).tolist())
 
 
 
