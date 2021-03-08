@@ -2,7 +2,7 @@ import tensorflow_datasets as tfds
 from utils.priors import *
 import argparse
 import time
-from preprocessing import prepare_dataset
+
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 
 from model.model_builder import ssd
@@ -47,6 +47,7 @@ CONTINUE_TRAINING = args.pretrain_mode
 
 if TRAIN_MODE == 'voc':
     from model.pascal_loss import total_loss
+    from preprocessing import pascal_prepare_dataset
     train_pascal_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
     valid_train_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
 
@@ -112,8 +113,8 @@ priors = create_priors_boxes(specs, IMAGE_SIZE[0])
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
 # 데이터세트 인스턴스화 (input은 300x300@3 labels은 8732)
-training_dataset = prepare_dataset(train_data, IMAGE_SIZE, BATCH_SIZE, target_transform, TRAIN_MODE, train=True)
-validation_dataset = prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE, target_transform, TRAIN_MODE, train=False)
+training_dataset = pascal_prepare_dataset(train_data, IMAGE_SIZE, BATCH_SIZE, target_transform, TRAIN_MODE, train=True)
+validation_dataset = pascal_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE, target_transform, TRAIN_MODE, train=False)
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 model = ssd(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE)

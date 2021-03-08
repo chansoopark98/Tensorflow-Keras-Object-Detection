@@ -5,7 +5,8 @@ import numpy as np
 from utils.priors import *
 from model.model_builder import ssd
 import os
-from preprocessing import prepare_dataset
+from preprocessing import pascal_prepare_dataset
+from preprocessing import coco_prepare_dataset
 from utils.model_post_processing import post_process #
 from utils.model_evaluation import eval_detection_voc
 from tqdm import tqdm
@@ -17,7 +18,7 @@ DATASET_DIR = './datasets/'
 IMAGE_SIZE = [384, 384]
 BATCH_SIZE = 1
 MODEL_NAME = 'B0'
-checkpoint_filepath = './checkpoints/0225.h5'
+checkpoint_filepath = './checkpoints/coco_0304_ep31_map41.h5'
 TRAIN_MODE = 'coco' # 'voc' or 'coco'
 
 if TRAIN_MODE == 'voc':
@@ -30,21 +31,21 @@ if TRAIN_MODE == 'voc':
 
 else :
     test_data, test_info = tfds.load('coco/2017', data_dir=DATASET_DIR, split='test', with_info=True)
-    train_data, train_info = tfds.load('coco/2017', data_dir=DATASET_DIR, split='train', with_info=True)
+
 
     # TODO TEST 데이터셋 다운로드 후 재구축
-    # test_data = test_data.filter(lambda x: tf.reduce_all(tf.equal(tf.size(x['objects']['bbox']), 0)))
-    # test_data = test_data.filter(lambda x: tf.reduce_all(tf.equal(tf.size(x['objects']['label']), 0)))
+    #test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
+    #test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
     #test_data = test_data.filter(lambda x: tf.reduce_all(tf.less_equal(tf.size(x['objects']['bbox']), 0)))
     #test_data = test_data.filter(lambda x: tf.reduce_all(tf.less_equal(tf.size(x['objects']['label']), 0)))
 
 
-
+    #
     a = test_data.take(1)
     a = a.as_numpy_iterator()
+    for i in a:
+        ids = i['objects']['id']
 
-    bbox_test = a['objects']['bbox']
-    label_test = a['objects']['label']
 
 
     number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
@@ -72,7 +73,8 @@ priors = create_priors_boxes(specs, IMAGE_SIZE[0])
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
 # instantiate the datasets
-validation_dataset = prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE, target_transform, TRAIN_MODE, train=False)
+validation_dataset = pascal_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE, target_transform, TRAIN_MODE, train=False)
+coco_dataset = coco_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE, target_transform, TRAIN_MODE, train=False)
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 model = ssd(TRAIN_MODE, MODEL_NAME, pretrained=False)
@@ -87,51 +89,131 @@ print("테스트 배치 개수:", test_steps)
 
 test_bboxes = []
 test_labels = []
-if TRAIN_MODE == 'COCO':
+import json
+class NumpyEncoder(json.JSONEncoder):
+    """ Special json encoder for numpy types """
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
+
+if TRAIN_MODE == 'coco':
+
+
+
+    # [
+    #     {
+    #         "image_id": int, "category_id": int, "bbox": [x, y, 너비, 높이], "점수": 플로트,
+    #     },
+    #     {
+    #         "image_id": int, "category_id": int, "bbox": [x, y, 너비, 높이], "점수": 플로트,
+    #     },
+    #     {
+    #         "image_id": int, "category_id": int, "bbox": [x, y, 너비, 높이], "점수": 플로트,
+    #     }
+    # ]
+
+
     test_difficults = []
     use_07_metric= False
+
+    img_id = []
+    cat_id = []
+    pred_boxes = []
+    pred_scores = []
+    pred_list = []  # << TODO
+    for sample in test_data:
+        img_id.append(np.int(sample['image/id'].numpy()))
+        # cat_id.append(np.int(sample['objects']['id'].numpy()))
+        cat_id.append(sample['objects']['id'].numpy().astype('int32'))
+
+    for x in tqdm(coco_dataset, total=test_steps):
+
+        pred = model.predict_on_batch(x)
+        predictions = post_process(pred, target_transform, classes=CLASSES_NUM)
+        for boxes, scores, labels in predictions:
+            pred_boxes.append(np.round(boxes, 2))
+            pred_scores.append(np.round(scores, 2))
+
+
+
+
+
+    for index in range(len(img_id)):
+
+        pred_list.append({"image_id": img_id[index],
+                          "category_id": cat_id[index],
+                          "bbox": pred_boxes[index],
+                          "score": pred_scores[index],
+                          })
+        print('img_id  ', img_id[index])
+        print('cat_id  ', cat_id[index])
+        print('pred_boxes  ', pred_boxes[index])
+        print('pred_scores  ', pred_scores[index])
+    dumps = json.dumps(pred_list , cls=NumpyEncoder)
+    with open('coco_predictions.json', 'w', encoding='utf-8') as f:
+        json.dump(dumps, f, indent="\t")
+
+
+        # pred_bboxes.append(boxes)
+        # pred_labels.append(labels.astype(int) - 1)
+        # pred_scores.append(scores)
+
+
+    #
+    # with open('coco_predictions.json', 'w', encoding='utf-8') as f:
+    #     json.dump(pred_list, f, indent="\t")
+
+
+
+
 else :
     test_difficults = []
     use_07_metric = True
 
-for sample in test_data:
-    label = sample['objects']['label'].numpy()
-    bbox = sample['objects']['bbox'].numpy()[:,[1, 0, 3, 2]]
+    for sample in test_data:
+        label = sample['objects']['label'].numpy()
+        bbox = sample['objects']['bbox'].numpy()[:, [1, 0, 3, 2]]
 
-    is_difficult = sample['objects']['is_crowd'].numpy()
-    test_difficults.append(is_difficult)
-    test_bboxes.append(bbox)
-    test_labels.append(label)
+        is_difficult = sample['objects']['is_crowd'].numpy()
+        test_difficults.append(is_difficult)
+        test_bboxes.append(bbox)
+        test_labels.append(label)
+
+    print("Evaluating..")
+    pred_bboxes = []
+    pred_labels = []
+    pred_scores = []
+    for x, y in tqdm(validation_dataset, total=test_steps):
+        pred = model.predict_on_batch(x)
+        predictions = post_process(pred, target_transform, classes=CLASSES_NUM)
+        for prediction in predictions:
+            boxes, scores, labels = prediction
+            pred_bboxes.append(boxes)
+            pred_labels.append(labels.astype(int) - 1)
+            pred_scores.append(scores)
+
+    answer = eval_detection_voc(pred_bboxes=pred_bboxes,
+                                pred_labels=pred_labels,
+                                pred_scores=pred_scores,
+                                gt_bboxes=test_bboxes,
+                                gt_labels=test_labels,
+                                gt_difficults=test_difficults,
+                                use_07_metric=use_07_metric)
+    # print("*"*100)
+    print("AP 결과")
+    ap_dict = dict(zip(CLASSES, answer['ap']))
+    pprint(ap_dict)
+    # print("*"*100)
+    print("mAP결과:", answer['map'])
+
+    w = csv.writer(open("eval.csv", "w"))
+    w.writerow(["Class", "Average Precision"])
+    for key, val in ap_dict.items():
+        w.writerow([key, val])
 
 
-print("Evaluating..")
-pred_bboxes = []
-pred_labels = []
-pred_scores = []
-for x, y in tqdm(validation_dataset, total=test_steps):
-    pred = model.predict_on_batch(x)
-    predictions = post_process(pred, target_transform, classes=CLASSES_NUM)
-    for prediction in predictions:
-        boxes, scores, labels = prediction
-        pred_bboxes.append(boxes)
-        pred_labels.append(labels.astype(int) - 1)
-        pred_scores.append(scores)
-
-answer = eval_detection_voc(pred_bboxes=pred_bboxes,
-                   pred_labels=pred_labels,
-                   pred_scores=pred_scores,
-                   gt_bboxes=test_bboxes,
-                   gt_labels=test_labels,
-                   gt_difficults=test_difficults,
-                   use_07_metric=use_07_metric)
-#print("*"*100)
-print("AP 결과")
-ap_dict = dict(zip(CLASSES, answer['ap']))
-pprint(ap_dict)
-#print("*"*100)
-print("mAP결과:", answer['map'])
-
-w = csv.writer(open("eval.csv", "w"))
-w.writerow(["Class", "Average Precision"])
-for key, val in ap_dict.items():
-    w.writerow([key, val])

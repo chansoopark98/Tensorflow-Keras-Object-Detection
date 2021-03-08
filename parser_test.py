@@ -1,7 +1,7 @@
 import tensorflow_datasets as tfds
 from utils.priors import *
 import os
-from preprocessing import prepare_dataset
+from preprocessing import pascal_prepare_dataset
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 
 from model.model_builder import ssd
