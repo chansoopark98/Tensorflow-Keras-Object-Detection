@@ -91,8 +91,13 @@ def coco_prepare_dataset(dataset, image_size, batch_size, target_transform, trai
     dataset = dataset.map(lambda image, boxes,
                                    labels: join_target(image, boxes, labels, image_size, target_transform, classes),
                             num_parallel_calls=AUTO)
+    dataset = dataset.padded_batch(batch_size)
+    dataset = dataset.prefetch(AUTO)
   else:
-    dataset = dataset.map(coco_test_prepare_input, num_parallel_calls=AUTO)
+    dataset = dataset.map(prepare_input, num_parallel_calls=AUTO)
+    dataset = dataset.map(lambda image, boxes,
+                               labels: join_target(image, boxes, labels, image_size, target_transform, classes),
+                        num_parallel_calls=AUTO)
     dataset = dataset.padded_batch(batch_size)
     dataset = dataset.prefetch(AUTO)
 
