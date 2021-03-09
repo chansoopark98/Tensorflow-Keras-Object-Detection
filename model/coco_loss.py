@@ -1,5 +1,4 @@
 import tensorflow as tf
-import sys
 import numpy as np
 
 def smooth_l1(labels, scores, sigma=1.0):
