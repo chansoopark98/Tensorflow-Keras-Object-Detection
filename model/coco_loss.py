@@ -132,16 +132,16 @@ def total_loss(y_true, y_pred, num_classes=81):
     mbox_loss = loc_loss + class_loss
 
 
-    # num_pos = pos_mask true 개수
-    tf.print("   //  num_pos: ", num_pos,
-             "   //  class_loss: ", classification_loss,
-             "   //  loc_loss: ", smooth_l1_loss,
-             "   //  gt_location: ", tf.reduce_sum(tf.where(tf.math.is_nan(gt_locations),1,0)),
-             "   //  predict_location: ", tf.reduce_sum(tf.where(tf.math.is_nan(predicted_locations),1,0)),
-             "   //  y_pred_nan: ", tf.reduce_sum(tf.where(tf.math.is_nan(y_pred),1,0)),
-             "   //  y_pred_inf: ", tf.reduce_sum(tf.where(tf.math.is_inf(y_pred),1,0)),
-             "   //  huber_loss: ", huber_loss,
-             output_stream = sys.stdout)
+    # # num_pos = pos_mask true 개수
+    # tf.print("   //  num_pos: ", num_pos,
+    #          "   //  class_loss: ", classification_loss,
+    #          "   //  loc_loss: ", smooth_l1_loss,
+    #          "   //  gt_location: ", tf.reduce_sum(tf.where(tf.math.is_nan(gt_locations),1,0)),
+    #          "   //  predict_location: ", tf.reduce_sum(tf.where(tf.math.is_nan(predicted_locations),1,0)),
+    #          "   //  y_pred_nan: ", tf.reduce_sum(tf.where(tf.math.is_nan(y_pred),1,0)),
+    #          "   //  y_pred_inf: ", tf.reduce_sum(tf.where(tf.math.is_inf(y_pred),1,0)),
+    #          "   //  huber_loss: ", huber_loss,
+    #          output_stream = sys.stdout)
 
     # tf.estimator.NanTensorHook(
     #     mbox_loss, fail_on_nan_loss=True

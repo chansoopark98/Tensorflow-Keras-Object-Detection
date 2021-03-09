@@ -95,19 +95,6 @@ class NumpyEncoder(json.JSONEncoder):
 
 
 if TRAIN_MODE == 'coco':
-
-    # [
-    #     {
-    #         "image_id": int, "category_id": int, "bbox": [x, y, 너비, 높이], "점수": 플로트,
-    #     },
-    #     {
-    #         "image_id": int, "category_id": int, "bbox": [x, y, 너비, 높이], "점수": 플로트,
-    #     },
-    #     {
-    #         "image_id": int, "category_id": int, "bbox": [x, y, 너비, 높이], "점수": 플로트,
-    #     }
-    # ]
-
     test_difficults = []
     use_07_metric = False
 
@@ -115,70 +102,43 @@ if TRAIN_MODE == 'coco':
     cat_id = []
     pred_boxes = []
     pred_scores = []
-    pred_list = []  # << TODO
+    pred_list = []
     img_shapes = []
     for sample in test_data:
         img_shapes.append(sample['image'].shape)
         img_id.append(np.int(sample['image/id'].numpy().astype('int32').item()))
-        # cat_id.append(np.int(sample['objects']['id'].numpy()))
         cat_id.append(sample['objects']['label'].numpy().astype('int32').tolist())
 
-    a = img_shapes[0]
-    b= img_shapes[0][0]
     for x in tqdm(coco_dataset, total=test_steps):
-
         pred = model.predict_on_batch(x)
         predictions = post_process(pred, target_transform, classes=CLASSES_NUM)
         for boxes, scores, labels in predictions:
-            pred_boxes.append(np.round(boxes.tolist()[0],2).astype('float32'))
-            pred_scores.append(np.round(scores.tolist()[0],2).astype('float32'))
+            pred_boxes.append(np.round(boxes.tolist(),2).astype('float32'))
+            pred_scores.append(np.round(scores.tolist(),2).astype('float32'))
 
-
-
-
-
-            # print(pred_boxes)
 
     for index in range(len(img_id)):
-        bbox = pred_boxes[index]
-        xmin, ymin, xmax, ymax = bbox
-        x = xmin * img_shapes[index][1]
-        y = ymin * img_shapes[index][0]
-        w = (xmax * img_shapes[index][1]) - (xmin * img_shapes[index][1])
-        h = (ymax * img_shapes[index][0]) - (ymin * img_shapes[index][0])
+        for i in range(len(cat_id[index])):
+            bbox = pred_boxes[index][i]
+            xmin, ymin, xmax, ymax = bbox
+            xmin = xmin * img_shapes[index][1]
+            ymin = ymin * img_shapes[index][0]
+            xmax = xmax * img_shapes[index][1]
+            ymax = ymax * img_shapes[index][0]
+            x = xmin
+            y = ymin
+            w = xmax - xmin
+            h = ymax - ymin
+            total_predictions = {"image_id": img_id[index],
+                             "category_id": cat_id[index][i],
+                             "bbox": [x, y, w, h],
+                             "score": pred_scores[index][i]
+                             }
 
-        #a = img_id[index]
-        # b = cat_id[index][0]
-        # c = [x, y, w, h]
-        # d = pred_scores[index]
+            pred_list.append(total_predictions)
 
-        total_predictions = {"image_id": img_id[index],
-                          "category_id": cat_id[index][0],
-                          "bbox": [x, y, w, h],
-                          "score": pred_scores[index]
-                          }
-
-        pred_list.append(total_predictions)
-
-        # print('img_id  ', img_id[index])
-        # print('cat_id  ', cat_id[index])
-        # print('pred_boxes  ', pred_boxes[index])
-        # print('pred_scores  ', pred_scores[index])
-    # todo
-    dumps = json.dumps(pred_list, cls=NumpyEncoder)
     with open('datasets/coco_predictions.json', 'w') as f:
-        json.dump(dumps, f)
-
-        # pred_bboxes.append(boxes)
-        # pred_labels.append(labels.astype(int) - 1)
-        # pred_scores.append(scores)
-
-    #
-    # with open('coco_predictions.json', 'w', encoding='utf-8') as f:
-    #     json.dump(pred_list, f, indent="\t")
-
-
-
+        json.dump(pred_list, f, ensure_ascii=False, indent="\t", cls=NumpyEncoder)
 
 else:
     test_difficults = []
