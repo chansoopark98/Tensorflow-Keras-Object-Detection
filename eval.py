@@ -9,9 +9,13 @@ from preprocessing import pascal_prepare_dataset
 from preprocessing import coco_prepare_dataset
 from utils.model_post_processing import post_process  #
 from utils.model_evaluation import eval_detection_voc
+from pycocotools.coco import COCO
+from pycocotools.cocoeval import COCOeval
 from tqdm import tqdm
 from pprint import pprint
 import csv
+import json
+
 
 DATASET_DIR = './datasets/'
 IMAGE_SIZE = [384, 384]
@@ -68,22 +72,14 @@ coco_dataset = coco_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE, target_tr
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 model = ssd(TRAIN_MODE, MODEL_NAME, pretrained=False)
 
-print("Loading Checkpoint..")
+print("모델 가중치 로드...")
 model.load_weights(checkpoint_filepath)
 model.summary()
-test_steps = number_test // BATCH_SIZE +1
-print("테스트 배치 개수:", test_steps)
-# flops = get_flops(model, BATCH_SIZE)
-# print(f"FLOPS: {flops}")
-
-test_bboxes = []
-test_labels = []
-import json
+test_steps = number_test // BATCH_SIZE + 1
+print("테스트 배치 개수 : ", test_steps)
 
 
 class NumpyEncoder(json.JSONEncoder):
-    """ Special json encoder for numpy types """
-
     def default(self, obj):
         if isinstance(obj, np.integer):
             return int(obj)
@@ -92,7 +88,6 @@ class NumpyEncoder(json.JSONEncoder):
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
-
 
 if TRAIN_MODE == 'coco':
     test_difficults = []
@@ -140,9 +135,22 @@ if TRAIN_MODE == 'coco':
     with open('datasets/coco_predictions.json', 'w') as f:
         json.dump(pred_list, f, ensure_ascii=False, indent="\t", cls=NumpyEncoder)
 
+    annType = 'bbox'
+    cocoGt = COCO('datasets/instances_val2017.json')
+    cocoDt = cocoGt.loadRes('datasets/coco_predictions.json')
+    imgIds = sorted(cocoGt.getImgIds())
+    # running evaluation
+    cocoEval = COCOeval(cocoGt, cocoDt, annType)
+    cocoEval.params.imgIds = imgIds
+    cocoEval.evaluate()
+    cocoEval.accumulate()
+    cocoEval.summarize()
+
 else:
     test_difficults = []
     use_07_metric = True
+    test_bboxes = []
+    test_labels = []
 
     for sample in test_data:
         label = sample['objects']['label'].numpy()

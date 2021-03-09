@@ -20,7 +20,7 @@ import cProfile
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=32)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=384)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
@@ -45,6 +45,22 @@ CONTINUE_TRAINING = args.pretrain_mode
 
 # TODO https://www.tensorflow.org/datasets/api_docs/python/tfds/testing/mock_data VOC+COCO 무작위 데이터 생성
 
+
+iou_threshold = 0.5
+center_variance = 0.1
+size_variance = 0.2
+
+specs = [
+                Spec(48, 8, BoxSizes(38, 77), [2]), # 0.1
+                Spec(24, 16, BoxSizes(77, 142), [2, 3]), # 0.2
+                Spec(12, 32, BoxSizes(142, 207), [2, 3]), # 0.37
+                Spec(6, 64, BoxSizes(207, 273), [2, 3]), # 0.54
+                Spec(3, 128, BoxSizes(273, 337), [2]), # 0.71
+                Spec(1, 384, BoxSizes(337, 403), [2]) # 0.88 , max 1.05
+        ]
+priors = create_priors_boxes(specs, IMAGE_SIZE[0])
+target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
+
 if TRAIN_MODE == 'voc':
     from model.pascal_loss import total_loss
     from preprocessing import pascal_prepare_dataset
@@ -64,8 +80,15 @@ if TRAIN_MODE == 'voc':
     print("테스트 데이터 개수:", number_test)
     optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
 
+    training_dataset = pascal_prepare_dataset(train_data, IMAGE_SIZE, BATCH_SIZE,
+                                              target_transform, TRAIN_MODE, train=True)
+    validation_dataset = pascal_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
+                                                target_transform, TRAIN_MODE, train=False)
+
 else :
     from model.coco_loss import total_loss
+    from preprocessing import coco_prepare_dataset
+
     train_data = tfds.load('coco/2017', data_dir=DATASET_DIR, split='train')
     train_data = train_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
     train_data = train_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
@@ -82,12 +105,13 @@ else :
     print("테스트 데이터 개수:", number_test)
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
+    training_dataset = coco_prepare_dataset(train_data, IMAGE_SIZE, BATCH_SIZE,
+                                              target_transform, TRAIN_MODE, train=True)
+    validation_dataset = coco_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
+                                                target_transform, TRAIN_MODE, train=False)
     # optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
 
 
-iou_threshold = 0.5
-center_variance = 0.1
-size_variance = 0.2
 
 # specs = [
 #                 Spec(48, 8, BoxSizes(40, 90), [2]),
@@ -98,23 +122,10 @@ size_variance = 0.2
 #                 Spec(1, 384, BoxSizes(334, 395), [2])
 #         ]
 
-specs = [
-                Spec(48, 8, BoxSizes(38, 77), [2]), # 0.1
-                Spec(24, 16, BoxSizes(77, 142), [2, 3]), # 0.2
-                Spec(12, 32, BoxSizes(142, 207), [2, 3]), # 0.37
-                Spec(6, 64, BoxSizes(207, 273), [2, 3]), # 0.54
-                Spec(3, 128, BoxSizes(273, 337), [2]), # 0.71
-                Spec(1, 384, BoxSizes(337, 403), [2]) # 0.88 , max 1.05
-        ]
 
-
-
-priors = create_priors_boxes(specs, IMAGE_SIZE[0])
-target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
 # 데이터세트 인스턴스화 (input은 300x300@3 labels은 8732)
-training_dataset = pascal_prepare_dataset(train_data, IMAGE_SIZE, BATCH_SIZE, target_transform, TRAIN_MODE, train=True)
-validation_dataset = pascal_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE, target_transform, TRAIN_MODE, train=False)
+
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 model = ssd(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE)
