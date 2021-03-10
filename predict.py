@@ -5,17 +5,30 @@ import os
 from preprocessing import prepare_for_prediction
 from tqdm import tqdm
 import cv2
-
+import argparse
 from collections import namedtuple
 
-DATASET_DIR = './datasets/'
-IMAGE_SIZE = [384, 384]
-BATCH_SIZE = 16
-MODEL_NAME = 'B0'
-checkpoint_filepath = './checkpoints/0218.h5'
-TRAIN_MODE = 'voc' # 'voc' or 'coco'
-INPUT_DIR = './inputs'
-OUTPUT_DIR = './outputs'
+parser = argparse.ArgumentParser()
+parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=384)
+parser.add_argument("--batch_size",     type=int,   help="모델 입력 이미지 크기 설정", default=32)
+parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0309.h5')
+parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./inputs/')
+parser.add_argument("--output_dir", type=str,   help="테스트 결과 이미지 디렉토리 설정", default='./outputs/')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
+
+
+
+args = parser.parse_args()
+BATCH_SIZE = args.batch_size
+IMAGE_SIZE = [args.image_size, args.image_size]
+DATASET_DIR = args.dataset_dir
+checkpoint_filepath = args.checkpoint_dir
+MODEL_NAME = args.backbone_model
+TRAIN_MODE = args.train_dataset
+INPUT_DIR = args.input_dir
+OUTPUT_DIR = args.output_dir
 
 iou_threshold = 0.5
 center_variance = 0.1

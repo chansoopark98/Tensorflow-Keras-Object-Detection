@@ -107,6 +107,64 @@ Download COCO Dataset
 <hr/>
 
 ## Train
+  
+훈련 과정에 앞서 데이터셋을 사전에 준비해야 합니다. 데이터셋을 다운로드 한 후 train.py로 훈련을 시작합니다.  
+<br/>
+```python
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=32)
+parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
+parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=384)
+parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
+parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름", default='MODEL_NAME')
+parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
+parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 가중치 로드", default=False)
+```  
+아래와 같이 실행할 수 있습니다.  
+
+    python train.py --batch_size=32 --epoch=200 --image_size=384 --lr=0.001 --model_name=test model  
+    --dataset_dir='./datasets/' --checkpoint_dir='./checkpoints/' --backbone_model=B0 --train_dataset=voc  
+
+사전 저장된 모델을 이어서 훈련하는 경우 아래 인자를 추가하십시요.  
+
+    --pretrain_mode=True
+<br>
+<hr>
+
+## Eval
+훈련 이후 모델 평가를 위해 eval.py를 실행합니다.
+```python
+parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=384)
+parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/model_name.h5')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
+```  
+아래와 같이 실행할 수 있습니다.  
+
+    python eval.py --image_size=384 --dataset_dir='./datasets/' --checkpoint_dir='./checkpoints/model_name.h5'  
+    --backbone_model=B0 --train_dataset=voc  
+
+
+## Predict
+사전 저장된 모델로 이미지 추론을 predict.py로 실행합니다.  
+```python
+parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=384)
+parser.add_argument("--batch_size",     type=int,   help="모델 입력 이미지 크기 설정", default=32)
+parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/model_name.h5')
+parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./inputs/')
+parser.add_argument("--output_dir", type=str,   help="테스트 결과 이미지 디렉토리 설정", default='./outputs/')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
+```  
+아래와 같이 실행할 수 있습니다.  
+
+    python predcit.py --image_size=384 --dataset_dir='./datasets/' --checkpoint_dir='./checkpoints/model_name.h5'  
+    --backbone_model=B0 --train_dataset=voc  --input_dir='./inputs/' --output_dir='./outputs/'
+
 
 
 
