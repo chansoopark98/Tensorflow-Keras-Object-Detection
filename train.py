@@ -2,12 +2,10 @@ import tensorflow_datasets as tfds
 from utils.priors import *
 import argparse
 import time
-
+import os
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
-
 from model.model_builder import ssd
-from tensorflow.keras.utils import plot_model
-from calc_flops import get_flops
+
 
 import cProfile
 
@@ -38,13 +36,15 @@ IMAGE_SIZE = [args.image_size, args.image_size]
 base_lr = args.lr
 SAVE_MODEL_NAME = args.model_name
 DATASET_DIR = args.dataset_dir
-checkpoint_filepath = args.checkpoint_dir
+CHECKPOINT_DIR = args.checkpoint_dir
 MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
 CONTINUE_TRAINING = args.pretrain_mode
 
-# TODO https://www.tensorflow.org/datasets/api_docs/python/tfds/testing/mock_data VOC+COCO 무작위 데이터 생성
+os.makedirs(DATASET_DIR, exist_ok=True)
+os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
+# TODO https://www.tensorflow.org/datasets/api_docs/python/tfds/testing/mock_data VOC+COCO 무작위 데이터 생성
 
 iou_threshold = 0.5
 center_variance = 0.1
@@ -110,9 +110,6 @@ else :
                                               target_transform, TRAIN_MODE, train=True)
     validation_dataset = coco_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
                                                 target_transform, TRAIN_MODE, train=False)
-    # optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
-
-
 
 # specs = [
 #                 Spec(48, 8, BoxSizes(40, 90), [2]),
@@ -123,13 +120,11 @@ else :
 #                 Spec(1, 384, BoxSizes(334, 395), [2])
 #         ]
 
-
-
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 model = ssd(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE)
 
 if CONTINUE_TRAINING is True:
-    model.load_weights(checkpoint_filepath+'0217_main'+'.h5')
+    model.load_weights(CHECKPOINT_DIR + '0217_main' + '.h5')
 
 steps_per_epoch = number_train // BATCH_SIZE
 validation_steps = number_test // BATCH_SIZE
@@ -137,15 +132,9 @@ print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
 model.summary()
 
-#flops = get_flops(model, BATCH_SIZE)
-#print(f"FLOPS: {flops}")
-
-#plot_model(model,'model_b0.png',show_shapes=True)
-
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-5, verbose=1)
-checkpoint = ModelCheckpoint(checkpoint_filepath+SAVE_MODEL_NAME+'.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
+checkpoint = ModelCheckpoint(CHECKPOINT_DIR + SAVE_MODEL_NAME + '.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
 isNanCheck = tf.keras.callbacks.TerminateOnNaN()
-
 
 model.compile(
     optimizer=optimizer,
@@ -157,5 +146,5 @@ history = model.fit(training_dataset,
                     steps_per_epoch=steps_per_epoch,
                     validation_steps=validation_steps,
                     epochs=EPOCHS,
-                    callbacks=[reduce_lr,checkpoint,isNanCheck])
+                    callbacks=[reduce_lr, checkpoint, isNanCheck])
 

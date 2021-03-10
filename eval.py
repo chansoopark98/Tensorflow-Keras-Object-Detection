@@ -1,14 +1,12 @@
 import tensorflow_datasets as tfds
-import tensorflow as tf
-import tensorflow.keras as keras
-import numpy as np
 from utils.priors import *
 from model.model_builder import ssd
-import os
 from preprocessing import pascal_prepare_dataset
 from preprocessing import coco_prepare_dataset
 from utils.model_post_processing import post_process  #
 from utils.model_evaluation import eval_detection_voc
+from tensorflow.keras.utils import plot_model
+from calc_flops import get_flops
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from tqdm import tqdm
@@ -16,25 +14,27 @@ from pprint import pprint
 import csv
 import json
 import argparse
-
+import os
 
 parser = argparse.ArgumentParser()
-
-
 parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=384)
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0309.h5')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
-
-
+parser.add_argument("--calc_flops",  type=str,   help="모델 FLOPS 계산", default=False)
 args = parser.parse_args()
+
 BATCH_SIZE = 1
 IMAGE_SIZE = [args.image_size, args.image_size]
 DATASET_DIR = args.dataset_dir
-checkpoint_filepath = args.checkpoint_dir
+CHECKPOINT_DIR = args.checkpoint_dir
 MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
+CALC_FLOPS = args.calc_flops
+
+os.makedirs(DATASET_DIR, exist_ok=True)
+os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
 
 if TRAIN_MODE == 'voc':
@@ -76,16 +76,23 @@ priors = create_priors_boxes(specs, IMAGE_SIZE[0])
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
 # instantiate the datasets
-validation_dataset = pascal_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE, target_transform, TRAIN_MODE,
-                                            train=False)
-coco_dataset = coco_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE, target_transform, TRAIN_MODE, train=False)
+validation_dataset = pascal_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
+                                            target_transform, TRAIN_MODE, train=False)
+coco_dataset = coco_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
+                                    target_transform, TRAIN_MODE, train=False)
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 model = ssd(TRAIN_MODE, MODEL_NAME, pretrained=False)
 
 print("모델 가중치 로드...")
-model.load_weights(checkpoint_filepath)
+model.load_weights(CHECKPOINT_DIR)
 model.summary()
+
+if CALC_FLOPS:
+    plot_model(model,'model_plot.png',show_shapes=False)
+    flops = get_flops(model, BATCH_SIZE)
+    print(f"FLOPS: {flops}")
+
 test_steps = number_test // BATCH_SIZE + 1
 print("테스트 배치 개수 : ", test_steps)
 
