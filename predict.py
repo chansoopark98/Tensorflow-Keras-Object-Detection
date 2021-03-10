@@ -1,12 +1,13 @@
 from utils.priors import *
 from model.model_builder import ssd
 from utils.model_post_processing import post_process
+from utils.misc import color_map
 import os
 from preprocessing import prepare_for_prediction
 from tqdm import tqdm
 import cv2
 import argparse
-from collections import namedtuple
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=384)
@@ -61,32 +62,7 @@ dataset = dataset.batch(BATCH_SIZE)
 x, y = 0, BATCH_SIZE
 test_steps = 4952 // BATCH_SIZE + 1
 
-def rgb2bgr(tpl):
-    return (tpl[2], tpl[1], tpl[0])
-Label   = namedtuple('Label',   ['name', 'color'])
-def color_map(index):
-    label_defs = [
-        Label('aeroplane', rgb2bgr((0, 0, 0))),
-        Label('bicycle', rgb2bgr((111, 74, 0))),
-        Label('bird', rgb2bgr((81, 0, 81))),
-        Label('boat', rgb2bgr((128, 64, 128))),
-        Label('bottle', rgb2bgr((244, 35, 232))),
-        Label('bus', rgb2bgr((230, 150, 140))),
-        Label('car', rgb2bgr((70, 70, 70))),
-        Label('cat', rgb2bgr((102, 102, 156))),
-        Label('chair', rgb2bgr((190, 153, 153))),
-        Label('cow', rgb2bgr((150, 120, 90))),
-        Label('diningtable', rgb2bgr((153, 153, 153))),
-        Label('dog', rgb2bgr((250, 170, 30))),
-        Label('horse', rgb2bgr((220, 220, 0))),
-        Label('motorbike', rgb2bgr((107, 142, 35))),
-        Label('person', rgb2bgr((52, 151, 52))),
-        Label('pottedplant', rgb2bgr((70, 130, 180))),
-        Label('sheep', rgb2bgr((220, 20, 60))),
-        Label('sofa', rgb2bgr((0, 0, 142))),
-        Label('train', rgb2bgr((0, 0, 230))),
-        Label('tvmonitor', rgb2bgr((119, 11, 32)))]
-    return label_defs[index]
+
 
 def draw_bounding(img , bboxes, labels, img_size):
     # resizing 작업

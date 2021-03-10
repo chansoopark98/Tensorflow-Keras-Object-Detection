@@ -134,6 +134,7 @@ if TRAIN_MODE == 'coco':
         for i in range(len(cat_id[index])):
             bbox = pred_boxes[index][i]
             xmin, ymin, xmax, ymax = bbox
+            print(bbox)
             xmin = xmin * img_shapes[index][1]
             ymin = ymin * img_shapes[index][0]
             xmax = xmax * img_shapes[index][1]
