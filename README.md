@@ -1,6 +1,6 @@
-# CSNet(Efficient Object Detection Network)
-=============
-CSnet : Efficient object detection network
+<h1>CSNet</h1>
+
+**CSnet : Efficient object detection network**
 
 이 저장소는 **EfficientNet** 기반 객체 검출 네트워크를 구현하였습니다. 본 구현은 **Tensorflow Keras** 라이브러리 기반 경량화 네트워크입니다. 적은 params와 FLOPS로 경쟁력있는 검출 정확도를 달성하였습니다.
 
@@ -19,7 +19,7 @@ CSnet : Efficient object detection network
 
 ## Preferences
 
-CSNet은 Tensorflow 기반 코드로 작성되었습니다. 코드는 Windows 및 Linux(Ubuntu) 환경에서 모두 동작합니다.
+CSNet은 Tensorflow 기반 코드로 작성되었습니다. 코드는 **Windows** 및 **Linux(Ubuntu)** 환경에서 모두 동작합니다.
 <table border="0">
 <tr>
     <tr>
@@ -76,7 +76,7 @@ CSNet은 Tensorflow 기반 코드로 작성되었습니다. 코드는 Windows �
 
 ## Install requirements
 
-학습 및 평가를 위해 Anaconda(miniconda) 가상환경에서 패키지를 다운로드 합니다.
+학습 및 평가를 위해 **Anaconda(miniconda)** 가상환경에서 패키지를 다운로드 합니다.
     
     conda create -n envs_name python=3.8
 
@@ -86,8 +86,8 @@ CSNet은 Tensorflow 기반 코드로 작성되었습니다. 코드는 Windows �
 
 ## Preparing datasets
 
-프로그램에 필요한 dataset은 Tensorflow Datasets 라이브러리(TFDS)를 사용합니다. [TFDS](https://www.tensorflow.org/datasets/catalog/overview)  
-COCO_2017, PASCAL_VOC(07+12) 두 개의 datasets을 선택할 수 있습니다.  
+프로그램에 필요한 **Dataset**은 **Tensorflow Datasets** 라이브러리(**TFDS**)를 사용합니다. [TFDS](https://www.tensorflow.org/datasets/catalog/overview)  
+**COCO_2017**, **PASCAL_VOC(07+12)** 두 개의 datasets을 선택할 수 있습니다.  
 <br>
 [COCO](https://cocodataset.org/#home)  - Requires 35GB or more storage  
 [PASCAL VOC](http://host.robots.ox.ac.uk/pascal/VOC/)  - Requires 5GB or more storage    
@@ -152,7 +152,7 @@ parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 da
 사전 저장된 모델로 이미지 추론을 predict.py로 실행합니다.  
 ```python
 parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=384)
-parser.add_argument("--batch_size",     type=int,   help="모델 입력 이미지 크기 설정", default=32)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈 설정", default=32)
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/model_name.h5')
 parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./inputs/')
