@@ -58,6 +58,7 @@ specs = [
                 Spec(3, 128, BoxSizes(273, 337), [2]), # 0.71
                 Spec(1, 384, BoxSizes(337, 403), [2]) # 0.88 , max 1.05
         ]
+
 priors = create_priors_boxes(specs, IMAGE_SIZE[0])
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
@@ -124,9 +125,6 @@ else :
 
 
 
-# 데이터세트 인스턴스화 (input은 300x300@3 labels은 8732)
-
-
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 model = ssd(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE)
 
@@ -147,7 +145,6 @@ model.summary()
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-5, verbose=1)
 checkpoint = ModelCheckpoint(checkpoint_filepath+SAVE_MODEL_NAME+'.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
 isNanCheck = tf.keras.callbacks.TerminateOnNaN()
-
 
 
 model.compile(

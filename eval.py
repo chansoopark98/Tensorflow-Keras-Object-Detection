@@ -15,14 +15,27 @@ from tqdm import tqdm
 from pprint import pprint
 import csv
 import json
+import argparse
 
 
-DATASET_DIR = './datasets/'
-IMAGE_SIZE = [384, 384]
+parser = argparse.ArgumentParser()
+
+
+parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=384)
+parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0309.h5')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
+
+
+args = parser.parse_args()
 BATCH_SIZE = 1
-MODEL_NAME = 'B0'
-checkpoint_filepath = './checkpoints/coco_0304_ep31_map41.h5'
-TRAIN_MODE = 'coco'  # 'voc' or 'coco'
+IMAGE_SIZE = [args.image_size, args.image_size]
+DATASET_DIR = args.dataset_dir
+checkpoint_filepath = args.checkpoint_dir
+MODEL_NAME = args.backbone_model
+TRAIN_MODE = args.train_dataset
+
 
 if TRAIN_MODE == 'voc':
     test_data = tfds.load('voc', data_dir=DATASET_DIR, split='test')
@@ -38,8 +51,6 @@ else:
     # TODO TEST 데이터셋 다운로드 후 재구축
     test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
     test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
-    # test_data = test_data.filter(lambda x: tf.reduce_all(tf.less_equal(tf.size(x['objects']['bbox']), 0)))
-    # test_data = test_data.filter(lambda x: tf.reduce_all(tf.less_equal(tf.size(x['objects']['label']), 0)))
 
     number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
 
@@ -125,7 +136,7 @@ if TRAIN_MODE == 'coco':
             w = xmax - xmin
             h = ymax - ymin
             total_predictions = {"image_id": img_id[index],
-                             "category_id": cat_id[index][i],
+                             "category_id": cat_id[index][i]+1,
                              "bbox": [x, y, w, h],
                              "score": pred_scores[index][i]
                              }

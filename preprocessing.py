@@ -105,7 +105,6 @@ def coco_prepare_dataset(dataset, image_size, batch_size, target_transform, trai
 
 
 def pascal_prepare_dataset(dataset, image_size, batch_size, target_transform, train_mode, train=False):
-
   classes = 21
 
   dataset = dataset.map(prepare_input, num_parallel_calls=AUTO)
