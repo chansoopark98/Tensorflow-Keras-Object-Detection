@@ -4,3 +4,5 @@ matplotlib
 tensorflow_datasets
 efficientnet
 opencv-python
+pycocotools
+tqdm
