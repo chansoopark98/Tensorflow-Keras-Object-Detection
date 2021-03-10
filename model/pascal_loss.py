@@ -29,12 +29,11 @@ def total_loss(y_true, y_pred, num_classes=21):
     neg_pos_ratio = 3.0
     # derived from cross_entropy=sum(log(p))
     loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]
-
     loss = tf.stop_gradient(loss)
-    # print(loss)
+
     mask = hard_negative_mining(loss, labels, neg_pos_ratio)
-    mask = tf.stop_gradient(mask)
-    # return mask
+    mask = tf.stop_gradient(mask) # neg sample 마스크
+
     confidence = tf.boolean_mask(confidence, mask)
     classification_loss = tf.math.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(logits = tf.reshape(confidence, [-1, num_classes]), labels = tf.boolean_mask(labels, mask)))
     # return classification_loss

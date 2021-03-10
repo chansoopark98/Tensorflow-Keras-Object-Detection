@@ -213,7 +213,7 @@ def SA(x):
 
 def upSampling(input_tensor, size, name):
     # resized = Resizing(size, size, name=name+'_resizing')(input_tensor)
-    resized = UpSampling2D(size=(2,2), interpolation='bilinear')(input_tensor)
+    resized = UpSampling2D(size=(2, 2), interpolation='bilinear')(input_tensor)
     return resized
 
 

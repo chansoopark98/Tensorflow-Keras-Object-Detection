@@ -1,17 +1,17 @@
 import tensorflow_datasets as tfds
 import argparse
+import os
 
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 
-
 args = parser.parse_args()
 DATASET_DIR = args.dataset_dir
 TRAIN_MODE = args.train_dataset
 
-
+os.makedirs(DATASET_DIR, exist_ok=True)
 
 if TRAIN_MODE == 'voc':
     train_pascal_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
