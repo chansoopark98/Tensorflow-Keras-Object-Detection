@@ -42,6 +42,7 @@ if TRAIN_MODE == 'voc':
     number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
     print("테스트 데이터 개수:", number_test)
     CLASSES_NUM = 21
+    BATCH_SIZE = 32
     with open('./pascal_labels.txt') as f:
         CLASSES = f.read().splitlines()
 
@@ -172,7 +173,7 @@ else:
         label = sample['objects']['label'].numpy()
         bbox = sample['objects']['bbox'].numpy()[:, [1, 0, 3, 2]]
 
-        is_difficult = sample['objects']['is_crowd'].numpy()
+        is_difficult = sample['objects']['is_difficult'].numpy()
         test_difficults.append(is_difficult)
         test_bboxes.append(bbox)
         test_labels.append(label)
