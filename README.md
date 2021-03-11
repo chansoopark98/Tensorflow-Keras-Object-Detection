@@ -1,6 +1,6 @@
 <h1>CSNet</h1>
 
-**CSnet : Efficient object detection network**
+> CSNet : Efficient object detection network
 
 이 저장소는 **EfficientNet** 기반 객체 검출 네트워크를 구현하였습니다. 본 구현은 **Tensorflow Keras** 라이브러리 기반 경량화 네트워크입니다. 적은 params와 FLOPS로 경쟁력있는 검출 정확도를 달성하였습니다.
 
