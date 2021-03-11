@@ -38,11 +38,11 @@ def random_crop(image, bbox, labels):
     y_max = bbox[:, 3] - clip_box[0]
     x_max = bbox[:, 2] - clip_box[1]
 
-    ## exception handling
-    # x_min = tf.where(tf.greater_equal(x_min, x_max), tf.cast(0, dtype=tf.float32), x_min)
-    # y_min = tf.where(tf.greater_equal(y_min, y_max), tf.cast(0, dtype=tf.float32), y_min)
-    # x_max = tf.where(tf.greater_equal(x_min, x_max), tf.cast(x_min+0.1, dtype=tf.float32), x_max)
-    # y_max = tf.where(tf.greater_equal(y_min, y_max), tf.cast(y_min+0.1, dtype=tf.float32), y_max)
+    # exception handling
+    x_min = tf.where(tf.greater_equal(x_min, x_max), tf.cast(0, dtype=tf.float32), x_min)
+    y_min = tf.where(tf.greater_equal(y_min, y_max), tf.cast(0, dtype=tf.float32), y_min)
+    x_max = tf.where(tf.greater_equal(x_min, x_max), tf.cast(x_min+0.1, dtype=tf.float32), x_max)
+    y_max = tf.where(tf.greater_equal(y_min, y_max), tf.cast(y_min+0.1, dtype=tf.float32), y_max)
 
     new_bbox = tf.stack([x_min, y_min, x_max, y_max], axis=1)
 

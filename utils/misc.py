@@ -45,7 +45,7 @@ def convert_locations_to_boxes(locations, priors, center_variance,
          $$ exp (예측_hw * size_variance) = frac {real_hw} {prior_hw} $$
 
      Args :
-         locations (batch_size, num_priors, 4) : SSD의 회귀 출력. 출력도 포함
+         locations (batch_size, num_priors, 4) : 네트워크의 회귀 출력. 출력도 포함
          priors (num_priors, 4) 또는 (batch_size / 1, num_priors, 4) : priors box
          center_variance : 중심 스케일을 변경 상수
          size_variance : 크기 스케일 변경 상수
@@ -106,11 +106,15 @@ def iou_of(boxes0, boxes1, eps=1e-5):
     area1 = area_of(boxes1[..., :2], boxes1[..., 2:])
     return overlap_area / (area0 + area1 - overlap_area + eps)
 
+import sys
 
 @tf.function
 def center_form_to_corner_form(locations):
-    return tf.concat([locations[..., :2] - locations[..., 2:] / 2,
+
+    output = tf.concat([locations[..., :2] - locations[..., 2:] / 2,
                       locations[..., :2] + locations[..., 2:] / 2], tf.rank(locations) - 1)
+
+    return output
 
 
 @tf.function
