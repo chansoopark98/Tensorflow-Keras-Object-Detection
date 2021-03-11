@@ -24,6 +24,8 @@ def data_augment(image, boxes, labels):
 
 import sys
 def prepare_input(sample, convert_to_normal=True):
+    tf.print(sample, output_stream=sys.stdout)
+
     img = tf.cast(sample['image'], dtype=tf.float32)
     # img = img - image_mean 이미지 평균
     labels = sample['objects']['label']+1

@@ -107,7 +107,7 @@ class NumpyEncoder(json.JSONEncoder):
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
-
+# IMAGE SHAPE(H ,W ,C)
 if TRAIN_MODE == 'coco':
     img_id = []
     cat_id = []
@@ -115,6 +115,8 @@ if TRAIN_MODE == 'coco':
     pred_scores = []
     pred_list = []
     img_shapes = []
+
+    # 531036 (640, 480, 3)
     for sample in test_data:
         img_shapes.append(sample['image'].shape)
         img_id.append(np.int(sample['image/id'].numpy().astype('int32').item()))
@@ -124,8 +126,10 @@ if TRAIN_MODE == 'coco':
         pred = model.predict_on_batch(x)
         predictions = post_process(pred, target_transform, classes=CLASSES_NUM)
         for boxes, scores, labels in predictions:
-            pred_boxes.append(np.round(boxes.tolist(),2).astype('float32'))
-            pred_scores.append(np.round(scores.tolist(),2).astype('float32'))
+            # boxes[:, [0, 2]] = boxes[:, [0, 2]] * img_size[1]
+            # boxes[:, [1, 3]] = boxes[:, [1, 3]] * img_size[0]
+            pred_boxes.append(np.round(boxes.tolist(), 2).astype('float32'))
+            pred_scores.append(np.round(scores.tolist(), 2).astype('float32'))
 
 
     for index in range(len(img_id)):
@@ -133,10 +137,10 @@ if TRAIN_MODE == 'coco':
             bbox = pred_boxes[index][i]
             xmin, ymin, xmax, ymax = bbox
             print(bbox)
-            xmin = xmin * img_shapes[index][1]
-            ymin = ymin * img_shapes[index][0]
-            xmax = xmax * img_shapes[index][1]
-            ymax = ymax * img_shapes[index][0]
+            # xmin = xmin * img_shapes[index][1]
+            # ymin = ymin * img_shapes[index][0]
+            # xmax = xmax * img_shapes[index][1]
+            # ymax = ymax * img_shapes[index][0]
             x = xmin
             y = ymin
             w = xmax - xmin
