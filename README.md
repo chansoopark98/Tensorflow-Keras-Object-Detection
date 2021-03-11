@@ -98,11 +98,11 @@ download_dataset.py를 사용하여 다운로드 하십시요.
 
 Download PASCAL VOC Dataset  
 
-    python download_dataset.py --dataset_dir='./datasets/' --train_dataset=voc
+    python download_datasets.py --dataset_dir='./datasets/' --train_dataset=voc
 
 Download COCO Dataset  
 
-    python download_dataset.py --dataset_dir='./datasets/' --train_dataset=coco
+    python download_datasets.py --dataset_dir='./datasets/' --train_dataset=coco
 
 
 <hr/>
