@@ -150,7 +150,7 @@ if TRAIN_MODE == 'coco':
             pred_list.append(total_predictions)
 
     with open('datasets/coco_predictions.json', 'w') as f:
-        json.dump(pred_list, f, ensure_ascii=False, indent="\t", cls=NumpyEncoder)
+        json.dump(pred_list, f, cls=NumpyEncoder)
 
     annType = 'bbox'
     cocoGt = COCO('datasets/instances_val2017.json')
