@@ -1,6 +1,5 @@
 #@title Evaluation
 from __future__ import division
-
 from collections import defaultdict
 import itertools
 import numpy as np

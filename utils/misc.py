@@ -65,6 +65,7 @@ def convert_locations_to_boxes(locations, priors, center_variance,
 def convert_boxes_to_locations(center_form_boxes, center_form_priors, center_variance, size_variance):
     if tf.rank(center_form_priors) + 1 == tf.rank(center_form_boxes):
         center_form_priors = tf.expand_dims(center_form_priors, 0)
+
     return tf.concat([
         (center_form_boxes[..., :2] - center_form_priors[..., :2]) / center_form_priors[..., 2:] / center_variance,
         tf.math.log(center_form_boxes[..., 2:] / center_form_priors[..., 2:]) / size_variance

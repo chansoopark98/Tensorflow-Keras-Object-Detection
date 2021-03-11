@@ -8,7 +8,6 @@ from tqdm import tqdm
 import cv2
 import argparse
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=384)
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=32)
@@ -18,8 +17,6 @@ parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉�
 parser.add_argument("--output_dir", type=str,   help="테스트 결과 이미지 디렉토리 설정", default='./outputs/')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
-
-
 
 args = parser.parse_args()
 BATCH_SIZE = args.batch_size

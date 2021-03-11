@@ -9,42 +9,42 @@ def random_lighting_noise(image):
         image = tf.stack([channels[0], channels[1], channels[2]], axis=-1)
     return image
 
-
 @tf.function
 def bbox_area(bbox):
     return (bbox[:, 2] - bbox[:, 0]) * (bbox[:, 3] - bbox[:, 1])
 
-
 @tf.function
 def random_crop(image, bbox, labels):
-    # ar_ = bbox_area(bbox)
     elems = tf.convert_to_tensor([0.1, 0.3, 0.5, 0.9, 1])
     min_object_covered = tf.random.shuffle(elems)[0]
+
     if min_object_covered == tf.constant(1.0):
         return image, bbox, labels
+
     begin, size, bbox_for_draw = tf.image.sample_distorted_bounding_box(
         tf.shape(image),
         bounding_boxes=tf.expand_dims(bbox, 0),
         min_object_covered=min_object_covered,
         area_range=[0.1, 1],
         aspect_ratio_range=[0.5, 2])
+
     clip_box = bbox_for_draw[0][0]
     distorted_image = tf.slice(image, begin, size)
     image_size = tf.shape(image)[:2]
     scale_factor = tf.cast(image_size / size[:2], tf.float32)
+
     y_min = bbox[:, 1] - clip_box[0]
     x_min = bbox[:, 0] - clip_box[1]
     y_max = bbox[:, 3] - clip_box[0]
     x_max = bbox[:, 2] - clip_box[1]
 
-    x_min = tf.where(tf.greater_equal(x_min, x_max), tf.cast(0, dtype=tf.float32), x_min)
-    y_min = tf.where(tf.greater_equal(y_min, y_max), tf.cast(0, dtype=tf.float32), y_min)
-    x_max = tf.where(tf.greater_equal(x_min, x_max), tf.cast(x_min+0.1, dtype=tf.float32), x_max)
-    y_max = tf.where(tf.greater_equal(y_min, y_max), tf.cast(y_min+0.1, dtype=tf.float32), y_max)
-
+    ## exception handling
+    # x_min = tf.where(tf.greater_equal(x_min, x_max), tf.cast(0, dtype=tf.float32), x_min)
+    # y_min = tf.where(tf.greater_equal(y_min, y_max), tf.cast(0, dtype=tf.float32), y_min)
+    # x_max = tf.where(tf.greater_equal(x_min, x_max), tf.cast(x_min+0.1, dtype=tf.float32), x_max)
+    # y_max = tf.where(tf.greater_equal(y_min, y_max), tf.cast(y_min+0.1, dtype=tf.float32), y_max)
 
     new_bbox = tf.stack([x_min, y_min, x_max, y_max], axis=1)
-
 
     centers_x = (bbox[:, 0] + bbox[:, 2]) / 2
     centers_y = (bbox[:, 1] + bbox[:, 3]) / 2
@@ -69,7 +69,9 @@ def random_crop(image, bbox, labels):
     scale = tf.broadcast_to(scale, tf.shape(new_bbox))
     new_bbox = tf.clip_by_value(new_bbox, 0, 1)
     new_bbox = new_bbox * scale
+
     # new_centers = new_centers * scale_factor[::-1]
+
     new_bbox = tf.clip_by_value(new_bbox, 0, 1)
     non_zero_area_mask = bbox_area(new_bbox) > tf.constant(0, tf.float32)
 
@@ -80,6 +82,7 @@ def random_crop(image, bbox, labels):
     image = tf.cond(is_empty, lambda: image, lambda: distorted_image)
     bbox = tf.cond(is_empty, lambda: bbox, lambda: new_bbox)
     labels = tf.cond(is_empty, lambda: labels, lambda: new_labels)
+
     return image, bbox, labels
 
 
@@ -88,6 +91,7 @@ def random_flip(image, boxes, flip_prob=tf.constant(0.5)):
     if tf.random.uniform([]) > flip_prob:
         image = tf.image.flip_left_right(image)
         boxes = tf.stack([1 - boxes[:, 2], boxes[:, 1], 1 - boxes[:, 0], boxes[:, 3]], axis=1)
+
     return (image, boxes)
 
 
@@ -98,12 +102,14 @@ def get_indices_from_slice(top, left, height, width):
     A = tf.reshape(tf.tile(a, [1, width]), [-1])
     B = tf.tile(b, [height])
     indices = tf.stack([A, B], axis=1)
+
     return indices
 
 
 @tf.function
 def expand(image, boxes, expand_prob=tf.constant(0.5)):
     if tf.random.uniform([]) > expand_prob:
+
         return image, boxes
 
     image_shape = tf.cast(tf.shape(image), tf.float32)
@@ -128,4 +134,5 @@ def expand(image, boxes, expand_prob=tf.constant(0.5)):
     ymax = tf.where(tf.greater_equal(ymin, ymax), tf.cast(ymin+0.1, dtype=tf.float32), ymax)
 
     boxes = tf.stack([xmin, ymin, xmax, ymax], axis=1)
+
     return image, boxes

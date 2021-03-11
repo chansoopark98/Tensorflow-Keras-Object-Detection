@@ -2,17 +2,14 @@ import efficientnet.keras as efn
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.regularizers import l2
-#import tensorflow_addons as tfa
 from tensorflow.keras.layers import GlobalAveragePooling2D,  Reshape, Dense, multiply, Concatenate, \
     Conv2D, Add, Activation, Dropout ,BatchNormalization, DepthwiseConv2D, Lambda ,  UpSampling2D
 from tensorflow.keras import backend as K
 
-
 activation = tf.keras.activations.swish
 #activation = tfa.activations.mish
 
-
-get_efficient_feature = {
+GET_EFFICIENT_NAME = {
     'B0': ['block3b_add', 'block5c_add', 'block7a_project_bn'],
     'B1': ['block3c_add', 'block5d_add', 'block7b_add'],
     'B2': ['block3c_add', 'block5d_add', 'block7b_add'],
@@ -84,9 +81,7 @@ def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300])
     elif base_model_name == 'B7':
         base = efn.EfficientNetB7(weights=weights, include_top=False, input_shape=[*IMAGE_SIZE, 3])
 
-
     base = remove_dropout(base)
-
     base.trainable = True
 
     return base
@@ -140,7 +135,6 @@ def MBConv(input_tensor, stride, name):
     return Add(name=name+'residual_add')([input_tensor, r])
 
 def extraMBConv(x, padding, name, stride=(1, 1)):
-
     channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
     in_channels = K.int_shape(x)[channel_axis]
 
@@ -159,8 +153,6 @@ def extraMBConv(x, padding, name, stride=(1, 1)):
                padding='same', name=name + '_mbconv_squeeze_conv')(r)
     r = BatchNormalization(axis=channel_axis, name=name + '_mbconv_squeeze_bn')(r)
     return r
-
-
 
 def convolution(input_tensor, channel, size, stride, padding, name):
     kernel_size = (size, size)
@@ -216,13 +208,11 @@ def upSampling(input_tensor, size, name):
     resized = UpSampling2D(size=(2, 2), interpolation='bilinear')(input_tensor)
     return resized
 
-
-
 def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], regularization=5e-4):
     source_layers = []
     base = create_efficientNet(base_model_name, pretrained, IMAGE_SIZE)
     print(base)
-    layer_names = get_efficient_feature[base_model_name]
+    layer_names = GET_EFFICIENT_NAME[base_model_name]
     print("layer_names : ", layer_names)
 
     # get extra layer

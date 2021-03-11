@@ -9,12 +9,12 @@ from utils.misc import *
  Args :
      specs : 이전 상자의 크기 모양에 대한 SSDSpecs
          spec = [
-             SSDSpec (38, 8, SSDBoxSizes (30, 60), [2]),
-             SSDSpec (19, 16, SSDBoxSizes (60, 111), [2, 3]),
-             SSDSpec (10, 32, SSDBoxSizes (111, 162), [2, 3]),
-             SSDSpec (5, 64, SSDBoxSizes (162, 213), [2, 3]),
-             SSDSpec (3, 100, SSDBoxSizes (213, 264), [2]),
-             SSDSpec (1, 300, SSDBoxSizes (264, 315), [2])
+             Spec (38, 8, BoxSizes (30, 60), [2]),
+             Spec (19, 16, BoxSizes (60, 111), [2, 3]),
+             Spec (10, 32, BoxSizes (111, 162), [2, 3]),
+             Spec (5, 64, BoxSizes (162, 213), [2, 3]),
+             Spec (3, 100, BoxSizes (213, 264), [2]),
+             Spec (1, 300, BoxSizes (264, 315), [2])
          ]
      image_size : 이미지 크기.
      clamp : 참이면 값을 [0.0, 1.0] 사이로 고정합니다.
@@ -122,6 +122,7 @@ def assign_gt2_priors(gt_boxes, gt_labels, corner_form_priors,
 
     # 라벨이 임계값을 넘기 않는 경우 background(배경) 처리
     boxes = tf.gather(gt_boxes, best_target_per_prior_index)
+
     return boxes, labels
 
 
@@ -141,4 +142,5 @@ class MatchingPriors(object):
         boxes, labels = assign_gt2_priors(gt_boxes, gt_labels, self.corner_form_priors, self.iou_threshold)
         boxes = corner_form_to_center_form(boxes)
         locations = convert_boxes_to_locations(boxes, self.center_form_priors, self.center_variance, self.size_variance)
+
         return locations, labels

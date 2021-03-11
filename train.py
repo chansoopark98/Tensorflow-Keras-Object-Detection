@@ -6,16 +6,6 @@ import os
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from model.model_builder import ssd
 
-
-import cProfile
-
-#
-# tf.debugging.experimental.enable_dump_debug_info(
-#     "/tmp/tfdbg2_logdir",
-#     tensor_debug_mode="FULL_HEALTH",
-#     circular_buffer_size=-1)
-
-
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=32)
@@ -111,14 +101,6 @@ else :
     validation_dataset = coco_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
                                                 target_transform, TRAIN_MODE, train=False)
 
-# specs = [
-#                 Spec(48, 8, BoxSizes(40, 90), [2]),
-#                 Spec(24, 16, BoxSizes(90, 151), [2, 3]),
-#                 Spec(12, 32, BoxSizes(151, 212), [2, 3]),
-#                 Spec(6, 64, BoxSizes(212, 273), [2, 3]),
-#                 Spec(3, 128, BoxSizes(273, 334), [2]),
-#                 Spec(1, 384, BoxSizes(334, 395), [2])
-#         ]
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 model = ssd(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE)

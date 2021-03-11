@@ -31,6 +31,7 @@ def batched_nms(boxes, scores, idxs, iou_threshold, top_k=100):
     offsets = idxs * (max_coordinate + 1)
     boxes_for_nms = boxes + offsets[:, None]
     keep = tf.image.non_max_suppression(boxes_for_nms, scores, top_k, iou_threshold)
+
     return keep
 
 
@@ -76,4 +77,5 @@ def post_process(detections, target_transform, confidence_threshold=0.01, top_k=
         keep = batched_nms(boxes, scores, labels, iou_threshold, top_k)
         boxes, scores, labels = tf.gather(boxes, keep), tf.gather(scores, keep), tf.gather(labels, keep)
         results.append(Predictions(boxes.numpy(), scores.numpy(), labels.numpy()))
+
     return results

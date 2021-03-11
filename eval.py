@@ -108,9 +108,6 @@ class NumpyEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 if TRAIN_MODE == 'coco':
-    test_difficults = []
-    use_07_metric = False
-
     img_id = []
     cat_id = []
     pred_boxes = []

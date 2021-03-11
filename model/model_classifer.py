@@ -1,4 +1,6 @@
-from tensorflow.keras.layers import Conv2D, BatchNormalization, Activation, Dense, Concatenate, Flatten, Reshape, Dropout, SeparableConv2D, GlobalAveragePooling2D
+from tensorflow.keras.layers import Conv2D, BatchNormalization,\
+    Activation, Dense, Concatenate, Flatten, Reshape, Dropout,\
+    SeparableConv2D, GlobalAveragePooling2D
 from tensorflow.keras.regularizers import l2
 from keras.engine.topology import Layer
 from tensorflow.keras.initializers import Constant
@@ -20,7 +22,7 @@ class Normalize(Layer):
     def call(self, x, mask=None):
         return self.gamma * K.l2_normalize(x, axis=-1)
 
-# create_classifier build
+# CLASSIFIER BUILD!
 def create_classifier(source_layers, num_priors, normalizations, num_classes=81):
     mbox_conf = []
     mbox_loc = []
@@ -75,6 +77,5 @@ def create_classifier(source_layers, num_priors, normalizations, num_classes=81)
 
     # predictions/concat:0, shape=(Batch, 8732, 25)
     predictions = Concatenate(axis=2, name='predictions')([mbox_loc, mbox_conf])
-
 
     return predictions

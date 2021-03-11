@@ -14,6 +14,7 @@
  4. [Train](#Train)
  5. [Eval](#Eval)
  6. [Predict](#Predict)
+ 7. [Reference](#Reference)
 
 <hr/>
 
@@ -149,7 +150,19 @@ parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 da
 
 
 ## Predict
-사전 저장된 모델로 이미지 추론을 predict.py로 실행합니다.  
+사전 저장된 모델로 이미지 추론을 predict.py로 실행합니다. 테스트에 사용할 이미지 파일과 출력 결과를 저장할 디렉토리를 지정해야 합니다.  
+
+```plain
+└── CSNet root
+       ├── inputs/  # This is the image directory to use for testing.
+       |   ├── image_1.jpg 
+       |   └── image_2.jpg
+       └── outputs/  # This is the directory to save the inference result image.    
+           ├── image_1_output.jpg 
+           └── image_2_output.jpg
+```  
+<br/>
+
 ```python
 parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=384)
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈 설정", default=32)
@@ -164,6 +177,20 @@ parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 da
 
     python predcit.py --image_size=384 --dataset_dir='./datasets/' --checkpoint_dir='./checkpoints/model_name.h5'  
     --backbone_model=B0 --train_dataset=voc  --input_dir='./inputs/' --output_dir='./outputs/'
+
+
+![001070 jpg](https://user-images.githubusercontent.com/60956651/110722231-49632f00-8255-11eb-9351-165d9efac7c2.jpg)
+![002107 jpg](https://user-images.githubusercontent.com/60956651/110722280-54b65a80-8255-11eb-8005-0ddd88f33082.jpg)  
+
+## Reference
+<hr>
+
+1. [https://github.com/qubvel/efficientnet](https://github.com/qubvel/efficientnet)
+2. [https://github.com/keras-team/keras-applications](https://github.com/keras-team/keras-applications)
+3. [https://github.com/xuannianz/EfficientDet](https://github.com/xuannianz/EfficientDet)
+4. [https://github.com/pierluigiferrari/ssd_keras](https://github.com/pierluigiferrari/ssd_keras)
+
+
 
 
 

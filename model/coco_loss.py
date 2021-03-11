@@ -2,11 +2,9 @@ import tensorflow as tf
 import numpy as np
 
 def smooth_l1(labels, scores, sigma=1.0):
-
     diff = scores-labels
     abs_diff = tf.abs(diff)
     return tf.where(tf.less(abs_diff, 1/(sigma**2)), 0.5*(sigma*diff)**2, abs_diff-1/(2*sigma**2))
-
 
 def hard_negative_mining(loss, labels, neg_pos_factor):
     pos_mask = labels > 0
@@ -17,7 +15,6 @@ def hard_negative_mining(loss, labels, neg_pos_factor):
     orders = tf.argsort(indexes, axis=1)
     neg_mask = tf.cast(orders, tf.float32) < num_neg
     return tf.logical_or(pos_mask ,neg_mask)
-
 
 def total_loss(y_true, y_pred, num_classes=81):
     labels = tf.argmax(y_true[:,:,:num_classes], axis=2) # batch, 13792

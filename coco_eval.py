@@ -1,5 +1,6 @@
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
+
 annType = 'bbox'
 cocoGt = COCO('datasets/instances_val2017.json')
 cocoDt = cocoGt.loadRes('datasets/coco_predictions.json')

@@ -1,7 +1,6 @@
 import tensorflow as tf
 from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2_as_graph
 
-
 def get_flops(model, batch_size=1):
     if batch_size is None:
         batch_size = 1
@@ -11,6 +10,6 @@ def get_flops(model, batch_size=1):
 
     run_meta = tf.compat.v1.RunMetadata()
     opts = tf.compat.v1.profiler.ProfileOptionBuilder.float_operation()
-    flops = tf.compat.v1.profiler.profile(graph=frozen_func.graph,
-                                            run_meta=run_meta, cmd='op', options=opts)
+    flops = tf.compat.v1.profiler.profile(graph=frozen_func.graph, run_meta=run_meta, cmd='op', options=opts)
+
     return flops.total_float_ops
