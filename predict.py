@@ -1,7 +1,7 @@
 from utils.priors import *
 from model.model_builder import ssd
 from utils.model_post_processing import post_process
-from utils.misc import color_map
+from utils.misc import voc_color_map
 import os
 from preprocessing import prepare_for_prediction
 from tqdm import tqdm
@@ -12,11 +12,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=384)
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=32)
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
-parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0309.h5')
-parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./inputs/')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0310.h5')
+parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./datasets/test/VOCdevkit/VOC2007/JPEGImages/')
 parser.add_argument("--output_dir", type=str,   help="테스트 결과 이미지 디렉토리 설정", default='./outputs/')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
-parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
 
 args = parser.parse_args()
 BATCH_SIZE = args.batch_size
@@ -27,6 +27,11 @@ MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
 INPUT_DIR = args.input_dir
 OUTPUT_DIR = args.output_dir
+
+
+CLASSES_NUM=81
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 iou_threshold = 0.5
 center_variance = 0.1
@@ -52,8 +57,8 @@ model.load_weights(checkpoint_filepath)
 
 filenames = os.listdir(INPUT_DIR)
 filenames.sort()
-dataset = tf.data.Dataset.list_files(INPUT_DIR + '/*', shuffle=False)
-dataset = dataset.map(prepare_for_prediction(IMAGE_SIZE))
+dataset = tf.data.Dataset.list_files(INPUT_DIR + '*', shuffle=False)
+dataset = dataset.map(prepare_for_prediction)
 dataset = dataset.batch(BATCH_SIZE)
 
 x, y = 0, BATCH_SIZE
@@ -74,11 +79,11 @@ def draw_bounding(img , bboxes, labels, img_size):
         xmax = tf.cast(bbox[2], dtype=tf.int32)
         ymax = tf.cast(bbox[3], dtype=tf.int32)
         img_box = np.copy(img)
-        _, color = color_map(int(labels[i]-1))
+        _, color = coco_color_map(int(labels[i] - 1))
         cv2.rectangle(img_box, (xmin, ymin), (xmax, ymax), color, 2)
         cv2.rectangle(img_box, (xmin - 1, ymin), (xmax + 1, ymin - 20), color, cv2.FILLED)
         font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(img_box, CLASSES[int(labels[i]-1)], (xmin + 5, ymin - 5), font, 0.5,
+        cv2.putText(img_box, COCO_CLASSES[int(labels[i]-1)], (xmin + 5, ymin - 5), font, 0.5,
                     (255, 255, 255), 1, cv2.LINE_AA)
         alpha = 0.8
         cv2.addWeighted(img_box, alpha, img, 1. - alpha, 0, img)
@@ -87,7 +92,7 @@ def draw_bounding(img , bboxes, labels, img_size):
 for batch in tqdm(dataset, total=test_steps):
 
     pred = model.predict_on_batch(batch)
-    predictions = post_process(pred, target_transform, confidence_threshold=0.4)
+    predictions = post_process(pred, target_transform, classes=CLASSES_NUM,confidence_threshold=0.4)
 
     for i, path in enumerate(filenames[x:y]):
 

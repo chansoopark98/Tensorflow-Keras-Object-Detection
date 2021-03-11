@@ -128,9 +128,9 @@ def pascal_prepare_dataset(dataset, image_size, batch_size, target_transform, tr
     return dataset
 
 # predict 할 때
-def prepare_for_prediction(file_path, image_size=[384, 384]):
+def prepare_for_prediction(file_path):
     img = tf.io.read_file(file_path)
-    img = decode_img(img, image_size)
+    img = decode_img(img, [384, 384])
     img = preprocess_input(img, mode='torch')
 
     return img
