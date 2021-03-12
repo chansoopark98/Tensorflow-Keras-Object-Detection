@@ -42,7 +42,6 @@ if TRAIN_MODE == 'voc':
     number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
     print("테스트 데이터 개수:", number_test)
     CLASSES_NUM = 21
-    BATCH_SIZE = 32
     with open('./pascal_labels.txt') as f:
         CLASSES = f.read().splitlines()
 
@@ -118,6 +117,7 @@ if TRAIN_MODE == 'coco':
     pred_list = []
     img_shapes = []
 
+    removed_classes = [12, 26, 29, 30, 45, 66, 68, 69, 71, 83, 91]
     # (img, img_shape , img_id, cat_id)
     # for x, img_shape, img_id, cat_id in tqdm(coco_dataset, total=test_steps):
 
@@ -127,10 +127,19 @@ if TRAIN_MODE == 'coco':
 
     for x, pred_id in tqdm(coco_dataset, total=test_steps):
         pred = model.predict_on_batch(x)
-        predictions = post_process(pred, target_transform, classes=CLASSES_NUM)
-        pred_ids.append(pred_id.numpy().astype('int32').item())
+        predictions = post_process(pred, target_transform, classes=CLASSES_NUM, confidence_threshold=0.5)
+        pred_ids.append(pred_id)
         for boxes, scores, labels in predictions:
-            pred_labels.append(np.round(labels.tolist(),2).astype('int32'))
+            for i in range(len(labels)):
+                stack = 0
+                for j in range(len(removed_classes)):
+                    if labels[i] >= removed_classes[j]:
+                        # stack += 1
+                        labels[i] += 1
+                # labels[i] += stack
+
+
+            pred_labels.append(labels)
             pred_boxes.append(np.round(boxes.tolist(),2).astype('float32'))
             pred_scores.append(np.round(scores.tolist(),2).astype('float32'))
 
@@ -144,25 +153,27 @@ if TRAIN_MODE == 'coco':
             ymin = ymin * img_shapes[index][0]
             xmax = xmax * img_shapes[index][1]
             ymax = ymax * img_shapes[index][0]
-            x = xmin
-            y = ymin
-            w = (xmax - xmin) + 1
-            h = (ymax - ymin) + 1
-            total_predictions = {"image_id": pred_ids[index],
-                             "category_id": pred_labels[index][i],
+            x = float(xmin)
+            y = float(ymin)
+            w = float((xmax - xmin) + 1)
+            h = float((ymax - ymin) + 1)
+            total_predictions = {"image_id": int(pred_ids[index]),
+                             "category_id": int(pred_labels[index][i]),
                              "bbox": [x, y, w, h],
-                             "score": pred_scores[index][i]
+                             "score": float(pred_scores[index][i])
                              }
 
             pred_list.append(total_predictions)
 
     with open('datasets/coco_predictions.json', 'w') as f:
-        json.dump(pred_list, f, ensure_ascii=False, indent="\t", cls=NumpyEncoder)
+        json.dump(pred_list, f, indent="\t", cls=NumpyEncoder)
 
     annType = 'bbox'
     cocoGt = COCO('datasets/instances_val2017.json')
     cocoDt = cocoGt.loadRes('datasets/coco_predictions.json')
     imgIds = sorted(cocoGt.getImgIds())
+    imgIds = imgIds[0:100]
+    imgId = imgIds[np.random.randint(100)]
     # running evaluation
     cocoEval = COCOeval(cocoGt, cocoDt, annType)
     cocoEval.params.imgIds = imgIds

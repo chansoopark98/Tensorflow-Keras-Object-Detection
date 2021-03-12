@@ -59,6 +59,7 @@ def prepare_cocoEval_input(sample):
     img_id = sample['image/id']
 
 
+
     img = preprocess_input(img, mode='torch')
     img = tf.image.resize(img, [384, 384])
     # return (img, img_shape , img_id, cat_id)
