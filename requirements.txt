@@ -7,3 +7,4 @@ opencv-python
 pycocotools
 tqdm
 cython
+tensorflow-addons
