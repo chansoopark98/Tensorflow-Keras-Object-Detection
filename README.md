@@ -104,7 +104,9 @@ Download COCO Dataset
 
     python download_datasets.py --dataset_dir='./datasets/' --train_dataset=coco
 
+*※ Windows tensorflow dataset issue!*
 
+윈도우에서 COCO Dataset을 사용하는 경우 [여기](https://mega.nz/file/ql1WBCzD#mbXuAZMx1Mu0-L7nGyAY2CbphHOfHOElvaN5_IsLZVI) 를 통해 다운로드 하세요. 
 <hr/>
 
 ## Train
