@@ -31,7 +31,7 @@ imgIds=sorted(cocoGt.getImgIds())
 
 cocoEval = COCOeval(cocoGt,cocoDt,annType)
 cocoEval.params.imgIds  = imgIds
-cocoEval.params.catIds = []
+#cocoEval.params.catIds = [1]
 cocoEval.evaluate()
 cocoEval.accumulate()
 cocoEval.summarize()

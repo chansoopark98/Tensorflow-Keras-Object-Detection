@@ -19,7 +19,7 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=384)
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
-parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0310.h5')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0311.h5')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
 parser.add_argument("--calc_flops",  type=str,   help="모델 FLOPS 계산", default=False)
