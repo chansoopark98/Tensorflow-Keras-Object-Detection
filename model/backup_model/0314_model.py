@@ -1,14 +1,13 @@
 import efficientnet.keras as efn
 import tensorflow as tf
-import tensorflow_addons as tfa
 from tensorflow import keras
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.layers import GlobalAveragePooling2D,  Reshape, Dense, multiply, Concatenate, \
     Conv2D, Add, Activation, Dropout ,BatchNormalization, DepthwiseConv2D, Lambda ,  UpSampling2D
 from tensorflow.keras import backend as K
 
-# activation = tf.keras.activations.swish
-activation = tfa.activations.mish
+activation = tf.keras.activations.swish
+#activation = tfa.activations.mish
 
 GET_EFFICIENT_NAME = {
     'B0': ['block3b_add', 'block5c_add', 'block7a_project_bn'],
@@ -51,7 +50,7 @@ def remove_dropout(model):
 
 
 
-def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512]):
+def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300]):
     if pretrained is False:
         weights = None
 
@@ -209,7 +208,7 @@ def upSampling(input_tensor, size, name):
     resized = UpSampling2D(size=(2, 2), interpolation='bilinear')(input_tensor)
     return resized
 
-def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], regularization=5e-4):
+def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], regularization=5e-4):
     source_layers = []
     base = create_efficientNet(base_model_name, pretrained, IMAGE_SIZE)
 

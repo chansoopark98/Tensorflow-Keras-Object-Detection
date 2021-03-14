@@ -1,6 +1,6 @@
 import tensorflow_datasets as tfds
 from utils.priors import *
-from model.model_builder import ssd
+from model.model_builder import model_build
 from preprocessing import pascal_prepare_dataset
 from preprocessing import coco_eval_dataset
 from utils.model_post_processing import post_process  #
@@ -17,6 +17,7 @@ import argparse
 import os
 
 parser = argparse.ArgumentParser()
+
 parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=384)
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0311.h5')
@@ -82,7 +83,7 @@ coco_dataset = coco_eval_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
                                     target_transform, TRAIN_MODE, train=False)
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
-model = ssd(TRAIN_MODE, MODEL_NAME, pretrained=False)
+model = model_build(TRAIN_MODE, MODEL_NAME, pretrained=False)
 
 print("모델 가중치 로드...")
 model.load_weights(CHECKPOINT_DIR)

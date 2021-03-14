@@ -4,19 +4,19 @@ import argparse
 import time
 import os
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
-from model.model_builder import ssd
+from model.model_builder import model_build
 
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
-parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=384)
+parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=512)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름", default=str(time.strftime('%m%d', time.localtime(time.time()))))
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
-parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 가중치 로드", default=False)
 
 args = parser.parse_args()
@@ -40,13 +40,22 @@ iou_threshold = 0.5
 center_variance = 0.1
 size_variance = 0.2
 
+# # 384 input size
+# specs = [
+#                 Spec(48, 8, BoxSizes(38, 77), [2]), # 0.1
+#                 Spec(24, 16, BoxSizes(77, 142), [2, 3]), # 0.2
+#                 Spec(12, 32, BoxSizes(142, 207), [2, 3]), # 0.37
+#                 Spec(6, 64, BoxSizes(207, 273), [2, 3]), # 0.54
+#                 Spec(3, 128, BoxSizes(273, 337), [2]), # 0.71
+#                 Spec(1, 384, BoxSizes(337, 403), [2]) # 0.88 , max 1.05
+#         ]
+
+# 384 input size
 specs = [
-                Spec(48, 8, BoxSizes(38, 77), [2]), # 0.1
-                Spec(24, 16, BoxSizes(77, 142), [2, 3]), # 0.2
-                Spec(12, 32, BoxSizes(142, 207), [2, 3]), # 0.37
-                Spec(6, 64, BoxSizes(207, 273), [2, 3]), # 0.54
-                Spec(3, 128, BoxSizes(273, 337), [2]), # 0.71
-                Spec(1, 384, BoxSizes(337, 403), [2]) # 0.88 , max 1.05
+                Spec(68, 8, BoxSizes(51, 102), [2]), # 0.1
+                Spec(34, 16, BoxSizes(102, 190), [2]), # 0.2
+                Spec(17, 32, BoxSizes(190, 276), [2]), # 0.37
+                Spec(8, 64, BoxSizes(276, 363), [2, 3]) # 0.54
         ]
 
 priors = create_priors_boxes(specs, IMAGE_SIZE[0])
@@ -103,7 +112,7 @@ else :
 
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
-model = ssd(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE)
+model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE)
 
 if CONTINUE_TRAINING is True:
     model.load_weights(CHECKPOINT_DIR + '0217_main' + '.h5')

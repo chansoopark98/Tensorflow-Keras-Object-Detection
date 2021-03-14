@@ -1,6 +1,6 @@
 import tensorflow_datasets as tfds
 from utils.priors import *
-from model.model_builder import ssd
+from model.model_builder import model_build
 from preprocessing import pascal_prepare_dataset
 from preprocessing import coco_prepare_dataset
 from utils.model_post_processing import post_process  #
@@ -83,7 +83,7 @@ coco_dataset = coco_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
                                     target_transform, TRAIN_MODE, train=False)
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
-model = ssd(TRAIN_MODE, MODEL_NAME, pretrained=False)
+model = model_build(TRAIN_MODE, MODEL_NAME, pretrained=False)
 
 print("모델 가중치 로드...")
 model.load_weights(CHECKPOINT_DIR)

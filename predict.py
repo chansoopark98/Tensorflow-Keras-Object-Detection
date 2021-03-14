@@ -1,5 +1,5 @@
 from utils.priors import *
-from model.model_builder import ssd
+from model.model_builder import model_build
 from utils.model_post_processing import post_process
 from utils.misc import voc_color_map
 import os
@@ -50,7 +50,7 @@ priors = create_priors_boxes(specs, IMAGE_SIZE[0])
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
-model = ssd(TRAIN_MODE ,MODEL_NAME, pretrained=False)
+model = model_build(TRAIN_MODE, MODEL_NAME, pretrained=False)
 model.summary()
 print("모델로드")
 model.load_weights(checkpoint_filepath)
