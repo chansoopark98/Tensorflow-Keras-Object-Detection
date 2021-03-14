@@ -51,7 +51,7 @@ def remove_dropout(model):
 
 
 
-def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512]):
+def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300]):
     if pretrained is False:
         weights = None
 
@@ -209,7 +209,7 @@ def upSampling(input_tensor, size, name):
     resized = UpSampling2D(size=(2, 2), interpolation='bilinear')(input_tensor)
     return resized
 
-def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], regularization=5e-4):
+def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], regularization=5e-4):
     source_layers = []
     base = create_efficientNet(base_model_name, pretrained, IMAGE_SIZE)
 
@@ -301,29 +301,34 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], r
     #conv5 = CA(conv5)
     #conv5 = SA(conv5)
 
-    conv3 = extraMBConv(conv5, 'same','conv5_to_conv3_1',(1, 1))
-    conv3 = extraMBConv(conv3, 'same', 'conv5_to_conv3_2',(2, 2))
+    # conv3 = extraMBConv(conv5, 'same','conv5_to_conv3_1',(1, 1))
+    # conv3 = extraMBConv(conv3, 'same', 'conv5_to_conv3_2',(2, 2))
     #conv3 = CA(conv3)
     #conv3 = SA(conv3)
 
-    conv1 = extraMBConv(conv3, 'same', 'conv3_to_conv1_1')
-    conv1 = extraMBConv(conv1, 'valid', 'conv3_to_conv1_2')
+    # conv1 = extraMBConv(conv3, 'same', 'conv3_to_conv1_1')
+    # conv1 = extraMBConv(conv1, 'valid', 'conv3_to_conv1_2')
     #conv1 = CA(conv1)
     #conv1 = SA(conv1)
 
     # predict features
-    source_layers.append(bridge_conv38)
+    #source_layers.append(bridge_conv38)
     source_layers.append(down_concat_conv19)
     source_layers.append(down_concat_conv10)
     source_layers.append(conv5)
-    source_layers.append(conv3)
-    source_layers.append(conv1)
-    print(bridge_conv38)
-    print(down_concat_conv19)
-    print(down_concat_conv10)
-    print(conv5)
-    print(conv3)
-    print(conv1)
+    #source_layers.append(conv3)
+    #source_layers.append(conv1)
+    # print(bridge_conv38)
+    # print(down_concat_conv19)
+    # print(down_concat_conv10)
+    # print(conv5)
+    # print(conv3)
+    # print(conv1)
+
+
+
+
+
 
 
     return base.input, source_layers

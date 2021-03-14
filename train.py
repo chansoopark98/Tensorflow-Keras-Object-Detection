@@ -8,7 +8,7 @@ from model.model_builder import model_build
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=8)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=512)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
@@ -52,9 +52,8 @@ size_variance = 0.2
 
 # 384 input size
 specs = [
-                Spec(68, 8, BoxSizes(51, 102), [2]), # 0.1
-                Spec(34, 16, BoxSizes(102, 190), [2]), # 0.2
-                Spec(17, 32, BoxSizes(190, 276), [2]), # 0.37
+                Spec(32, 16, BoxSizes(102, 190), [2, 3]), # 0.2
+                Spec(16, 32, BoxSizes(190, 276), [2, 3]), # 0.37
                 Spec(8, 64, BoxSizes(276, 363), [2, 3]) # 0.54
         ]
 
