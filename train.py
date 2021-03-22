@@ -8,13 +8,14 @@ from model.model_builder import model_build
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=8)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=512)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름", default=str(time.strftime('%m%d', time.localtime(time.time()))))
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
+parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 가중치 로드", default=False)
@@ -27,6 +28,7 @@ base_lr = args.lr
 SAVE_MODEL_NAME = args.model_name
 DATASET_DIR = args.dataset_dir
 CHECKPOINT_DIR = args.checkpoint_dir
+TENSORBOARD_DIR = args.tensorboard_dir
 MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
 CONTINUE_TRAINING = args.pretrain_mode
@@ -129,7 +131,10 @@ model.summary()
 
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-5, verbose=1)
 checkpoint = ModelCheckpoint(CHECKPOINT_DIR + SAVE_MODEL_NAME + '.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
-isNanCheck = tf.keras.callbacks.TerminateOnNaN()
+tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=False)
+
+from callbacks import MyCallback
+testCallBack = MyCallback('test', TENSORBOARD_DIR)
 
 model.compile(
     optimizer=optimizer,
@@ -141,5 +146,5 @@ history = model.fit(training_dataset,
                     steps_per_epoch=steps_per_epoch,
                     validation_steps=validation_steps,
                     epochs=EPOCHS,
-                    callbacks=[reduce_lr, checkpoint, isNanCheck])
+                    callbacks=[reduce_lr, checkpoint, tensorboard, testCallBack])
 

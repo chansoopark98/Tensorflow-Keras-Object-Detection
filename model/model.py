@@ -1,14 +1,14 @@
 import efficientnet.keras as efn
 import tensorflow as tf
-import tensorflow_addons as tfa
+# import tensorflow_addons as tfa
 from tensorflow import keras
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.layers import GlobalAveragePooling2D,  Reshape, Dense, multiply, Concatenate, \
     Conv2D, Add, Activation, Dropout ,BatchNormalization, DepthwiseConv2D, Lambda ,  UpSampling2D
 from tensorflow.keras import backend as K
 
-# activation = tf.keras.activations.swish
-activation = tfa.activations.mish
+activation = tf.keras.activations.swish
+# activation = tfa.activations.mish
 
 GET_EFFICIENT_NAME = {
     'B0': ['block3b_add', 'block5c_add', 'block7a_project_bn'],
