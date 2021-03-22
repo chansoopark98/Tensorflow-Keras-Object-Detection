@@ -41,21 +41,25 @@ center_variance = 0.1
 size_variance = 0.2
 
 # # 384 input size
-# specs = [
-#                 Spec(48, 8, BoxSizes(38, 77), [2]), # 0.1
-#                 Spec(24, 16, BoxSizes(77, 142), [2, 3]), # 0.2
-#                 Spec(12, 32, BoxSizes(142, 207), [2, 3]), # 0.37
-#                 Spec(6, 64, BoxSizes(207, 273), [2, 3]), # 0.54
-#                 Spec(3, 128, BoxSizes(273, 337), [2]), # 0.71
-#                 Spec(1, 384, BoxSizes(337, 403), [2]) # 0.88 , max 1.05
-#         ]
+# spec = [
+#     Spec(38, 8, BoxSizes(30, 60), [2]),
+#     Spec(19, 16, BoxSizes(60, 111), [2, 3]),
+#     Spec(10, 32, BoxSizes(111, 162), [2, 3]),
+#     Spec(5, 64, BoxSizes(162, 213), [2, 3]),
+#     Spec(3, 100, BoxSizes(213, 264), [2]),
+#     Spec(1, 300, BoxSizes(264, 315), [2])
+# ]
 
 # 384 input size
 specs = [
-                Spec(32, 16, BoxSizes(102, 190), [2, 3]), # 0.2
-                Spec(16, 32, BoxSizes(190, 276), [2, 3]), # 0.37
-                Spec(8, 64, BoxSizes(276, 363), [2, 3]) # 0.54
+            Spec(64, 8, BoxSizes(51, 133), [2]),  # 0.1
+            Spec(32, 16, BoxSizes(133, 215), [2]),  # 0.26
+            Spec(16, 32, BoxSizes(215, 297), [2, 3]), # 0.42
+            Spec(8, 64, BoxSizes(297, 379), [2, 3]), # 0.58
+            Spec(4, 128, BoxSizes(379, 460), [2, 3]), # 0.74
+            Spec(2, 256, BoxSizes(460, 538), [2]), # 0.9 , max 1.05
         ]
+
 
 priors = create_priors_boxes(specs, IMAGE_SIZE[0])
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
@@ -91,6 +95,7 @@ else :
     train_data = tfds.load('coco/2017', data_dir=DATASET_DIR, split='train')
     train_data = train_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
     train_data = train_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
+
 
     test_data = tfds.load('coco/2017', data_dir=DATASET_DIR, split='validation')
     test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
