@@ -5,7 +5,7 @@ dataset/
 inputs/
 outputs/
 checkpoints/
-
+tensorboard/
 
 
 # Byte-compiled / optimized / DLL files
