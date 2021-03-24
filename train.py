@@ -54,11 +54,11 @@ size_variance = 0.2
 
 # 384 input size
 specs = [
-            Spec(64, 8, BoxSizes(51, 133), [2]),  # 0.1
-            Spec(32, 16, BoxSizes(133, 215), [2]),  # 0.26
+            Spec(64, 8, BoxSizes(51, 133), []),  # 0.1
+            Spec(32, 16, BoxSizes(133, 215), [2, 3]),  # 0.26
             Spec(16, 32, BoxSizes(215, 297), [2, 3]), # 0.42
             Spec(8, 64, BoxSizes(297, 379), [2, 3]), # 0.58
-            Spec(4, 128, BoxSizes(379, 460), [2, 3]), # 0.74
+            Spec(4, 128, BoxSizes(379, 460), [2]), # 0.74
             Spec(2, 256, BoxSizes(460, 538), [2]), # 0.9 , max 1.05
         ]
 

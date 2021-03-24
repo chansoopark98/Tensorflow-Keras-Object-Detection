@@ -21,11 +21,11 @@ parser.add_argument("--image_size",     type=int,   help="모델 입력 이미�
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0311.h5')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
-parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--calc_flops",  type=str,   help="모델 FLOPS 계산", default=False)
 args = parser.parse_args()
 
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 IMAGE_SIZE = [args.image_size, args.image_size]
 DATASET_DIR = args.dataset_dir
 CHECKPOINT_DIR = args.checkpoint_dir
@@ -65,9 +65,12 @@ center_variance = 0.1
 size_variance = 0.2
 
 specs = [
-                Spec(32, 16, BoxSizes(102, 190), [2, 3]), # 0.2
-                Spec(16, 32, BoxSizes(190, 276), [2, 3]), # 0.37
-                Spec(8, 64, BoxSizes(276, 363), [2, 3]) # 0.54
+            Spec(64, 8, BoxSizes(51, 133), [2]),  # 0.1
+            Spec(32, 16, BoxSizes(133, 215), [2]),  # 0.26
+            Spec(16, 32, BoxSizes(215, 297), [2, 3]), # 0.42
+            Spec(8, 64, BoxSizes(297, 379), [2, 3]), # 0.58
+            Spec(4, 128, BoxSizes(379, 460), [2, 3]), # 0.74
+            Spec(2, 256, BoxSizes(460, 538), [2]), # 0.9 , max 1.05
         ]
 
 
