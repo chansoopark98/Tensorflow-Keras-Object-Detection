@@ -1,5 +1,6 @@
 import efficientnet.keras as efn
 import tensorflow as tf
+# import tensorflow_addons as tfa
 from tensorflow import keras
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.layers import GlobalAveragePooling2D,  Reshape, Dense, multiply, Concatenate, \
@@ -7,7 +8,7 @@ from tensorflow.keras.layers import GlobalAveragePooling2D,  Reshape, Dense, mul
 from tensorflow.keras import backend as K
 
 activation = tf.keras.activations.swish
-#activation = tfa.activations.mish
+# activation = tfa.activations.mish
 
 GET_EFFICIENT_NAME = {
     'B0': ['block3b_add', 'block5c_add', 'block7a_project_bn'],
@@ -216,9 +217,13 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
 
     # get extra layer
     #efficient_conv75 = base.get_layer('block2b_add').output  # 75 75 24
-    efficient_conv38 = base.get_layer(layer_names[0]).output # 38 38 40
-    efficient_conv19 = base.get_layer(layer_names[1]).output # 19 19 112`
-    efficient_conv10 = base.get_layer(layer_names[2]).output # 10 10 320
+    efficient_conv38 = base.get_layer(layer_names[0]).output # 64 64 40
+    efficient_conv19 = base.get_layer(layer_names[1]).output # 32 32 112`
+    efficient_conv10 = base.get_layer(layer_names[2]).output # 16 16 320
+
+    print("efficient_conv32", efficient_conv38)
+    print("efficient_conv16", efficient_conv19)
+    print("efficient_conv8", efficient_conv10)
 
     # conv75 = MBConv(efficient_conv75, 1, 'conv75_channel_64')
     # conv75 = SA(conv75)
@@ -300,29 +305,29 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
     #conv5 = CA(conv5)
     #conv5 = SA(conv5)
 
-    # conv3 = extraMBConv(conv5, 'same','conv5_to_conv3_1',(1, 1))
-    # conv3 = extraMBConv(conv3, 'same', 'conv5_to_conv3_2',(2, 2))
+    conv3 = extraMBConv(conv5, 'same','conv5_to_conv3_1',(1, 1))
+    conv3 = extraMBConv(conv3, 'same', 'conv5_to_conv3_2',(2, 2))
     #conv3 = CA(conv3)
     #conv3 = SA(conv3)
 
-    # conv1 = extraMBConv(conv3, 'same', 'conv3_to_conv1_1')
-    # conv1 = extraMBConv(conv1, 'valid', 'conv3_to_conv1_2')
+    conv1 = extraMBConv(conv3, 'same', 'conv3_to_conv1_1')
+    conv1 = extraMBConv(conv1, 'valid', 'conv3_to_conv1_2')
     #conv1 = CA(conv1)
     #conv1 = SA(conv1)
 
     # predict features
-    #source_layers.append(bridge_conv38)
+    source_layers.append(bridge_conv38)
     source_layers.append(down_concat_conv19)
     source_layers.append(down_concat_conv10)
     source_layers.append(conv5)
-    #source_layers.append(conv3)
-    #source_layers.append(conv1)
-    # print(bridge_conv38)
-    # print(down_concat_conv19)
-    # print(down_concat_conv10)
-    # print(conv5)
-    # print(conv3)
-    # print(conv1)
+    source_layers.append(conv3)
+    source_layers.append(conv1)
+    print(bridge_conv38)
+    print(down_concat_conv19)
+    print(down_concat_conv10)
+    print(conv5)
+    print(conv3)
+    print(conv1)
 
 
 

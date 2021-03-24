@@ -165,17 +165,6 @@ def convolution(input_tensor, channel, size, stride, padding, name):
 
     return conv
 
-def dilated_convolution(input_tensor, channel, size, stride, dilated_rate, padding, name):
-    kernel_size = (size, size)
-    kernel_stride = (stride, stride)
-    dilated_size = (dilated_rate, dilated_rate)
-    conv = Conv2D(channel, kernel_size, kernel_stride, dilation_rate=dilated_size,
-                  padding=padding, kernel_regularizer=l2(0.0005),
-                  kernel_initializer=CONV_KERNEL_INITALIZER, name=name)(input_tensor)
-    conv = BatchNormalization(axis=3, name=name+'_bn')(conv)
-    conv = Activation(activation, name=name+'_relu')(conv)
-
-    return conv
 
 
 
@@ -204,12 +193,12 @@ def SA(x):
 
 
 
-def upSampling(input_tensor, size, name):
+def upSampling(input_tensor,name):
     # resized = Resizing(size, size, name=name+'_resizing')(input_tensor)
     resized = UpSampling2D(size=(2, 2), interpolation='bilinear')(input_tensor)
     return resized
 
-def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], regularization=5e-4):
+def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], regularization=5e-4):
     source_layers = []
     base = create_efficientNet(base_model_name, pretrained, IMAGE_SIZE)
 
@@ -217,122 +206,61 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[300, 300], r
 
     # get extra layer
     #efficient_conv75 = base.get_layer('block2b_add').output  # 75 75 24
-    efficient_conv38 = base.get_layer(layer_names[0]).output # 64 64 40
-    efficient_conv19 = base.get_layer(layer_names[1]).output # 32 32 112`
-    efficient_conv10 = base.get_layer(layer_names[2]).output # 16 16 320
-
-    print("efficient_conv32", efficient_conv38)
-    print("efficient_conv16", efficient_conv19)
-    print("efficient_conv8", efficient_conv10)
-
-    # conv75 = MBConv(efficient_conv75, 1, 'conv75_channel_64')
-    # conv75 = SA(conv75)
-
-    #conv38 = convolution(efficient_conv38, 64, 3, 1, 'same', 'conv38_channel_64')
-    conv38 = MBConv(efficient_conv38, 1, 'conv38_channel_64')
-    conv38 = MBConv(conv38, 1, 'conv38_channel_64_2')
-    #conv38 = CA(conv38)
-    conv38 = SA(conv38)
-
-    #conv19 = convolution(efficient_conv19, 128, 3, 1, 'same', 'conv19_channel_128')
-    conv19 = MBConv(efficient_conv19, 1, 'conv19_channel_128')
-    conv19 = MBConv(conv19, 1, 'conv19_channel_128_2')
-    # conv19 = CA(conv19)
-    conv19 = SA(conv19)
-
-    #conv10 = convolution(efficient_conv10, 256, 3, 1, 'same', 'conv10_channel_256')
-    conv10 = MBConv(efficient_conv10, 1, 'conv10_channel_256')
-    conv10 = MBConv(conv10, 1, 'conv10_channel_256_2')
-    # conv10 = CA(conv10)
-    conv10 = SA(conv10)
+    conv38 = base.get_layer(layer_names[0]).output # 64 64 40
+    conv19 = base.get_layer(layer_names[1]).output # 32 32 112
+    conv10 = base.get_layer(layer_names[2]).output # 16 16 320
 
     # bottom-up pathway
-    conv10_upSampling = upSampling(conv10, 24, 'conv10_to_conv19')  # 10x10@256 to 19x19@256
+    conv10_upSampling = upSampling(conv10, 'conv10_to_conv19')  # 10x10@256 to 19x19@256
+
+    sa_conv10 = SA(conv10)
 
     concat_conv19 = Concatenate()([conv10_upSampling, conv19])
-    concat_conv19 = convolution(concat_conv19, 128, 1, 1, 'same', 'concat_conv19_1x1_channel')
-    concat_conv19 = MBConv(concat_conv19, 1, 'conv19_upSampling_conv') # for top-down
+    concat_conv19_1x1 = convolution(concat_conv19, 128, 1, 1, 'same', 'concat_conv19_1x1_channel')
+
+    sa_conv19 = SA(concat_conv19_1x1)
+
+    concat_conv19_1x1 = MBConv(concat_conv19_1x1, 1, 'conv19_upSampling_conv') # for top-down
     #ca_conv19 = CA(concat_conv19)
-    ca_conv19 = upSampling(concat_conv19, 48, 'conv19_to_conv38')  # 10x10@128 to 19x19@128
+    ca_conv19 = upSampling(concat_conv19_1x1, 'conv19_to_conv38')  # 10x10@128 to 19x19@128
 
     concat_conv38 = Concatenate()([conv38, ca_conv19])  # 38x39 / @64+128
     concat_conv38 = convolution(concat_conv38, 64, 1, 1, 'same', 'concat_conv38_1x1_channel')
     concat_conv38 = MBConv(concat_conv38, 1, 'conv38_upSampling_conv')
-    # sa_conv38 = SA(concat_conv38)
 
-
-    # Mid-Bridge pathway
-    bridge_conv38 = MBConv(concat_conv38, 1, 'conv38_bridge_1')
-    #bridge_conv38 = MBConv(bridge_conv38, 1, 'conv38_bridge_2') # for predict --------
-    #bridge_conv38 = CA(bridge_conv38)
-    bridge_conv38 = SA(bridge_conv38)
-    print(' bridge_conv38 -- ' , bridge_conv38)
-
-    bridge_conv19 = MBConv(concat_conv19, 1, 'conv19_bridge_1')
-    #bridge_conv19 = MBConv(bridge_conv19, 1, 'conv19_bridge_2')
-    #bridge_conv19 = CA(bridge_conv19)
-    bridge_conv19 = SA(bridge_conv19)
-    print(' bridge_conv39  --  ', bridge_conv19)
-
-    bridge_conv10 = MBConv(conv10, 1, 'conv10_bridge_1')
-    #bridge_conv10 = MBConv(bridge_conv10, 1, 'conv10_bridge_2')
-    #bridge_conv10 = CA(bridge_conv10)
-    bridge_conv10 = SA(bridge_conv10)
-    print(' bridge_conv10  --  ', bridge_conv10)
-
+    sa_conv38 = SA(concat_conv38)
 
     # top-down pathway
-    down_conv19 = MBConv(bridge_conv38, 2, 'conv38_downSampling_conv') # STRIDE = 2
-    down_concat_conv19 = Concatenate()([bridge_conv19, down_conv19]) # 19x19@ 64 + 128
+    down_conv19 = MBConv(sa_conv38, 2, 'conv38_downSampling_conv') # STRIDE = 2
+    down_concat_conv19 = Concatenate()([sa_conv19, down_conv19]) # 19x19@ 64 + 128
     down_concat_conv19 = convolution(down_concat_conv19, 128, 1, 1, 'same', 'concat_conv19_1x1_channel_2')
-    #down_concat_conv19 = MBConv(down_concat_conv19, 1, 'conv19_down_conv') # for predict --------
-    #down_concat_conv19 = SA(down_concat_conv19) ### for predict
-
     down_conv10 = MBConv(down_concat_conv19, 2,  'conv10_downSampling_conv')
-    down_concat_conv10 = Concatenate()([bridge_conv10, down_conv10])  # @256+128
+
+    down_concat_conv10 = Concatenate()([sa_conv10, down_conv10])  # @256+128
     down_concat_conv10 = convolution(down_concat_conv10, 256, 1, 1, 'same', 'concat_conv10_1x1_channel_2')
-    #down_concat_conv10 = MBConv(down_concat_conv10, 1, 'conv10_down_conv') # for predict -------
-    #down_concat_conv10 = SA(down_concat_conv10) ### for predict
-
-
-    #sa_conv38 = MBConv(sa_conv38, 1,  'conv38_for_predict')
-    #sa_down_conv19 = MBConv(sa_down_conv19, 1, 'conv19_for_predict')
-    #sa_conv_conv10 = MBConv(sa_conv_conv10, 1, 'conv10_for_predict')
-
 
     conv5 = extraMBConv(down_concat_conv10, 'same', 'conv10_to_conv5_1', (1, 1))
     conv5 = extraMBConv(conv5, 'same', 'conv10_to_conv5_2', (2, 2))
-    #conv5 = CA(conv5)
-    #conv5 = SA(conv5)
 
     conv3 = extraMBConv(conv5, 'same','conv5_to_conv3_1',(1, 1))
     conv3 = extraMBConv(conv3, 'same', 'conv5_to_conv3_2',(2, 2))
-    #conv3 = CA(conv3)
-    #conv3 = SA(conv3)
+
 
     conv1 = extraMBConv(conv3, 'same', 'conv3_to_conv1_1')
     conv1 = extraMBConv(conv1, 'valid', 'conv3_to_conv1_2')
-    #conv1 = CA(conv1)
-    #conv1 = SA(conv1)
 
     # predict features
-    source_layers.append(bridge_conv38)
+    source_layers.append(sa_conv38)
     source_layers.append(down_concat_conv19)
     source_layers.append(down_concat_conv10)
     source_layers.append(conv5)
     source_layers.append(conv3)
     source_layers.append(conv1)
-    print(bridge_conv38)
+    print(concat_conv38)
     print(down_concat_conv19)
     print(down_concat_conv10)
     print(conv5)
     print(conv3)
     print(conv1)
-
-
-
-
-
-
 
     return base.input, source_layers

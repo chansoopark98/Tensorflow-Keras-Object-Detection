@@ -5,6 +5,7 @@ import time
 import os
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from model.model_builder import model_build
+from metrics import f1score, precision, recall
 
 parser = argparse.ArgumentParser()
 
@@ -129,18 +130,19 @@ print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
 model.summary()
 
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-5, verbose=1)
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=2, min_lr=1e-5, verbose=1)
 checkpoint = ModelCheckpoint(CHECKPOINT_DIR + SAVE_MODEL_NAME + '.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=False)
 
 from callbacks import MyCallback
 testCallBack = MyCallback('test', TENSORBOARD_DIR)
 
+
+
 model.compile(
     optimizer=optimizer,
     loss=total_loss,
-    metrics=['accuracy']
-)
+    metrics=[precision, recall, f1score])
 
 history = model.fit(training_dataset,
                     validation_data=validation_dataset,
