@@ -216,7 +216,7 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], r
     sa_conv10 = SA(conv10)
 
     concat_conv19 = Concatenate()([conv10_upSampling, conv19])
-    concat_conv19_1x1 = convolution(concat_conv19, 128, 1, 1, 'same', 'concat_conv19_1x1_channel')
+    concat_conv19_1x1 = convolution(concat_conv19, 256, 1, 1, 'same', 'concat_conv19_1x1_channel')
 
     sa_conv19 = SA(concat_conv19_1x1)
 
@@ -225,7 +225,7 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], r
     ca_conv19 = upSampling(concat_conv19_1x1, 'conv19_to_conv38')  # 10x10@128 to 19x19@128
 
     concat_conv38 = Concatenate()([conv38, ca_conv19])  # 38x39 / @64+128
-    concat_conv38 = convolution(concat_conv38, 64, 1, 1, 'same', 'concat_conv38_1x1_channel')
+    concat_conv38 = convolution(concat_conv38, 128, 1, 1, 'same', 'concat_conv38_1x1_channel')
     concat_conv38 = MBConv(concat_conv38, 1, 'conv38_upSampling_conv')
 
     sa_conv38 = SA(concat_conv38)
@@ -233,7 +233,7 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], r
     # top-down pathway
     down_conv19 = MBConv(sa_conv38, 2, 'conv38_downSampling_conv') # STRIDE = 2
     down_concat_conv19 = Concatenate()([sa_conv19, down_conv19]) # 19x19@ 64 + 128
-    down_concat_conv19 = convolution(down_concat_conv19, 128, 1, 1, 'same', 'concat_conv19_1x1_channel_2')
+    down_concat_conv19 = convolution(down_concat_conv19, 256, 1, 1, 'same', 'concat_conv19_1x1_channel_2')
     down_conv10 = MBConv(down_concat_conv19, 2,  'conv10_downSampling_conv')
 
     down_concat_conv10 = Concatenate()([sa_conv10, down_conv10])  # @256+128
@@ -249,6 +249,9 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], r
     conv1 = extraMBConv(conv3, 'same', 'conv3_to_conv1_1')
     conv1 = extraMBConv(conv1, 'valid', 'conv3_to_conv1_2')
 
+    conv0 = extraMBConv(conv1, 'same', 'conv1_to_conv0_1')
+    conv0 = extraMBConv(conv0, 'same', 'conv0_1_to_conv0_2', (2, 2))
+
     # predict features
     source_layers.append(sa_conv38)
     source_layers.append(down_concat_conv19)
@@ -256,11 +259,13 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], r
     source_layers.append(conv5)
     source_layers.append(conv3)
     source_layers.append(conv1)
+    source_layers.append(conv0)
     print(concat_conv38)
     print(down_concat_conv19)
     print(down_concat_conv10)
     print(conv5)
     print(conv3)
     print(conv1)
+    print(conv0)
 
     return base.input, source_layers

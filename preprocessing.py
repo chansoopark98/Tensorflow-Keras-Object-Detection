@@ -123,6 +123,7 @@ def pascal_prepare_dataset(dataset, image_size, batch_size, target_transform, tr
     dataset = dataset.map(lambda image, boxes,
                                labels: join_target(image, boxes, labels, image_size, target_transform, classes),
                         num_parallel_calls=AUTO)
+    # dataset = dataset.cache()
     dataset = dataset.padded_batch(batch_size)
     dataset = dataset.prefetch(AUTO)
 

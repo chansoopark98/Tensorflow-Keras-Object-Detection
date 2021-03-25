@@ -9,8 +9,8 @@ from metrics import f1score, precision, recall
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
-parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=8)
+parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
 parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=512)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름", default=str(time.strftime('%m%d', time.localtime(time.time()))))
@@ -55,12 +55,13 @@ size_variance = 0.2
 
 # 384 input size
 specs = [
-            Spec(64, 8, BoxSizes(51, 133), []),  # 0.1
-            Spec(32, 16, BoxSizes(133, 215), [2, 3]),  # 0.26
-            Spec(16, 32, BoxSizes(215, 297), [2, 3]), # 0.42
-            Spec(8, 64, BoxSizes(297, 379), [2, 3]), # 0.58
-            Spec(4, 128, BoxSizes(379, 460), [2]), # 0.74
-            Spec(2, 256, BoxSizes(460, 538), [2]), # 0.9 , max 1.05
+            Spec(64, 8, BoxSizes(51, 123), []),  # 0.1
+            Spec(32, 16, BoxSizes(123, 189), [2]),  # 0.26
+            Spec(16, 32, BoxSizes(189, 256), [2, 3]), # 0.42
+            Spec(8, 64, BoxSizes(256, 323), [2, 3]), # 0.58
+            Spec(4, 128, BoxSizes(323, 389), [2]), # 0.74
+            Spec(2, 256, BoxSizes(389, 461), [2]), # 0.9 , max 1.05
+            Spec(1, 512, BoxSizes(461, 538), [2]) # 0.9 , max 1.05
         ]
 
 
@@ -135,7 +136,7 @@ checkpoint = ModelCheckpoint(CHECKPOINT_DIR + SAVE_MODEL_NAME + '.h5', monitor='
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
 
 from callbacks import MyCallback
-testCallBack = MyCallback('test', TENSORBOARD_DIR, train_data)
+testCallBack = MyCallback('test', TENSORBOARD_DIR)
 
 
 
