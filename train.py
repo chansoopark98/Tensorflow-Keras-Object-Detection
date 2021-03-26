@@ -7,6 +7,7 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from model.model_builder import model_build
 from metrics import f1score, precision, recall
 
+
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=8)
@@ -130,6 +131,7 @@ validation_steps = number_test // BATCH_SIZE
 print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
 model.summary()
+
 
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=2, min_lr=1e-5, verbose=1)
 checkpoint = ModelCheckpoint(CHECKPOINT_DIR + SAVE_MODEL_NAME + '.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)

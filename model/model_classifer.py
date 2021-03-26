@@ -35,11 +35,13 @@ def create_classifier(source_layers, num_priors, normalizations, num_classes=81)
         # name='activation_3/Relu:0' shape=(batch, 3, 3, 256)
         # name='activation_5/Relu:0' shape=(batch, 1, 1, 256)
         x = layer
-        name = x.name.split('/')[0] # name만 추출 (ex: block3b_add)
+        # name = x.name.split('/')[0] # name만 추출 (ex: block3b_add)
+        name = x.name.split(':')[0] # name만 추출 (ex: block3b_add)
 
         # <<< reduce norm
         if normalizations is not None and normalizations[i] > 0:
            x = Normalize(normalizations[i], name=name + '_norm')(x)
+           print('norm_feature : '+x.name)
 
         # x = activation_5/Relu:0, shape=(Batch, 1, 1, 256)
         # print("start_multibox_head.py")
