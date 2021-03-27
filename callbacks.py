@@ -9,17 +9,17 @@ class MyCallback(tf.keras.callbacks.Callback):
         self.file_writer = tf.summary.create_file_writer(TENSORBOARD_DIR)
         self.file_writer.set_as_default()
 
-    def on_epoch_begin(self, epoch, logs=None):
-        logs['learning rate'] = self.model.optimizer.lr
-        tf.summary.scalar("lr", logs['learning rate'], step=epoch)
-
-    # def on_epoch_end(self, epoch, logs=None):
+    # def on_epoch_begin(self, epoch, logs=None):
     #     logs['learning rate'] = self.model.optimizer.lr
-    #     # with self.file_writer.as_default():
-    #     #     # img = self.model.predict(dummy_data)
-    #     #     # y_pred = self.model.predict(self.validation_data[0])
-    #     #     tf.summary.image("Training data", img, step=0)
-    #     tf.summary.scalar("end_lr", logs['learning rate'], step=epoch)
+    #     tf.summary.scalar("lr", logs['learning rate'], step=epoch)
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs['learning rate'] = self.model.optimizer.lr
+        # with self.file_writer.as_default():
+        #     # img = self.model.predict(dummy_data)
+        #     # y_pred = self.model.predict(self.validation_data[0])
+        #     tf.summary.image("Training data", img, step=0)
+        tf.summary.scalar("end_lr", logs['learning rate'], step=epoch)
 
     #
     #
