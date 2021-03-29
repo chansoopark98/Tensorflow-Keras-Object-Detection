@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tensorflow.keras.backend as K
-
-def recall(y_pred, y_target):
+from tensorflow.keras.metrics import sparse_categorical_crossentropy, MeanIoU
+def recall(y_target, y_pred):
     # clip(t, clip_value_min, clip_value_max) : clip_value_min~clip_value_max 이외 가장자리를 깎아 낸다
     # round : 반올림한다
     y_target_yn = K.round(K.clip(y_target, 0, 1)) # 실제값을 0(Negative) 또는 1(Positive)로 설정한다
@@ -20,7 +20,7 @@ def recall(y_pred, y_target):
     # return a single tensor value
     return recall
 
-def precision(y_pred, y_target):
+def precision(y_target, y_pred):
     # clip(t, clip_value_min, clip_value_max) : clip_value_min~clip_value_max 이외 가장자리를 깎아 낸다
     # round : 반올림한다
     y_pred_yn = K.round(K.clip(y_pred, 0, 1)) # 예측값을 0(Negative) 또는 1(Positive)로 설정한다
@@ -40,7 +40,7 @@ def precision(y_pred, y_target):
     return precision
 
 
-def f1score(y_pred, y_target):
+def f1score(y_target, y_pred):
     _recall = recall(y_target, y_pred)
     _precision = precision(y_target, y_pred)
     # K.epsilon()는 'divide by zero error' 예방차원에서 작은 수를 더한다
@@ -48,3 +48,30 @@ def f1score(y_pred, y_target):
 
     # return a single tensor value
     return _f1score
+
+def cross_entropy(y_target, y_pred):
+    return sparse_categorical_crossentropy(y_pred=y_pred[:,:,:21], y_true=tf.argmax(y_target[:,:,:21], axis=2))
+
+def smooth_l1(labels, scores, sigma=1.0):
+    diff = scores - labels
+    abs_diff = tf.abs(diff)
+    return tf.where(tf.less(abs_diff, 1 / (sigma ** 2)), 0.5 * (sigma * diff) ** 2, abs_diff - 1 / (2 * sigma ** 2))
+
+def localization(y_true, y_pred):
+    num_classes = 21
+
+    labels = tf.argmax(y_true[:, :, :num_classes], axis=2)  # batch, 13792
+    predicted_locations = y_pred[:, :, num_classes:]  # None, None, 4
+    gt_locations = y_true[:, :, num_classes:]  # None, 13792, None
+
+    pos_mask = labels > 0
+
+    predicted_locations = tf.reshape(tf.boolean_mask(predicted_locations, pos_mask), [-1, 4])
+
+    gt_locations = tf.reshape(tf.boolean_mask(gt_locations, pos_mask), [-1, 4])
+
+    num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
+    return tf.math.reduce_sum(smooth_l1(scores=predicted_locations, labels=gt_locations))/num_pos
+    # num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
+    # loc_loss = smooth_l1_loss / num_pos
+

@@ -5,12 +5,12 @@ import time
 import os
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from model.model_builder import model_build
-from metrics import f1score, precision, recall
+from metrics import f1score, precision, recall , cross_entropy, localization
 
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=8)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
 parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=512)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
@@ -145,7 +145,9 @@ testCallBack = MyCallback('test', TENSORBOARD_DIR)
 model.compile(
     optimizer=optimizer,
     loss=total_loss,
-    metrics=[precision, recall, f1score])
+    metrics=[f1score, precision, recall, cross_entropy, localization]
+)
+    # metrics=[precision, recall, f1score])
 
 history = model.fit(training_dataset,
                     validation_data=validation_dataset,
