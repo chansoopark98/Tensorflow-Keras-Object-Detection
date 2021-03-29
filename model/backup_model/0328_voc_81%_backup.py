@@ -212,10 +212,8 @@ def build_BiFPN(p3, p5, p7, num_channels=64 , id=0, freeze_bn=False):
         P5_in = C5
         P6_in = Conv2D(num_channels, kernel_size=1, padding='same', name='resample_p6/conv2d')(C5)
         P6_in = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, name='resample_p6/bn')(P6_in)
-        # Add spatial attention
         # P6_in = BatchNormalization(freeze=freeze_bn, name='resample_p6/bn')(P6_in)
         P6_in = MaxPooling2D(pool_size=3, strides=2, padding='same', name='resample_p6/maxpool')(P6_in)
-        P6_in_2 = SA(P6_in)
         P7_in = MaxPooling2D(pool_size=3, strides=2, padding='same', name='resample_p7/maxpool')(P6_in)
         P7_U = UpSampling2D()(P7_in)
         P6_td = Add(name='fpn_cells/cell_/fnode0/add')([P6_in, P7_U])
@@ -256,11 +254,6 @@ def build_BiFPN(p3, p5, p7, num_channels=64 , id=0, freeze_bn=False):
                                 name='fpn_cells/cell_/fnode4/resample_0_1_9/conv2d')(P4_in)
         P4_in_2 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON,
                                             name='fpn_cells/cell_/fnode4/resample_0_1_9/bn')(P4_in_2)
-
-        # Add spatial attention
-        P4_in_2 = SA(P4_in_2)
-
-
         # P4_in_2 = BatchNormalization(freeze=freeze_bn, name=f'fpn_cells/cell_{id}/fnode4/resample_0_1_9/bn')(P4_in_2)
         P3_D = MaxPooling2D(pool_size=3, strides=2, padding='same')(P3_out)
         P4_out = Add(name='fpn_cells/cell_/fnode4/add')([P4_in_2, P4_td, P3_D])
@@ -272,10 +265,6 @@ def build_BiFPN(p3, p5, p7, num_channels=64 , id=0, freeze_bn=False):
                                 name='fpn_cells/cell_/fnode5/resample_0_2_10/conv2d')(P5_in)
         P5_in_2 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON,
                                             name='fpn_cells/cell_/fnode5/resample_0_2_10/bn')(P5_in_2)
-
-        # Add spatial attention
-        P5_in_2 = SA(P5_in_2)
-
         # P5_in_2 = BatchNormalization(freeze=freeze_bn, name=f'fpn_cells/cell_{id}/fnode5/resample_0_2_10/bn')(P5_in_2)
         P4_D = MaxPooling2D(pool_size=3, strides=2, padding='same')(P4_out)
         P5_out = Add(name='fpn_cells/cell_/fnode5/add')([P5_in_2, P5_td, P4_D])
@@ -284,7 +273,7 @@ def build_BiFPN(p3, p5, p7, num_channels=64 , id=0, freeze_bn=False):
                                     name='fpn_cells/cell_/fnode5/op_after_combine10')(P5_out)
 
         P5_D = MaxPooling2D(pool_size=3, strides=2, padding='same')(P5_out)
-        P6_out = Add(name='fpn_cells/cell_/fnode6/add')([P6_in_2, P6_td, P5_D])
+        P6_out = Add(name='fpn_cells/cell_/fnode6/add')([P6_in, P6_td, P5_D])
         P6_out = Activation(lambda x: tf.nn.swish(x))(P6_out)
         P6_out = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
                                     name='fpn_cells/cell_/fnode6/op_after_combine11')(P6_out)
