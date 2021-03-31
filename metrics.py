@@ -1,9 +1,10 @@
 import tensorflow as tf
 import tensorflow.keras.backend as K
-from tensorflow.keras.metrics import sparse_categorical_crossentropy, MeanIoU
+from tensorflow.keras.metrics import sparse_categorical_crossentropy
+
+num_classes = 81
+
 def recall(y_target, y_pred):
-    # clip(t, clip_value_min, clip_value_max) : clip_value_min~clip_value_max 이외 가장자리를 깎아 낸다
-    # round : 반올림한다
     y_target_yn = K.round(K.clip(y_target, 0, 1)) # 실제값을 0(Negative) 또는 1(Positive)로 설정한다
     y_pred_yn = K.round(K.clip(y_pred, 0, 1)) # 예측값을 0(Negative) 또는 1(Positive)로 설정한다
 
@@ -50,7 +51,7 @@ def f1score(y_target, y_pred):
     return _f1score
 
 def cross_entropy(y_target, y_pred):
-    return sparse_categorical_crossentropy(y_pred=y_pred[:,:,:21], y_true=tf.argmax(y_target[:,:,:21], axis=2))
+    return sparse_categorical_crossentropy(y_pred=y_pred[:,:,:num_classes], y_true=tf.argmax(y_target[:,:,:num_classes], axis=2))
 
 def smooth_l1(labels, scores, sigma=1.0):
     diff = scores - labels
@@ -58,8 +59,6 @@ def smooth_l1(labels, scores, sigma=1.0):
     return tf.where(tf.less(abs_diff, 1 / (sigma ** 2)), 0.5 * (sigma * diff) ** 2, abs_diff - 1 / (2 * sigma ** 2))
 
 def localization(y_true, y_pred):
-    num_classes = 21
-
     labels = tf.argmax(y_true[:, :, :num_classes], axis=2)  # batch, 13792
     predicted_locations = y_pred[:, :, num_classes:]  # None, None, 4
     gt_locations = y_true[:, :, num_classes:]  # None, 13792, None
