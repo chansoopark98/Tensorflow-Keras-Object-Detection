@@ -207,29 +207,26 @@ def convolution(input_tensor, channel, size, stride, padding, name):
 
 
 def SA(x):
-    channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
-    in_channels = K.int_shape(x)[channel_axis]
 
     dilated_feature = DepthwiseConv2D((3, 3), strides=(1, 1), use_bias=False, dilation_rate=(3, 3), padding='same')(x)
     depthwise_feature = DepthwiseConv2D((3, 3), strides=(1, 1), use_bias=False, padding='same')(x)
 
-    avg_pool = Lambda(lambda x: K.mean(x, axis=3, keepdims=True))(dilated_feature)
+    dil_pool = Lambda(lambda x: K.max(x, axis=3, keepdims=True))(dilated_feature)
 
-    max_pool = Lambda(lambda x: K.max(x, axis=3, keepdims=True))(depthwise_feature)
+    dwc_pool = Lambda(lambda x: K.max(x, axis=3, keepdims=True))(depthwise_feature)
 
-    concat = Concatenate(axis=3)([avg_pool, max_pool])
+    concat = Concatenate(axis=3)([dil_pool, dwc_pool])
 
     sa_feature = Conv2D(filters=1,
                           kernel_size=7,
                           strides=1,
                           padding='same',
                           activation='sigmoid',
-                          kernel_initializer=CONV_KERNEL_INITALIZER,
                           use_bias=False)(concat)
 
     return multiply([x, sa_feature])
 
-num_channels = [64, 88, 112, 160, 224, 288, 384]
+
 
 def SeparableConvBlock(num_channels, kernel_size, strides, name, freeze_bn=False):
     f1 = SeparableConv2D(num_channels, kernel_size=kernel_size, strides=strides, padding='same',
@@ -241,7 +238,6 @@ def SeparableConvBlock(num_channels, kernel_size, strides, name, freeze_bn=False
 
 
 def build_FPN(features, num_channels=64, times=0, normal_fusion=True, freeze_bn=False):
-
     if times == 0 :
         C3, C4, C5 = features
         P3_in = C3
@@ -249,10 +245,12 @@ def build_FPN(features, num_channels=64, times=0, normal_fusion=True, freeze_bn=
         P5_in = C5
         P6_in = Conv2D(num_channels, kernel_size=1, padding='same', name='resample_p6/conv2d')(C5)
         P6_in = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, name='resample_p6/bn')(P6_in)
-        # Add spatial attention
-        # P6_in = BatchNormalization(freeze=freeze_bn, name='resample_p6/bn')(P6_in)
         P6_in = MaxPooling2D(pool_size=3, strides=2, padding='same', name='resample_p6/maxpool')(P6_in)
-        P6_in_2 = SA(P6_in)
+
+
+        # # Add spatial attention
+        # P6_in_2 = SA(P6_in)
+
         P7_in = MaxPooling2D(pool_size=3, strides=2, padding='same', name='resample_p7/maxpool')(P6_in)
         P7_U = UpSampling2D()(P7_in)
 
@@ -268,7 +266,6 @@ def build_FPN(features, num_channels=64, times=0, normal_fusion=True, freeze_bn=
                                 name='fpn_cells/cell_/fnode1/resample_0_2_6/conv2d')(P5_in)
         P5_in_1 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON,
                                             name='fpn_cells/cell_/fnode1/resample_0_2_6/bn')(P5_in_1)
-        # P5_in_1 = BatchNormalization(freeze=freeze_bn, name=f'fpn_cells/cell_{id}/fnode1/resample_0_2_6/bn')(P5_in_1)
         P6_U = UpSampling2D()(P6_td)
 
 
@@ -285,7 +282,6 @@ def build_FPN(features, num_channels=64, times=0, normal_fusion=True, freeze_bn=
                                 name='fpn_cells/cell_/fnode2/resample_0_1_7/conv2d')(P4_in)
         P4_in_1 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON,
                                             name='fpn_cells/cell_/fnode2/resample_0_1_7/bn')(P4_in_1)
-        # P4_in_1 = BatchNormalization(freeze=freeze_bn, name=f'fpn_cells/cell_{id}/fnode2/resample_0_1_7/bn')(P4_in_1)
         P5_U = UpSampling2D()(P5_td)
 
 
@@ -302,7 +298,6 @@ def build_FPN(features, num_channels=64, times=0, normal_fusion=True, freeze_bn=
                               name='fpn_cells/cell_/fnode3/resample_0_0_8/conv2d')(P3_in)
         P3_in = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON,
                                           name=f'fpn_cells/cell_/fnode3/resample_0_0_8/bn')(P3_in)
-        # P3_in = BatchNormalization(freeze=freeze_bn, name=f'fpn_cells/cell_{id}/fnode3/resample_0_0_8/bn')(P3_in)
         P4_U = UpSampling2D()(P4_td)
 
         if normal_fusion:
@@ -318,8 +313,8 @@ def build_FPN(features, num_channels=64, times=0, normal_fusion=True, freeze_bn=
         P4_in_2 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON,
                                             name='fpn_cells/cell_/fnode4/resample_0_1_9/bn')(P4_in_2)
 
-        # Add spatial attention
-        P4_in_2 = SA(P4_in_2)
+        # # Add spatial attention
+        # P4_in_2 = SA(P4_in_2)
 
 
         # P4_in_2 = BatchNormalization(freeze=freeze_bn, name=f'fpn_cells/cell_{id}/fnode4/resample_0_1_9/bn')(P4_in_2)
@@ -339,13 +334,11 @@ def build_FPN(features, num_channels=64, times=0, normal_fusion=True, freeze_bn=
         P5_in_2 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON,
                                             name='fpn_cells/cell_/fnode5/resample_0_2_10/bn')(P5_in_2)
 
-        # Add spatial attention
-        P5_in_2 = SA(P5_in_2)
+        # # Add spatial attention
+        # P5_in_2 = SA(P5_in_2)
 
-        # P5_in_2 = BatchNormalization(freeze=freeze_bn, name=f'fpn_cells/cell_{id}/fnode5/resample_0_2_10/bn')(P5_in_2)
+
         P4_D = MaxPooling2D(pool_size=3, strides=2, padding='same')(P4_out)
-
-
 
         if normal_fusion:
             P5_out = Add(name='fpn_cells/cell_/fnode5/add')([P5_in_2, P5_td, P4_D])
@@ -359,9 +352,9 @@ def build_FPN(features, num_channels=64, times=0, normal_fusion=True, freeze_bn=
         P5_D = MaxPooling2D(pool_size=3, strides=2, padding='same')(P5_out)
 
         if normal_fusion:
-            P6_out = Add(name='fpn_cells/cell_/fnode6/add')([P6_in_2, P6_td, P5_D])
+            P6_out = Add(name='fpn_cells/cell_/fnode6/add')([P6_in, P6_td, P5_D])
         else:
-            P6_out = weightAdd(name='fpn_cells/cell_/fnode6/add')([P6_in_2, P6_td, P5_D])
+            P6_out = weightAdd(name='fpn_cells/cell_/fnode6/add')([P6_in, P6_td, P5_D])
 
         P6_out = Activation(lambda x: tf.nn.swish(x))(P6_out)
         P6_out = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
@@ -472,17 +465,9 @@ def build_FPN(features, num_channels=64, times=0, normal_fusion=True, freeze_bn=
         P7_out = Activation(lambda x: tf.nn.swish(x))(P7_out)
         P7_out = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
                                     name=f'fpn_cells/cell_{times}/fnode7/op_after_combine12')(P7_out)
-    return P3_out, P4_td, P5_td, P6_td, P7_out
 
+        return P3_out, P4_td, P5_td, P6_td, P7_out
 
-
-
-
-
-def upSampling(input_tensor,name):
-    # resized = Resizing(size, size, name=name+'_resizing')(input_tensor)
-    resized = UpSampling2D(size=(2, 2), interpolation='bilinear')(input_tensor)
-    return resized
 
 def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], regularization=5e-4):
     source_layers = []
@@ -491,20 +476,32 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], r
     layer_names = GET_EFFICIENT_NAME[base_model_name]
     # get extra layer
     #efficient_conv75 = base.get_layer('block2b_add').output  # 75 75 24
-    conv38 = base.get_layer(layer_names[0]).output # 64 64 40
-    conv19 = base.get_layer(layer_names[1]).output # 32 32 112
-    conv10 = base.get_layer(layer_names[2]).output # 16 16 320
-    features = [conv38, conv19, conv10]
+    p3 = base.get_layer(layer_names[0]).output # 64 64 40
+    # p4 = base.get_layer('block4c_add').output
+    p5 = base.get_layer(layer_names[1]).output # 32 32 112
+    # p6 = base.get_layer('block6d_add').output
+    p7 = base.get_layer(layer_names[2]).output # 16 16 320
+
+    features = p3, p5, p7
     for i in range(3):
-        features = build_FPN(features, 64, times=i, normal_fusion=False)
+        print("times i : ", i+1)
+        features = build_FPN(features, 64, times=i, normal_fusion=True)
 
 
 
-    conv1 = extraMBConv(features[4], 'same', 'conv3_to_conv1_1')
-    conv1 = extraMBConv(conv1, 'valid', 'conv3_to_conv1_2')
+    extra_p8 = SeparableConvBlock(num_channels=64, kernel_size=3, strides=2,
+                               name='extra/p8/dwconv')(features[4])
+    extra_p8 = Activation(lambda x: tf.nn.swish(x))(extra_p8)
 
-    conv0 = extraMBConv(conv1, 'same', 'conv1_to_conv0_1')
-    conv0 = extraMBConv(conv0, 'same', 'conv0_1_to_conv0_2', (2, 2))
+    extra_p9 = SeparableConvBlock(num_channels=64, kernel_size=3, strides=2,
+                               name='extra/p9/dwconv')(extra_p8)
+    extra_p9 = Activation(lambda x: tf.nn.swish(x))(extra_p9)
+
+    # conv1 = extraMBConv(features[4], 'same', 'conv3_to_conv1_1')
+    # conv1 = extraMBConv(conv1, 'valid', 'conv3_to_conv1_2')
+    #
+    # conv0 = extraMBConv(conv1, 'same', 'conv1_to_conv0_1')
+    # conv0 = extraMBConv(conv0, 'same', 'conv0_1_to_conv0_2', (2, 2))
 
     # predict features
     source_layers.append(features[0])
@@ -512,14 +509,14 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], r
     source_layers.append(features[2])
     source_layers.append(features[3])
     source_layers.append(features[4])
-    source_layers.append(conv1)
-    source_layers.append(conv0)
+    source_layers.append(extra_p8)
+    source_layers.append(extra_p9)
     print(features[0])
     print(features[1])
     print(features[2])
     print(features[3])
     print(features[4])
-    print(conv1)
-    print(conv0)
+    print(extra_p8)
+    print(extra_p9)
 
     return base.input, source_layers

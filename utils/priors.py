@@ -23,8 +23,66 @@ from utils.misc import *
  """
 
 BoxSizes = collections.namedtuple('Boxsizes', ['min', 'max'])
-Spec = collections.namedtuple('Spec', ['feature_map_size', 'shrinkage', 'box_sizes', 'aspect_ratios'])
+Spec = collections.namedtuple('Spec', ['feature_map_size', 'shrinkage', 'box_sizes', 'aspect_ratios', 'default'])
 
+
+# def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
+#     priors = []
+#     for spec in specs:
+#         # specs
+#         # index 0 >> size-(48,438) shrinkage-8 CSNet
+#         scale = image_size / spec.shrinkage
+#         for j, i in itertools.product(range(spec.feature_map_size), repeat=2):
+#             x_center = (i + 0.5) / scale
+#             y_center = (j + 0.5) / scale
+#
+#             # 작은 bbox
+#             size = spec.box_sizes.min
+#             h = w = size / image_size
+#             priors.append([
+#                 x_center,
+#                 y_center,
+#                 w,
+#                 h
+#             ])
+#
+#             # 큰 bbox
+#             size = np.sqrt(spec.box_sizes.max * spec.box_sizes.min)
+#             h = w = size / image_size
+#             priors.append([
+#                 x_center,
+#                 y_center,
+#                 w,
+#                 h
+#             ])
+#
+#             # 작은 bbox 높이, 너비 비율 변경
+#             size = spec.box_sizes.min
+#             h = w = size / image_size
+#             if spec.aspect_ratios :
+#                 for ratio in spec.aspect_ratios:
+#                     ratio = np.sqrt(ratio)
+#                     priors.append([
+#                         x_center,
+#                         y_center,
+#                         w * ratio,
+#                         h / ratio
+#                     ])
+#                     priors.append([
+#                         x_center,
+#                         y_center,
+#                         w / ratio,
+#                         h * ratio
+#                     ])
+#
+#     # priors > shape(Batch, 13792)
+#     # 2차원 배열이고 각 배열마다 4개씩 존재(x_center, y_center, w, h) * 13792
+#     priors = np.array(priors, dtype=np.float32)
+#
+#     print(priors)
+#     if clamp:
+#         np.clip(priors, 0.0, 1.0, out=priors)
+#     return tf.convert_to_tensor(priors)
 
 def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
     priors = []
@@ -46,15 +104,16 @@ def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
                 h
             ])
 
-            # 큰 bbox
-            size = np.sqrt(spec.box_sizes.max * spec.box_sizes.min)
-            h = w = size / image_size
-            priors.append([
-                x_center,
-                y_center,
-                w,
-                h
-            ])
+            if spec.default:
+                # 큰 bbox
+                size = np.sqrt(spec.box_sizes.max * spec.box_sizes.min)
+                h = w = size / image_size
+                priors.append([
+                    x_center,
+                    y_center,
+                    w,
+                    h
+                ])
 
             # 작은 bbox 높이, 너비 비율 변경
             size = spec.box_sizes.min

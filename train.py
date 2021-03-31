@@ -56,13 +56,13 @@ size_variance = 0.2
 
 # 384 input size
 specs = [
-            Spec(64, 8, BoxSizes(51, 123), [2]),  # 0.1
-            Spec(32, 16, BoxSizes(123, 189), [2]),  # 0.26
-            Spec(16, 32, BoxSizes(189, 256), [2, 3]), # 0.42
-            Spec(8, 64, BoxSizes(256, 323), [2, 3]), # 0.58
-            Spec(4, 128, BoxSizes(323, 389), [2]), # 0.74
-            Spec(2, 256, BoxSizes(389, 461), [2]), # 0.9 , max 1.05
-            Spec(1, 512, BoxSizes(461, 538), [2]) # 0.9 , max 1.05
+            Spec(64, 8, BoxSizes(51, 123), [2], False),  # 0.1
+            Spec(32, 16, BoxSizes(123, 189), [2], False),  # 0.26
+            Spec(16, 32, BoxSizes(189, 256), [2, 3], True), # 0.42
+            Spec(8, 64, BoxSizes(256, 323), [2, 3], True), # 0.58
+            Spec(4, 128, BoxSizes(323, 389), [2], True), # 0.74
+            Spec(2, 256, BoxSizes(389, 461), [2], True), # 0.9 , max 1.05
+            Spec(1, 512, BoxSizes(461, 538), [2], True) # 0.9 , max 1.05
         ]
 
 
@@ -87,6 +87,7 @@ if TRAIN_MODE == 'voc':
     number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
     print("테스트 데이터 개수:", number_test)
     optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
+    # optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
 
     training_dataset = pascal_prepare_dataset(train_data, IMAGE_SIZE, BATCH_SIZE,
                                               target_transform, TRAIN_MODE, train=True)
