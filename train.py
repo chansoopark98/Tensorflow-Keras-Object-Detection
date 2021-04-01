@@ -10,7 +10,7 @@ from metrics import f1score, precision, recall , cross_entropy, localization
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
 parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=512)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
@@ -19,7 +19,7 @@ parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
-parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 가중치 로드", default=False)
 
 args = parser.parse_args()
@@ -62,13 +62,13 @@ size_variance = 0.2
 
 ## for voc
 specs = [
-            Spec(64, 8, BoxSizes(51, 123), [2], False),  # 0.1
-            Spec(32, 16, BoxSizes(123, 189), [2], False),  # 0.26
-            Spec(16, 32, BoxSizes(189, 256), [2, 3], True), # 0.42
-            Spec(8, 64, BoxSizes(256, 323), [2, 3], True), # 0.58
-            Spec(4, 128, BoxSizes(323, 389), [2], True), # 0.74
-            Spec(2, 256, BoxSizes(389, 461), [2], True), # 0.9 , max 1.05
-            Spec(1, 512, BoxSizes(461, 538), [2], True) # 0.9 , max 1.05
+            Spec(64, 8, BoxSizes(51, 102), [2]),  # 0.1
+            Spec(32, 16, BoxSizes(123, 174), [2]),  # 0.26
+            Spec(16, 32, BoxSizes(189, 241), [2, 3]), # 0.42
+            Spec(8, 64, BoxSizes(256, 307), [2, 3]), # 0.58
+            Spec(4, 128, BoxSizes(323, 374), [2]), # 0.74
+            Spec(2, 256, BoxSizes(389, 440), [2]), # 0.9 , max 1.05
+            Spec(1, 512, BoxSizes(461, 538), [2]) # 0.9 , max 1.05
         ]
 
 ## for coco
