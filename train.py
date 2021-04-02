@@ -62,15 +62,14 @@ size_variance = 0.2
 
 ## for voc
 specs = [
-            Spec(64, 8, BoxSizes(51, 102), [2]),  # 0.1
-            Spec(32, 16, BoxSizes(123, 174), [2]),  # 0.26
-            Spec(16, 32, BoxSizes(189, 241), [2, 3]), # 0.42
-            Spec(8, 64, BoxSizes(256, 307), [2, 3]), # 0.58
-            Spec(4, 128, BoxSizes(323, 374), [2]), # 0.74
-            Spec(2, 256, BoxSizes(389, 440), [2]), # 0.9 , max 1.05
+            Spec(64, 8, BoxSizes(51, 123), [2]),  # 0.1
+            Spec(32, 16, BoxSizes(123, 189), [2]),  # 0.26
+            Spec(16, 32, BoxSizes(189, 256), [2, 3]), # 0.42
+            Spec(8, 64, BoxSizes(256, 323), [2, 3]), # 0.58
+            Spec(4, 128, BoxSizes(323, 389), [2, 3]), # 0.74
+            Spec(2, 256, BoxSizes(389, 461), [2]), # 0.9 , max 1.05
             Spec(1, 512, BoxSizes(461, 538), [2]) # 0.9 , max 1.05
         ]
-
 ## for coco
 
 # specs = [
@@ -152,7 +151,7 @@ print("검증 배치 개수:", validation_steps)
 model.summary()
 
 
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=2, min_lr=1e-5, verbose=1)
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3, min_lr=1e-6, verbose=1)
 checkpoint = ModelCheckpoint(CHECKPOINT_DIR + SAVE_MODEL_NAME + '.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
 
