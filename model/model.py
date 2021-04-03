@@ -246,11 +246,6 @@ def build_FPN(features, num_channels=64, times=0, normal_fusion=True, freeze_bn=
         P6_in = Conv2D(num_channels, kernel_size=1, padding='same', name='resample_p6/conv2d')(C5)
         P6_in = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, name='resample_p6/bn')(P6_in)
         P6_in = MaxPooling2D(pool_size=3, strides=2, padding='same', name='resample_p6/maxpool')(P6_in)
-
-
-        # Add spatial attention
-        P6_in_2 = SA(P6_in)
-
         P7_in = MaxPooling2D(pool_size=3, strides=2, padding='same', name='resample_p7/maxpool')(P6_in)
         P7_U = UpSampling2D()(P7_in)
 
@@ -313,9 +308,6 @@ def build_FPN(features, num_channels=64, times=0, normal_fusion=True, freeze_bn=
         P4_in_2 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON,
                                             name='fpn_cells/cell_/fnode4/resample_0_1_9/bn')(P4_in_2)
 
-        # Add spatial attention
-        P4_in_2 = SA(P4_in_2)
-
 
         # P4_in_2 = BatchNormalization(freeze=freeze_bn, name=f'fpn_cells/cell_{id}/fnode4/resample_0_1_9/bn')(P4_in_2)
         P3_D = MaxPooling2D(pool_size=3, strides=2, padding='same')(P3_out)
@@ -334,8 +326,6 @@ def build_FPN(features, num_channels=64, times=0, normal_fusion=True, freeze_bn=
         P5_in_2 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON,
                                             name='fpn_cells/cell_/fnode5/resample_0_2_10/bn')(P5_in_2)
 
-        # Add spatial attention
-        P5_in_2 = SA(P5_in_2)
 
 
         P4_D = MaxPooling2D(pool_size=3, strides=2, padding='same')(P4_out)
@@ -352,9 +342,9 @@ def build_FPN(features, num_channels=64, times=0, normal_fusion=True, freeze_bn=
         P5_D = MaxPooling2D(pool_size=3, strides=2, padding='same')(P5_out)
 
         if normal_fusion:
-            P6_out = Add(name='fpn_cells/cell_/fnode6/add')([P6_in_2, P6_td, P5_D])
+            P6_out = Add(name='fpn_cells/cell_/fnode6/add')([P6_in, P6_td, P5_D])
         else:
-            P6_out = weightAdd(name='fpn_cells/cell_/fnode6/add')([P6_in_2, P6_td, P5_D])
+            P6_out = weightAdd(name='fpn_cells/cell_/fnode6/add')([P6_in, P6_td, P5_D])
 
         P6_out = Activation(lambda x: tf.nn.swish(x))(P6_out)
         P6_out = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
@@ -424,14 +414,10 @@ def build_FPN(features, num_channels=64, times=0, normal_fusion=True, freeze_bn=
                                     name=f'fpn_cells/cell_{times}/fnode3/op_after_combine8')(P3_out)
         P3_D = MaxPooling2D(pool_size=3, strides=2, padding='same')(P3_out)
 
-        ####
-        P4_in_2 = SA(P4_in)
-
-
         if normal_fusion:
-            P4_out = Add(name=f'fpn_cells/cell_{times}/fnode4/add')([P4_in_2, P4_td, P3_D])
+            P4_out = Add(name=f'fpn_cells/cell_{times}/fnode4/add')([P4_in, P4_td, P3_D])
         else:
-            P4_out = weightAdd(name=f'fpn_cells/cell_{times}/fnode4/add')([P4_in_2, P4_td, P3_D])
+            P4_out = weightAdd(name=f'fpn_cells/cell_{times}/fnode4/add')([P4_in, P4_td, P3_D])
 
         P4_out = Activation(lambda x: tf.nn.swish(x))(P4_out)
         P4_out = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
@@ -439,13 +425,11 @@ def build_FPN(features, num_channels=64, times=0, normal_fusion=True, freeze_bn=
 
         P4_D = MaxPooling2D(pool_size=3, strides=2, padding='same')(P4_out)
 
-        ####
-        P5_in_2 = SA(P5_in)
 
         if normal_fusion:
-            P5_out = Add(name=f'fpn_cells/cell_{times}/fnode5/add')([P5_in_2, P5_td, P4_D])
+            P5_out = Add(name=f'fpn_cells/cell_{times}/fnode5/add')([P5_in, P5_td, P4_D])
         else:
-            P5_out = weightAdd(name=f'fpn_cells/cell_{times}/fnode5/add')([P5_in_2, P5_td, P4_D])
+            P5_out = weightAdd(name=f'fpn_cells/cell_{times}/fnode5/add')([P5_in, P5_td, P4_D])
 
         P5_out = Activation(lambda x: tf.nn.swish(x))(P5_out)
         P5_out = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
@@ -454,14 +438,10 @@ def build_FPN(features, num_channels=64, times=0, normal_fusion=True, freeze_bn=
         P5_D = MaxPooling2D(pool_size=3, strides=2, padding='same')(P5_out)
 
 
-        ####
-        P6_in_2 = SA(P6_in)
-
-
         if normal_fusion:
-            P6_out = Add(name=f'fpn_cells/cell_{times}/fnode6/add')([P6_in_2, P6_td, P5_D])
+            P6_out = Add(name=f'fpn_cells/cell_{times}/fnode6/add')([P6_in, P6_td, P5_D])
         else:
-            P6_out = weightAdd(name=f'fpn_cells/cell_{times}/fnode6/add')([P6_in_2, P6_td, P5_D])
+            P6_out = weightAdd(name=f'fpn_cells/cell_{times}/fnode6/add')([P6_in, P6_td, P5_D])
 
         P6_out = Activation(lambda x: tf.nn.swish(x))(P6_out)
         P6_out = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
