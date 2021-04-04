@@ -362,7 +362,7 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], r
     features = p3, p5, p7
 
     for i in range(3):
-        p3, p4, p5, p6, p7 = build_BiFPN(features, 64, i)
+        features = build_BiFPN(features, 64, i)
 
 
 
@@ -373,18 +373,18 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], r
     extra_p9 = extraMBConv(extra_p9, 'same', 'conv0_1_to_conv0_2', (2, 2))
 
     # predict features
-    source_layers.append(p3)
-    source_layers.append(p4)
-    source_layers.append(p5)
-    source_layers.append(p6)
-    source_layers.append(p7)
+    source_layers.append(features[0])
+    source_layers.append(features[1])
+    source_layers.append(features[2])
+    source_layers.append(features[3])
+    source_layers.append(features[4])
     source_layers.append(extra_p8)
     source_layers.append(extra_p9)
-    print(p3)
-    print(p4)
-    print(p5)
-    print(p6)
-    print(p7)
+    print(features[0])
+    print(features[1])
+    print(features[2])
+    print(features[3])
+    print(features[4])
     print(extra_p8)
     print(extra_p9)
 
