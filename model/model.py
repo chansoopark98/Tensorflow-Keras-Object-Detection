@@ -206,7 +206,7 @@ def SeparableConvBlock(num_channels, kernel_size, strides, name, freeze_bn=False
 
 def build_BiFPN(features, num_channels=64 , id=0, freeze_bn=False):
     if id == 0:
-        _, _, C3, C4, C5 = features
+        C3, C4, C5 = features
         P3_in = C3
         P4_in = C4
         P5_in = C5
