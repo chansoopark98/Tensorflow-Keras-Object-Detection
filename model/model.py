@@ -289,7 +289,7 @@ def build_BiFPN(features, num_channels=64 , id=0, freeze_bn=False):
         print('p5', P5_td)
         print('p6', P6_td)
         print('p7', P7_out)
-        return P3_out, P4_td, P5_td, P6_td, P7_out
+        return [P3_out, P4_td, P5_td, P6_td, P7_out]
 
     else:
         P3_in, P4_in, P5_in, P6_in, P7_in = features
@@ -339,7 +339,7 @@ def build_BiFPN(features, num_channels=64 , id=0, freeze_bn=False):
 
         print("else")
 
-        return P3_out, P4_td, P5_td, P6_td, P7_out
+        return [P3_out, P4_td, P5_td, P6_td, P7_out]
 
 
 
@@ -361,7 +361,7 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], r
     p3 = base.get_layer(layer_names[0]).output # 64 64 40
     p5 = base.get_layer(layer_names[1]).output # 32 32 112
     p7 = base.get_layer(layer_names[2]).output # 16 16 320
-    features = p3, p5, p7
+    features = [p3, p5, p7]
 
     for i in range(3):
         features = build_BiFPN(features, 64, i)

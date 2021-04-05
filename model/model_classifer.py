@@ -5,6 +5,7 @@ from tensorflow.keras.regularizers import l2
 from keras.engine.topology import Layer
 from tensorflow.keras.initializers import Constant
 import tensorflow.keras.backend as K
+from tensorflow.keras import initializers
 
 # l2 normalize
 class Normalize(Layer):
@@ -51,8 +52,19 @@ def create_classifier(source_layers, num_priors, normalizations, num_classes=21)
 
         ## original ----
         # x1 = Conv2D(num_priors[i] * num_classes, 3, padding='same', kernel_regularizer=l2(5e-4) ,name= name + '_mbox_conf')(x)
-        x1 = SeparableConv2D(num_priors[i] * num_classes, 3, padding='same', use_bias=False, kernel_regularizer=l2(5e-4),
-                             name= name + '_mbox_conf')(x)
+        # x1 = SeparableConv2D(num_priors[i] * num_classes, 3, padding='same', use_bias=False, kernel_regularizer=l2(5e-4), name= name + '_mbox_conf')(x)
+        x1 = SeparableConv2D(num_priors[i] * num_classes, 3, padding='same',
+                             depthwise_initializer=initializers.VarianceScaling(),
+                             pointwise_initializer=initializers.VarianceScaling(),
+                             name= name + '_mbox_conf_1')(x)
+        x1 = SeparableConv2D(num_priors[i] * num_classes, 3, padding='same',
+                             depthwise_initializer=initializers.VarianceScaling(),
+                             pointwise_initializer=initializers.VarianceScaling(),
+                             name= name + '_mbox_conf_2')(x1)
+        x1 = SeparableConv2D(num_priors[i] * num_classes, 3, padding='same',
+                             depthwise_initializer=initializers.VarianceScaling(),
+                             pointwise_initializer=initializers.VarianceScaling(),
+                             name= name + '_mbox_conf_3')(x1)
         x1 = Flatten(name=name + '_mbox_conf_flat')(x1)
 
 
@@ -60,8 +72,20 @@ def create_classifier(source_layers, num_priors, normalizations, num_classes=21)
         mbox_conf.append(x1)
 
         # x2 = Conv2D(num_priors[i] * 4, 3, padding='same', kernel_regularizer=l2(5e-4) ,name= name + '_mbox_loc')(x)
-        x2 = SeparableConv2D(num_priors[i] * 4, 3, padding='same', use_bias=False, kernel_regularizer=l2(5e-4),
-                             name= name + '_mbox_loc')(x)
+        # x2 = SeparableConv2D(num_priors[i] * 4, 3, padding='same', use_bias=False, kernel_regularizer=l2(5e-4),name= name + '_mbox_loc')(x)
+        x2 = SeparableConv2D(num_priors[i] * 4, 3, padding='same',
+                             depthwise_initializer=initializers.VarianceScaling(),
+                             pointwise_initializer=initializers.VarianceScaling(),
+                             name= name + '_mbox_loc_1')(x)
+        x2 = SeparableConv2D(num_priors[i] * 4, 3, padding='same',
+                             depthwise_initializer=initializers.VarianceScaling(),
+                             pointwise_initializer=initializers.VarianceScaling(),
+                             name= name + '_mbox_loc_2')(x2)
+        x2 = SeparableConv2D(num_priors[i] * 4, 3, padding='same',
+                             depthwise_initializer=initializers.VarianceScaling(),
+                             pointwise_initializer=initializers.VarianceScaling(),
+                             name= name + '_mbox_loc_3')(x2)
+
         x2 = Flatten(name=name + '_mbox_loc_flat')(x2)
         # x2 = activation_b5_mbox_loc_flat/Reshape:0 , shape=(Batch , 16)
         mbox_loc.append(x2)
