@@ -337,6 +337,8 @@ def build_BiFPN(features, num_channels=64 , id=0, freeze_bn=False):
         P7_out = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
                                     name=f'fpn_cells/cell_{id}/fnode7/op_after_combine12')(P7_out)
 
+        print("else")
+
         return P3_out, P4_td, P5_td, P6_td, P7_out
 
 
@@ -364,13 +366,11 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], r
     for i in range(3):
         features = build_BiFPN(features, 64, i)
 
+    extra_p8 = SeparableConvBlock(num_channels=64, kernel_size=3, strides=2,
+                       name='extra_conv/p8')(features[4])
+    extra_p9 = SeparableConvBlock(num_channels=64, kernel_size=3, strides=2,
+                       name='extra_conv/p9')(extra_p8)
 
-
-    extra_p8 = extraMBConv(features[4], 'same', 'conv3_to_conv1_1')
-    extra_p8 = extraMBConv(extra_p8, 'valid', 'conv3_to_conv1_2')
-
-    extra_p9 = extraMBConv(extra_p8, 'same', 'conv1_to_conv0_1')
-    extra_p9 = extraMBConv(extra_p9, 'same', 'conv0_1_to_conv0_2', (2, 2))
 
     # predict features
     source_layers.append(features[0])

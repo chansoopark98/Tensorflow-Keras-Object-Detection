@@ -23,7 +23,7 @@ class Normalize(Layer):
         return self.gamma * K.l2_normalize(x, axis=-1)
 
 # CLASSIFIER BUILD!
-def create_classifier(source_layers, num_priors, normalizations, num_classes=81):
+def create_classifier(source_layers, num_priors, normalizations, num_classes=21):
     mbox_conf = []
     mbox_loc = []
     for i, layer in enumerate(source_layers):
