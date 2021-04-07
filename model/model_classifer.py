@@ -24,7 +24,7 @@ class Normalize(Layer):
         return self.gamma * K.l2_normalize(x, axis=-1)
 
 # CLASSIFIER BUILD!
-def create_classifier(source_layers, num_priors, normalizations, num_classes=21):
+def create_classifier(source_layers, num_priors, normalizations, num_classes=21, classifier_times=3):
     mbox_conf = []
     mbox_loc = []
     for i, layer in enumerate(source_layers):
@@ -57,14 +57,13 @@ def create_classifier(source_layers, num_priors, normalizations, num_classes=21)
                              depthwise_initializer=initializers.VarianceScaling(),
                              pointwise_initializer=initializers.VarianceScaling(),
                              name= name + '_mbox_conf_1')(x)
-        x1 = SeparableConv2D(num_priors[i] * num_classes, 3, padding='same',
-                             depthwise_initializer=initializers.VarianceScaling(),
-                             pointwise_initializer=initializers.VarianceScaling(),
-                             name= name + '_mbox_conf_2')(x1)
-        x1 = SeparableConv2D(num_priors[i] * num_classes, 3, padding='same',
-                             depthwise_initializer=initializers.VarianceScaling(),
-                             pointwise_initializer=initializers.VarianceScaling(),
-                             name= name + '_mbox_conf_3')(x1)
+        for cls_times in range(classifier_times-1):
+            print('cls_times', cls_times)
+            x1 = SeparableConv2D(num_priors[i] * num_classes, 3, padding='same',
+                                 depthwise_initializer=initializers.VarianceScaling(),
+                                 pointwise_initializer=initializers.VarianceScaling(),
+                                 name= name + '_mbox_conf_'+str(cls_times+2))(x1)
+
         x1 = Flatten(name=name + '_mbox_conf_flat')(x1)
 
 
@@ -77,14 +76,11 @@ def create_classifier(source_layers, num_priors, normalizations, num_classes=21)
                              depthwise_initializer=initializers.VarianceScaling(),
                              pointwise_initializer=initializers.VarianceScaling(),
                              name= name + '_mbox_loc_1')(x)
-        x2 = SeparableConv2D(num_priors[i] * 4, 3, padding='same',
-                             depthwise_initializer=initializers.VarianceScaling(),
-                             pointwise_initializer=initializers.VarianceScaling(),
-                             name= name + '_mbox_loc_2')(x2)
-        x2 = SeparableConv2D(num_priors[i] * 4, 3, padding='same',
-                             depthwise_initializer=initializers.VarianceScaling(),
-                             pointwise_initializer=initializers.VarianceScaling(),
-                             name= name + '_mbox_loc_3')(x2)
+        for loc_times in range(classifier_times - 1):
+            x2 = SeparableConv2D(num_priors[i] * 4, 3, padding='same',
+                                 depthwise_initializer=initializers.VarianceScaling(),
+                                 pointwise_initializer=initializers.VarianceScaling(),
+                                 name= name + '_mbox_loc_'+str(loc_times+2))(x2)
 
         x2 = Flatten(name=name + '_mbox_loc_flat')(x2)
         # x2 = activation_b5_mbox_loc_flat/Reshape:0 , shape=(Batch , 16)

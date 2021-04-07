@@ -10,8 +10,8 @@ def model_build(model_mode, base_model_name, pretrained=True, image_size=[512, 5
     elif model_mode == 'coco':
         classes = 81
 
-    inputs, source_layers = csnet_extra_model(base_model_name, pretrained, image_size)
-    output = create_classifier(source_layers, num_priors, normalizations, classes)
+    inputs, source_layers, classifier_times = csnet_extra_model(base_model_name, pretrained, image_size)
+    output = create_classifier(source_layers, num_priors, normalizations, classes, classifier_times)
     model = keras.Model(inputs, outputs=output)
     return model
 

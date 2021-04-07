@@ -179,11 +179,7 @@ def build_BiFPN(features, num_channels=64 , id=0, freeze_bn=False):
         P7_out = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
                                     name='fpn_cells/cell_/fnode7/op_after_combine12')(P7_out)
 
-        print('p3', P3_out)
-        print('p4', P4_td)
-        print('p5', P5_td)
-        print('p6', P6_td)
-        print('p7', P7_out)
+
         return [P3_out, P4_td, P5_td, P6_td, P7_out]
 
     else:
@@ -232,12 +228,9 @@ def build_BiFPN(features, num_channels=64 , id=0, freeze_bn=False):
         P7_out = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
                                     name=f'fpn_cells/cell_{id}/fnode7/op_after_combine12')(P7_out)
 
-        print("else")
+
 
         return [P3_out, P4_td, P5_td, P6_td, P7_out]
-
-
-
 
 
 def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512]):
@@ -245,7 +238,7 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512]):
     base = create_efficientNet(base_model_name, pretrained, IMAGE_SIZE)
 
     layer_names = GET_EFFICIENT_NAME[base_model_name]
-    print('model_name !!!!!!!!! : ', MODEL_NAME[base_model_name])
+
 
     # get extra layer
     #efficient_conv75 = base.get_layer('block2b_add').output  # 75 75 24
@@ -254,7 +247,8 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512]):
     p7 = base.get_layer(layer_names[2]).output # 16 16 320
     features = [p3, p5, p7]
 
-    for i in range(3):
+    for i in range(FPN_TIMES[MODEL_NAME[base_model_name]]):
+        print("times", i)
         features = build_BiFPN(features=features, num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]], id=i)
 
     extra_p8 = SeparableConvBlock(num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]], kernel_size=3, strides=2,
@@ -271,12 +265,12 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512]):
     source_layers.append(features[4])
     source_layers.append(extra_p8)
     source_layers.append(extra_p9)
-    print(features[0])
-    print(features[1])
-    print(features[2])
-    print(features[3])
-    print(features[4])
-    print(extra_p8)
-    print(extra_p9)
+    # print(features[0])
+    # print(features[1])
+    # print(features[2])
+    # print(features[3])
+    # print(features[4])
+    # print(extra_p8)
+    # print(extra_p9)
 
-    return base.input, source_layers
+    return base.input, source_layers, CLS_TIEMS[MODEL_NAME[base_model_name]]
