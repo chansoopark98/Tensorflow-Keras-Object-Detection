@@ -12,9 +12,6 @@ from functools import reduce
 # activation = tfa.activations.mish
 
 NUM_CHANNELS = [64, 88, 112, 160, 224, 288, 384]
-FPN_TIMES = [3, 4, 5, 6, 7, 7, 8]
-CLS_TIEMS = [3, 3, 3, 4, 4, 4, 5]
-INPUT_SIZE = [512, 640, 768, 896, 1024, 1280, 1408]
 MOMENTUM = 0.997
 EPSILON = 1e-4
 
@@ -27,17 +24,6 @@ GET_EFFICIENT_NAME = {
     'B5': ['block3e_add', 'block5g_add', 'block7c_add'],
     'B6': ['block3f_add', 'block5h_add', 'block7c_add'],
     'B7': ['block3g_add', 'block5j_add', 'block7d_add'],
-}
-
-MODEL_NAME = {
-    'B0': 0,
-    'B1': 1,
-    'B2': 2,
-    'B3': 3,
-    'B4': 4,
-    'B5': 5,
-    'B6': 6,
-    'B7': 7
 }
 
 
@@ -240,12 +226,11 @@ def build_BiFPN(features, num_channels=64 , id=0, freeze_bn=False):
 
 
 
-def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512]):
+def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], regularization=5e-4):
     source_layers = []
     base = create_efficientNet(base_model_name, pretrained, IMAGE_SIZE)
 
     layer_names = GET_EFFICIENT_NAME[base_model_name]
-    print('model_name !!!!!!!!! : ', MODEL_NAME[base_model_name])
 
     # get extra layer
     #efficient_conv75 = base.get_layer('block2b_add').output  # 75 75 24
@@ -255,11 +240,11 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512]):
     features = [p3, p5, p7]
 
     for i in range(3):
-        features = build_BiFPN(features=features, num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]], id=i)
+        features = build_BiFPN(features, 64, i)
 
-    extra_p8 = SeparableConvBlock(num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]], kernel_size=3, strides=2,
+    extra_p8 = SeparableConvBlock(num_channels=64, kernel_size=3, strides=2,
                        name='extra_conv/p8')(features[4])
-    extra_p9 = SeparableConvBlock(num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]], kernel_size=3, strides=2,
+    extra_p9 = SeparableConvBlock(num_channels=64, kernel_size=3, strides=2,
                        name='extra_conv/p9')(extra_p8)
 
 
