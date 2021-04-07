@@ -18,14 +18,25 @@ parser.add_argument("--model_name",     type=str,   help="저장될 모델 이�
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
-parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B3')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 가중치 로드", default=False)
+
+MODEL_INPUT_SIZE = {
+    'B0': 512,
+    'B1': 640,
+    'B2': 768,
+    'B3': 896,
+    'B4': 1024,
+    'B5': 1280,
+    'B6': 1408,
+    'B7': 1408
+}
 
 args = parser.parse_args()
 BATCH_SIZE = args.batch_size
 EPOCHS = args.epoch
-IMAGE_SIZE = [args.image_size, args.image_size]
+# IMAGE_SIZE = [args.image_size, args.image_size]
 base_lr = args.lr
 SAVE_MODEL_NAME = args.model_name
 DATASET_DIR = args.dataset_dir
@@ -34,6 +45,9 @@ TENSORBOARD_DIR = args.tensorboard_dir
 MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
 CONTINUE_TRAINING = args.pretrain_mode
+IMAGE_SIZE = [MODEL_INPUT_SIZE[MODEL_NAME], MODEL_INPUT_SIZE[MODEL_NAME]]
+print("입력 이미지 크기 : ", IMAGE_SIZE)
+
 
 os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
@@ -49,39 +63,35 @@ iou_threshold = 0.5
 center_variance = 0.1
 size_variance = 0.2
 
-# # 384 input size
-# spec = [
-#     Spec(38, 8, BoxSizes(30, 60), [2]),
-#     Spec(19, 16, BoxSizes(60, 111), [2, 3]),
-#     Spec(10, 32, BoxSizes(111, 162), [2, 3]),
-#     Spec(5, 64, BoxSizes(162, 213), [2, 3]),
-#     Spec(3, 100, BoxSizes(213, 264), [2]),
-#     Spec(1, 300, BoxSizes(264, 315), [2])
-# ]
 
-
-## for voc
-specs = [
-            Spec(64, 8, BoxSizes(51, 123), [2]),  # 0.1
-            Spec(32, 16, BoxSizes(123, 189), [2]),  # 0.26
-            Spec(16, 32, BoxSizes(189, 256), [2, 3]),  # 0.42
-            Spec(8, 64, BoxSizes(256, 323), [2, 3]),  # 0.58
-            Spec(4, 128, BoxSizes(323, 389), [2]),  # 0.74
-            Spec(2, 256, BoxSizes(389, 461), [2]),  # 0.74
-            Spec(1, 512, BoxSizes(461, 538), [2]),  # 0.74
-        ]
-## for coco
-
+## test ok
 # specs = [
-#             Spec(64, 8, BoxSizes(51, 123), [2], False),  # 0.1
-#             Spec(32, 16, BoxSizes(123, 189), [2], False),  # 0.26
-#             Spec(16, 32, BoxSizes(189, 256), [2, 3], True), # 0.42
-#             Spec(8, 64, BoxSizes(256, 323), [2, 3], True), # 0.58
-#             Spec(4, 128, BoxSizes(323, 389), [2], True), # 0.74
-#             Spec(2, 256, BoxSizes(389, 461), [2], True), # 0.9 , max 1.05
-#             Spec(1, 512, BoxSizes(461, 538), [2], True) # 0.9 , max 1.05
+#             Spec(64, 8, BoxSizes(51, 123), [2]),  # 0.1
+#             Spec(32, 16, BoxSizes(123, 189), [2]),  # 0.24
+#             Spec(16, 32, BoxSizes(189, 256), [2, 3]),  # 0.37
+#             Spec(8, 64, BoxSizes(256, 323), [2, 3]),  # 0.5
+#             Spec(4, 128, BoxSizes(323, 389), [2]),  # 0.63
+#             Spec(2, 256, BoxSizes(389, 461), [2]),  # 0.76
+#             Spec(1, 512, BoxSizes(461, 538), [2]),  # 0.9
 #         ]
 
+
+## for test
+# 32 / 16 /
+specs = [
+            Spec(int(IMAGE_SIZE[0]/16), int(IMAGE_SIZE[0]/32),
+                 BoxSizes(int(IMAGE_SIZE[0]*0.2), int(IMAGE_SIZE[0]*0.37)), [2, 3]),  # 0.2
+            Spec(int(IMAGE_SIZE[0]/32), int(IMAGE_SIZE[0]/16),
+                 BoxSizes(int(IMAGE_SIZE[0]*0.37), int(IMAGE_SIZE[0]*0.54)), [2, 3]),  # 0.37
+            Spec(int(IMAGE_SIZE[0]/64), int(IMAGE_SIZE[0]/8),
+                 BoxSizes(int(IMAGE_SIZE[0]*0.54), int(IMAGE_SIZE[0]*0.71)), [2, 3]),  # 0.54
+            Spec(int(IMAGE_SIZE[0]/128), int(IMAGE_SIZE[0]/4),
+                 BoxSizes(int(IMAGE_SIZE[0]*0.71), int(IMAGE_SIZE[0]*0.88)), [2]),  # 0.71
+            Spec(int(IMAGE_SIZE[0] / 256), int(IMAGE_SIZE[0]/2),
+                 BoxSizes(int(IMAGE_SIZE[0] * 0.88), int(IMAGE_SIZE[0] * 0.95)), [2]) # 0.88 / 0.95
+        ]
+
+print(specs)
 
 priors = create_priors_boxes(specs, IMAGE_SIZE[0])
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)

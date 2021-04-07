@@ -14,7 +14,7 @@ from functools import reduce
 NUM_CHANNELS = [64, 88, 112, 160, 224, 288, 384]
 FPN_TIMES = [3, 4, 5, 6, 7, 7, 8]
 CLS_TIEMS = [3, 3, 3, 4, 4, 4, 5]
-INPUT_SIZE = [512, 640, 768, 896, 1024, 1280, 1408]
+
 MOMENTUM = 0.997
 EPSILON = 1e-4
 
@@ -242,19 +242,21 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512]):
 
     # get extra layer
     #efficient_conv75 = base.get_layer('block2b_add').output  # 75 75 24
-    p3 = base.get_layer(layer_names[0]).output # 64 64 40
-    p5 = base.get_layer(layer_names[1]).output # 32 32 112
-    p7 = base.get_layer(layer_names[2]).output # 16 16 320
+    # p3 = base.get_layer(layer_names[0]).output # 64 64 40
+    p3 = base.get_layer(layer_names[1]).output # 32 32 112
+    p5 = base.get_layer(layer_names[2]).output # 16 16 320
+    p7 = SeparableConvBlock(num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]], kernel_size=3, strides=2,
+                       name='fpn_input/p7')(p5)
     features = [p3, p5, p7]
 
     for i in range(FPN_TIMES[MODEL_NAME[base_model_name]]):
         print("times", i)
         features = build_BiFPN(features=features, num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]], id=i)
 
-    extra_p8 = SeparableConvBlock(num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]], kernel_size=3, strides=2,
-                       name='extra_conv/p8')(features[4])
-    extra_p9 = SeparableConvBlock(num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]], kernel_size=3, strides=2,
-                       name='extra_conv/p9')(extra_p8)
+    # extra_p8 = SeparableConvBlock(num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]], kernel_size=3, strides=2,
+    #                    name='extra_conv/p8')(features[4])
+    # extra_p9 = SeparableConvBlock(num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]], kernel_size=3, strides=2,
+    #                    name='extra_conv/p9')(extra_p8)
 
 
     # predict features
@@ -263,13 +265,13 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512]):
     source_layers.append(features[2])
     source_layers.append(features[3])
     source_layers.append(features[4])
-    source_layers.append(extra_p8)
-    source_layers.append(extra_p9)
-    # print(features[0])
-    # print(features[1])
-    # print(features[2])
-    # print(features[3])
-    # print(features[4])
+    # source_layers.append(extra_p8)
+    # source_layers.append(extra_p9)
+    print(features[0])
+    print(features[1])
+    print(features[2])
+    print(features[3])
+    print(features[4])
     # print(extra_p8)
     # print(extra_p9)
 
