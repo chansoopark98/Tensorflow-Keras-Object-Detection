@@ -80,15 +80,15 @@ size_variance = 0.2
 # 32 / 16 /
 specs = [
             Spec(int(IMAGE_SIZE[0]/16), int(IMAGE_SIZE[0]/32),
-                 BoxSizes(int(IMAGE_SIZE[0]*0.2), int(IMAGE_SIZE[0]*0.37)), [2, 3]),  # 0.2
+                 BoxSizes(int(IMAGE_SIZE[0]*0.1), int(IMAGE_SIZE[0]*0.24)), [2, 3]),  # 0.2
             Spec(int(IMAGE_SIZE[0]/32), int(IMAGE_SIZE[0]/16),
-                 BoxSizes(int(IMAGE_SIZE[0]*0.37), int(IMAGE_SIZE[0]*0.54)), [2, 3]),  # 0.37
+                 BoxSizes(int(IMAGE_SIZE[0]*0.24), int(IMAGE_SIZE[0]*0.37)), [2, 3]),  # 0.37
             Spec(int(IMAGE_SIZE[0]/64), int(IMAGE_SIZE[0]/8),
-                 BoxSizes(int(IMAGE_SIZE[0]*0.54), int(IMAGE_SIZE[0]*0.71)), [2, 3]),  # 0.54
+                 BoxSizes(int(IMAGE_SIZE[0]*0.5), int(IMAGE_SIZE[0]*0.63)), [2, 3]),  # 0.54
             Spec(int(IMAGE_SIZE[0]/128), int(IMAGE_SIZE[0]/4),
-                 BoxSizes(int(IMAGE_SIZE[0]*0.71), int(IMAGE_SIZE[0]*0.88)), [2]),  # 0.71
+                 BoxSizes(int(IMAGE_SIZE[0]*0.63), int(IMAGE_SIZE[0]*0.76)), [2]),  # 0.71
             Spec(int(IMAGE_SIZE[0] / 256), int(IMAGE_SIZE[0]/2),
-                 BoxSizes(int(IMAGE_SIZE[0] * 0.88), int(IMAGE_SIZE[0] * 0.95)), [2]) # 0.88 / 0.95
+                 BoxSizes(int(IMAGE_SIZE[0] * 0.76), int(IMAGE_SIZE[0] * 0.9)), [2]) # 0.88 / 0.95
         ]
 
 print(specs)
