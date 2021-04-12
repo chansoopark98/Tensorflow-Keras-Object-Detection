@@ -18,19 +18,19 @@ parser.add_argument("--model_name",     type=str,   help="저장될 모델 이�
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
-parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B2')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 가중치 로드", default=False)
 
 MODEL_INPUT_SIZE = {
     'B0': 512,
-    'B1': 640,
-    'B2': 768,
-    'B3': 896,
-    'B4': 1024,
-    'B5': 1280,
-    'B6': 1408,
-    'B7': 1408
+    'B1': 576,
+    'B2': 640,
+    'B3': 704,
+    'B4': 768,
+    'B5': 832,
+    'B6': 896,
+    'B7': 960
 }
 
 args = parser.parse_args()
