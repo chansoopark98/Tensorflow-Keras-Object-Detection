@@ -50,7 +50,7 @@ def prepare_input(sample, convert_to_normal=True):
     #img = (img - image_mean) / image_std # 데이터셋 pascal 평균 분산치 실험
     return (img, bbox, labels)
 
-def prepare_cocoEval_input(sample, img_size):
+def prepare_cocoEval_input(sample):
     img = tf.cast(sample['image'], dtype=tf.float32)
 
     # img_shape = sample['image'].shape
@@ -60,7 +60,7 @@ def prepare_cocoEval_input(sample, img_size):
 
 
     img = preprocess_input(img, mode='torch')
-    img = tf.image.resize(img, img_size)
+    img = tf.image.resize(img, [512, 512])
     # return (img, img_shape , img_id, cat_id)
     return (img, img_id)
 

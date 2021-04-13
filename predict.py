@@ -14,8 +14,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=32)
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0410_81.9%_b1_/0410.h5')
-# parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./datasets/test/VOCdevkit/VOC2007/JPEGImages/')
-parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./inputs/')
+parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./datasets/test/VOCdevkit/VOC2007/JPEGImages/')
+# parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./inputs/')
 parser.add_argument("--output_dir", type=str,   help="테스트 결과 이미지 디렉토리 설정", default='./outputs/')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B1')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
@@ -113,7 +113,7 @@ def draw_bounding(img , bboxes, labels, img_size):
 for batch in tqdm(dataset, total=test_steps):
 
     pred = model.predict_on_batch(batch)
-    predictions = post_process(pred, target_transform, classes=CLASSES_NUM, confidence_threshold=0.15)
+    predictions = post_process(pred, target_transform, classes=CLASSES_NUM, confidence_threshold=0.4)
 
     for i, path in enumerate(filenames[x:y]):
 

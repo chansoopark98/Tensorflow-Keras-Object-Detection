@@ -20,11 +20,12 @@ parser = argparse.ArgumentParser()
 
 
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
-parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0410_81.9%_b1_/0410.h5')
-parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B1')
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=32)
+# parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0410_81.9%_b1_/0410.h5')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0409_anchor_5_81.4%_voc_good_/0409.h5')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
-parser.add_argument("--calc_flops",  type=str,   help="모델 FLOPS 계산", default=False)
+parser.add_argument("--calc_flops",  type=str,   help="모델 FLOPS 계산", default=True)
 args = parser.parse_args()
 
 
@@ -50,29 +51,6 @@ CALC_FLOPS = args.calc_flops
 IMAGE_SIZE = [MODEL_INPUT_SIZE[MODEL_NAME], MODEL_INPUT_SIZE[MODEL_NAME]]
 os.makedirs(DATASET_DIR, exist_ok=True)
 
-
-
-if TRAIN_MODE == 'voc':
-    test_data = tfds.load('voc', data_dir=DATASET_DIR, split='test')
-    number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
-    print("테스트 데이터 개수:", number_test)
-    CLASSES_NUM = 21
-    with open('./pascal_labels.txt') as f:
-        CLASSES = f.read().splitlines()
-
-else:
-    test_data, test_info = tfds.load('coco/2017', data_dir=DATASET_DIR, split='validation', with_info=True)
-
-    test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
-    test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
-
-    number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
-
-    print("테스트 데이터 개수:", number_test)
-    CLASSES_NUM = 81
-    with open('./coco_labels.txt') as f:
-        CLASSES = f.read().splitlines()
-
 iou_threshold = 0.5
 center_variance = 0.1
 size_variance = 0.2
@@ -94,11 +72,36 @@ specs = [
 priors = create_priors_boxes(specs, IMAGE_SIZE[0])
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
-# instantiate the datasets
-validation_dataset = pascal_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
-                                            target_transform, TRAIN_MODE, train=False)
-coco_dataset = coco_eval_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
-                                    target_transform, TRAIN_MODE, train=False)
+
+if TRAIN_MODE == 'voc':
+    test_data = tfds.load('voc', data_dir=DATASET_DIR, split='test')
+    number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+    print("테스트 데이터 개수:", number_test)
+    CLASSES_NUM = 21
+    with open('./pascal_labels.txt') as f:
+        CLASSES = f.read().splitlines()
+
+    validation_dataset = pascal_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
+                                                target_transform, TRAIN_MODE, train=False)
+
+else:
+    test_data, test_info = tfds.load('coco/2017', data_dir=DATASET_DIR, split='validation', with_info=True)
+
+    test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
+    test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
+
+    number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+
+    print("테스트 데이터 개수:", number_test)
+    CLASSES_NUM = 81
+    with open('./coco_labels.txt') as f:
+        CLASSES = f.read().splitlines()
+
+    coco_dataset = coco_eval_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
+                                     target_transform, TRAIN_MODE, train=False)
+
+
+
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 model = model_build(TRAIN_MODE, MODEL_NAME, pretrained=False)
@@ -108,8 +111,8 @@ model.load_weights(CHECKPOINT_DIR)
 model.summary()
 
 if CALC_FLOPS:
-    plot_model(model,'model_plot.png',show_shapes=False)
-    flops = get_flops(model, BATCH_SIZE)
+    # plot_model(model,'model_plot.png',show_shapes=False)
+    flops = get_flops(model, 1)
     print(f"FLOPS: {flops}")
 
 test_steps = number_test // BATCH_SIZE + 1
