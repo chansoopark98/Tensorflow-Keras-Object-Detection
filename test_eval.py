@@ -63,7 +63,6 @@ if TRAIN_MODE == 'voc':
 else:
     test_data, test_info = tfds.load('coco/2017', data_dir=DATASET_DIR, split='validation', with_info=True)
 
-    # TODO TEST 데이터셋 다운로드 후 재구축
     test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
     test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
 

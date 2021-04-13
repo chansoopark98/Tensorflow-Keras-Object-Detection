@@ -4,6 +4,7 @@ import tensorflow as tf
 from utils.augmentations import *
 
 AUTO = tf.data.experimental.AUTOTUNE
+image_size = [512, 512]
 
 @tf.function
 def data_augment(image, boxes, labels):
@@ -49,7 +50,7 @@ def prepare_input(sample, convert_to_normal=True):
     #img = (img - image_mean) / image_std # 데이터셋 pascal 평균 분산치 실험
     return (img, bbox, labels)
 
-def prepare_cocoEval_input(sample):
+def prepare_cocoEval_input(sample, img_size):
     img = tf.cast(sample['image'], dtype=tf.float32)
 
     # img_shape = sample['image'].shape
@@ -59,7 +60,7 @@ def prepare_cocoEval_input(sample):
 
 
     img = preprocess_input(img, mode='torch')
-    img = tf.image.resize(img, [512, 512])
+    img = tf.image.resize(img, img_size)
     # return (img, img_shape , img_id, cat_id)
     return (img, img_id)
 
