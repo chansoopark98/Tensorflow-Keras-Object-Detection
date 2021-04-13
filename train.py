@@ -6,7 +6,8 @@ import os
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from model.model_builder import model_build
 from metrics import f1score, precision, recall , cross_entropy, localization
-
+from config import *
+from callbacks import Scalar_LR
 
 parser = argparse.ArgumentParser()
 
@@ -22,21 +23,9 @@ parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 �
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 가중치 로드", default=False)
 
-MODEL_INPUT_SIZE = {
-    'B0': 512,
-    'B1': 576,
-    'B2': 640,
-    'B3': 704,
-    'B4': 768,
-    'B5': 832,
-    'B6': 896,
-    'B7': 960
-}
-
 args = parser.parse_args()
 BATCH_SIZE = args.batch_size
 EPOCHS = args.epoch
-# IMAGE_SIZE = [args.image_size, args.image_size]
 base_lr = args.lr
 SAVE_MODEL_NAME = args.model_name
 DATASET_DIR = args.dataset_dir
@@ -47,7 +36,6 @@ TRAIN_MODE = args.train_dataset
 CONTINUE_TRAINING = args.pretrain_mode
 IMAGE_SIZE = [MODEL_INPUT_SIZE[MODEL_NAME], MODEL_INPUT_SIZE[MODEL_NAME]]
 print("입력 이미지 크기 : ", IMAGE_SIZE)
-
 
 os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
@@ -63,54 +51,17 @@ iou_threshold = 0.5
 center_variance = 0.1
 size_variance = 0.2
 
+MODEL_INPUT_SIZE = {
+    'B0': 512,
+    'B1': 576,
+    'B2': 640,
+    'B3': 704,
+    'B4': 768,
+    'B5': 832,
+    'B6': 896,
+    'B7': 960
+}
 
-## test ok
-# specs = [
-#             Spec(64, 8, BoxSizes(51, 123), [2]),  # 0.1
-#             Spec(32, 16, BoxSizes(123, 189), [2]),  # 0.24
-#             Spec(16, 32, BoxSizes(189, 256), [2, 3]),  # 0.37
-#             Spec(8, 64, BoxSizes(256, 323), [2, 3]),  # 0.5
-#             Spec(4, 128, BoxSizes(323, 389), [2]),  # 0.63
-#             Spec(2, 256, BoxSizes(389, 461), [2]),  # 0.76
-#             Spec(1, 512, BoxSizes(461, 538), [2]),  # 0.9
-#         ]
-
-
-""" 0408 test
-{'aeroplane': 0.883235057374783,
- 'bicycle': 0.873452960761183,
- 'bird': 0.8355587097199219,
- 'boat': 0.7985908363112868,
- 'bottle': 0.6096242308587395,
- 'bus': 0.850391878651511,
- 'car': 0.877372139861527,
- 'cat': 0.873653518498321,
- 'chair': 0.680718161177171,
- 'cow': 0.8131513275288116,
- 'diningtable': 0.7358944506308274,
- 'dog': 0.8564532217146804,
- 'horse': 0.8819337612866569,
- 'motorbike': 0.8767863612438392,
- 'person': 0.8469665526542779,
- 'pottedplant': 0.6518036318412295,
- 'sheep': 0.8102691940574812,
- 'sofa': 0.7508058777838824,
- 'train': 0.8942437806005586,
- 'tvmonitor': 0.7973264964656708}
-mAP결과: 0.809911607451118
-"""
-# specs = [
-#             Spec(int(IMAGE_SIZE[0]/16), int(IMAGE_SIZE[0]/32),
-#                  BoxSizes(int(IMAGE_SIZE[0]*0.1), int(IMAGE_SIZE[0]*0.24)), [2, 3]),  # 0.2
-#             Spec(int(IMAGE_SIZE[0]/32), int(IMAGE_SIZE[0]/16),
-#                  BoxSizes(int(IMAGE_SIZE[0]*0.24), int(IMAGE_SIZE[0]*0.37)), [2, 3]),  # 0.37
-#             Spec(int(IMAGE_SIZE[0]/64), int(IMAGE_SIZE[0]/8),
-#                  BoxSizes(int(IMAGE_SIZE[0]*0.5), int(IMAGE_SIZE[0]*0.63)), [2, 3]),  # 0.54
-#             Spec(int(IMAGE_SIZE[0]/128), int(IMAGE_SIZE[0]/4),
-#                  BoxSizes(int(IMAGE_SIZE[0]*0.63), int(IMAGE_SIZE[0]*0.76)), [2]),  # 0.71
-#             Spec(int(IMAGE_SIZE[0] / 256), int(IMAGE_SIZE[0]/2),
-#                  BoxSizes(int(IMAGE_SIZE[0] * 0.76), int(IMAGE_SIZE[0] * 0.9)), [2]) # 0.88 / 0.95
-#         ]
 
 specs = [
             Spec(int(IMAGE_SIZE[0]/16), int(IMAGE_SIZE[0]/32),
@@ -124,8 +75,6 @@ specs = [
             Spec(int(IMAGE_SIZE[0] / 256), int(IMAGE_SIZE[0]/2),
                  BoxSizes(int(IMAGE_SIZE[0] * 0.76), int(IMAGE_SIZE[0] * 0.9)), [2]) # 0.88 / 0.95
         ]
-
-
 print(specs)
 
 priors = create_priors_boxes(specs, IMAGE_SIZE[0])
@@ -200,9 +149,8 @@ reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr
 checkpoint = ModelCheckpoint(CHECKPOINT_DIR + SAVE_MODEL_NAME + '.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
 
-from callbacks import MyCallback
-testCallBack = MyCallback('test', TENSORBOARD_DIR)
 
+testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
 
 
 model.compile(
@@ -210,7 +158,6 @@ model.compile(
     loss=total_loss,
     metrics=[f1score, precision, recall, cross_entropy, localization]
 )
-    # metrics=[precision, recall, f1score])
 
 history = model.fit(training_dataset,
                     validation_data=validation_dataset,

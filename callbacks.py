@@ -1,11 +1,10 @@
 import tensorflow as tf
 
-import matplotlib.pyplot as plt
-class MyCallback(tf.keras.callbacks.Callback):
+class Scalar_LR(tf.keras.callbacks.Callback):
     def __init__(self, name, TENSORBOARD_DIR):
         super().__init__()
         self.name = name
-        self.previous_loss = None
+        # self.previous_loss = None
         self.file_writer = tf.summary.create_file_writer(TENSORBOARD_DIR)
         self.file_writer.set_as_default()
 
