@@ -107,9 +107,6 @@ def coco_eval_dataset(dataset, image_size, batch_size, target_transform, train_m
     classes = 81
 
     dataset = dataset.map(prepare_cocoEval_input, num_parallel_calls=AUTO)
-    dataset = dataset.map(lambda image, boxes,
-                               labels: join_target(image, boxes, labels, image_size, target_transform, classes),
-                        num_parallel_calls=AUTO)
 
     dataset = dataset.padded_batch(batch_size)
     dataset = dataset.prefetch(AUTO)

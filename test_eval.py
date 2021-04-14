@@ -2,7 +2,7 @@ import tensorflow_datasets as tfds
 from utils.priors import *
 from model.model_builder import model_build
 from preprocessing import pascal_prepare_dataset
-from preprocessing import coco_prepare_dataset
+from preprocessing import coco_eval_dataset
 from utils.model_post_processing import post_process  #
 from utils.model_evaluation import eval_detection_voc
 from tensorflow.keras.utils import plot_model
@@ -20,12 +20,12 @@ parser = argparse.ArgumentParser()
 
 
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=32)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
 # parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0410_81.9%_b1_/0410.h5')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0411.h5')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
-parser.add_argument("--calc_flops",  type=str,   help="모델 FLOPS 계산", default=True)
+parser.add_argument("--calc_flops",  type=str,   help="모델 FLOPS 계산", default=False)
 args = parser.parse_args()
 
 
@@ -94,10 +94,8 @@ else:
 
     print("테스트 데이터 개수:", number_test)
     CLASSES_NUM = 81
-    with open('./coco_labels.txt') as f:
-        CLASSES = f.read().splitlines()
 
-    coco_dataset = coco_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
+    coco_dataset = coco_eval_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
                                      target_transform, TRAIN_MODE, train=False)
 
 
@@ -144,7 +142,7 @@ if TRAIN_MODE == 'coco':
 
     for x, pred_id in tqdm(coco_dataset, total=test_steps):
         pred = model.predict_on_batch(x)
-        predictions = post_process(pred, target_transform, classes=CLASSES_NUM)
+        predictions = post_process(pred, target_transform, confidence_threshold=0.01, top_k=100, iou_threshold=0.5, classes=CLASSES_NUM)
         pred_ids.append(pred_id)
         for boxes, scores, labels in predictions:
             for i in range(len(labels)):
