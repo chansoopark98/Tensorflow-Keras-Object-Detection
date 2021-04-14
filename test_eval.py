@@ -2,7 +2,7 @@ import tensorflow_datasets as tfds
 from utils.priors import *
 from model.model_builder import model_build
 from preprocessing import pascal_prepare_dataset
-from preprocessing import coco_eval_dataset
+from preprocessing import coco_prepare_dataset
 from utils.model_post_processing import post_process  #
 from utils.model_evaluation import eval_detection_voc
 from tensorflow.keras.utils import plot_model
@@ -22,9 +22,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=32)
 # parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0410_81.9%_b1_/0410.h5')
-parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0409_anchor_5_81.4%_voc_good_/0409.h5')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0411.h5')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
-parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
 parser.add_argument("--calc_flops",  type=str,   help="모델 FLOPS 계산", default=True)
 args = parser.parse_args()
 
@@ -97,7 +97,7 @@ else:
     with open('./coco_labels.txt') as f:
         CLASSES = f.read().splitlines()
 
-    coco_dataset = coco_eval_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
+    coco_dataset = coco_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
                                      target_transform, TRAIN_MODE, train=False)
 
 
@@ -109,11 +109,6 @@ model = model_build(TRAIN_MODE, MODEL_NAME, pretrained=False)
 print("모델 가중치 로드...")
 model.load_weights(CHECKPOINT_DIR)
 model.summary()
-
-if CALC_FLOPS:
-    # plot_model(model,'model_plot.png',show_shapes=False)
-    flops = get_flops(model, 1)
-    print(f"FLOPS: {flops}")
 
 test_steps = number_test // BATCH_SIZE + 1
 print("테스트 배치 개수 : ", test_steps)

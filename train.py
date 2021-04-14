@@ -6,7 +6,6 @@ import os
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from model.model_builder import model_build
 from metrics import f1score, precision, recall , cross_entropy, localization
-from config import *
 from callbacks import Scalar_LR
 
 parser = argparse.ArgumentParser()
@@ -19,9 +18,20 @@ parser.add_argument("--model_name",     type=str,   help="저장될 모델 이�
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
-parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B2')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B3')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 가중치 로드", default=False)
+
+MODEL_INPUT_SIZE = {
+    'B0': 512,
+    'B1': 576,
+    'B2': 640,
+    'B3': 704,
+    'B4': 768,
+    'B5': 832,
+    'B6': 896,
+    'B7': 960
+}
 
 args = parser.parse_args()
 BATCH_SIZE = args.batch_size
@@ -51,16 +61,7 @@ iou_threshold = 0.5
 center_variance = 0.1
 size_variance = 0.2
 
-MODEL_INPUT_SIZE = {
-    'B0': 512,
-    'B1': 576,
-    'B2': 640,
-    'B3': 704,
-    'B4': 768,
-    'B5': 832,
-    'B6': 896,
-    'B7': 960
-}
+
 
 
 specs = [
@@ -144,6 +145,9 @@ print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
 model.summary()
 
+from calc_flops import get_flops
+flops = get_flops(model, 1)
+print(f"FLOPS: {flops}")
 
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-6, verbose=1)
 checkpoint = ModelCheckpoint(CHECKPOINT_DIR + SAVE_MODEL_NAME + '.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)

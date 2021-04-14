@@ -1,4 +1,4 @@
-tensorflow
+tensorflow==2.2.0
 keras
 matplotlib
 tensorflow_datasets
