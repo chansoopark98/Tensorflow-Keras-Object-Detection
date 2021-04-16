@@ -25,10 +25,9 @@ parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 �
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0411.h5')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
+parser.add_argument("--eval_testdev",  type=str,   help="COCO TESTDEV 평가", default=False)
 parser.add_argument("--calc_flops",  type=str,   help="모델 FLOPS 계산", default=False)
 args = parser.parse_args()
-
-
 
 MODEL_INPUT_SIZE = {
     'B0': 512,
@@ -49,6 +48,7 @@ MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
 CALC_FLOPS = args.calc_flops
 IMAGE_SIZE = [MODEL_INPUT_SIZE[MODEL_NAME], MODEL_INPUT_SIZE[MODEL_NAME]]
+EVAL_TESTDEV = args.eval_testdev
 os.makedirs(DATASET_DIR, exist_ok=True)
 
 iou_threshold = 0.5
@@ -85,21 +85,28 @@ if TRAIN_MODE == 'voc':
                                                 target_transform, TRAIN_MODE, train=False)
 
 else:
-    test_data, test_info = tfds.load('coco/2017', data_dir=DATASET_DIR, split='validation', with_info=True)
+    if EVAL_TESTDEV:
+        test_data, test_info = tfds.load('coco/2017', data_dir=DATASET_DIR, split='validation', with_info=True)
+    else:
+        test_dev_idList = []
+        with open('datasets/image_info_test-dev2017.json', 'r') as f:
+            json_data = json.load(f)
+            a = json_data['images']
+            for i in range(len(a)):
+                test_dev_idList.append(int(a[i]['id']))
 
-    test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
-    test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
+        test_dev_idList = tf.convert_to_tensor(test_dev_idList, dtype=tf.int64)
 
-    number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+        test_data, test_info = tfds.load('coco/2017', data_dir=DATASET_DIR, split='test', with_info=True)
+        test_data = test_data.filter(lambda x: tf.reduce_all(
+            tf.equal(tf.math.count_nonzero(tf.equal(x['image/id'], test_dev_idList)),0)))
 
-    print("테스트 데이터 개수:", number_test)
+        number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+        print("테스트 데이터 개수:", number_test)
+
     CLASSES_NUM = 81
-
     coco_dataset = coco_eval_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
                                      target_transform, TRAIN_MODE, train=False)
-
-
-
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 model = model_build(TRAIN_MODE, MODEL_NAME, pretrained=False)
@@ -183,18 +190,18 @@ if TRAIN_MODE == 'coco':
     with open('datasets/coco_predictions.json', 'w') as f:
         json.dump(pred_list, f, indent="\t", cls=NumpyEncoder)
 
-    annType = 'bbox'
-    cocoGt = COCO('datasets/instances_val2017.json')
-    cocoDt = cocoGt.loadRes('datasets/coco_predictions.json')
-    imgIds = sorted(cocoGt.getImgIds())
-    # imgIds = imgIds[0:100]
-    # imgId = imgIds[np.random.randint(100)]
-    # running evaluation
-    cocoEval = COCOeval(cocoGt, cocoDt, annType)
-    cocoEval.params.imgIds = imgIds
-    cocoEval.evaluate()
-    cocoEval.accumulate()
-    cocoEval.summarize()
+    # annType = 'bbox'
+    # cocoGt = COCO('datasets/instances_val2017.json')
+    # cocoDt = cocoGt.loadRes('datasets/coco_predictions.json')
+    # imgIds = sorted(cocoGt.getImgIds())
+    # # imgIds = imgIds[0:100]
+    # # imgId = imgIds[np.random.randint(100)]
+    # # running evaluation
+    # cocoEval = COCOeval(cocoGt, cocoDt, annType)
+    # cocoEval.params.imgIds = imgIds
+    # cocoEval.evaluate()
+    # cocoEval.accumulate()
+    # cocoEval.summarize()
 
 else:
     test_difficults = []
