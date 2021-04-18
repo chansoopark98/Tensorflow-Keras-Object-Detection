@@ -18,8 +18,8 @@ parser.add_argument("--model_name",     type=str,   help="저장될 모델 이�
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
-parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B3')
-parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
 parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 가중치 로드", default=False)
 
 MODEL_INPUT_SIZE = {
@@ -52,7 +52,32 @@ os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
 if TRAIN_MODE == 'voc':
     num_classes = 21
+
+    specs = [
+        Spec(int(IMAGE_SIZE[0] / 16), int(IMAGE_SIZE[0] / 32),
+             BoxSizes(int(IMAGE_SIZE[0] * 0.1), int(IMAGE_SIZE[0] * 0.24)), [2, 3]),  # 0.2
+        Spec(int(IMAGE_SIZE[0] / 32), int(IMAGE_SIZE[0] / 16),
+             BoxSizes(int(IMAGE_SIZE[0] * 0.24), int(IMAGE_SIZE[0] * 0.37)), [2, 3]),  # 0.37
+        Spec(int(IMAGE_SIZE[0] / 64), int(IMAGE_SIZE[0] / 8),
+             BoxSizes(int(IMAGE_SIZE[0] * 0.45), int(IMAGE_SIZE[0] * 0.58)), [2, 3]),  # 0.54
+        Spec(int(IMAGE_SIZE[0] / 128), int(IMAGE_SIZE[0] / 4),
+             BoxSizes(int(IMAGE_SIZE[0] * 0.6), int(IMAGE_SIZE[0] * 0.76)), [2]),  # 0.71
+        Spec(int(IMAGE_SIZE[0] / 256), int(IMAGE_SIZE[0] / 2),
+             BoxSizes(int(IMAGE_SIZE[0] * 0.76), int(IMAGE_SIZE[0] * 0.9)), [2])  # 0.88 / 0.95
+    ]
 else:
+    specs = [
+        Spec(int(IMAGE_SIZE[0] / 16), int(IMAGE_SIZE[0] / 32),
+             BoxSizes(int(IMAGE_SIZE[0] * 0.07), int(IMAGE_SIZE[0] * 0.21)), [2, 3]),  # 0.2
+        Spec(int(IMAGE_SIZE[0] / 32), int(IMAGE_SIZE[0] / 16),
+             BoxSizes(int(IMAGE_SIZE[0] * 0.21), int(IMAGE_SIZE[0] * 0.34)), [2, 3]),  # 0.37
+        Spec(int(IMAGE_SIZE[0] / 64), int(IMAGE_SIZE[0] / 8),
+             BoxSizes(int(IMAGE_SIZE[0] * 0.42), int(IMAGE_SIZE[0] * 0.55)), [2, 3]),  # 0.54
+        Spec(int(IMAGE_SIZE[0] / 128), int(IMAGE_SIZE[0] / 4),
+             BoxSizes(int(IMAGE_SIZE[0] * 0.57), int(IMAGE_SIZE[0] * 0.73)), [2]),  # 0.71
+        Spec(int(IMAGE_SIZE[0] / 256), int(IMAGE_SIZE[0] / 2),
+             BoxSizes(int(IMAGE_SIZE[0] * 0.73), int(IMAGE_SIZE[0] * 0.87)), [2])  # 0.88 / 0.95
+    ]
     num_classes = 81
 
 # TODO https://www.tensorflow.org/datasets/api_docs/python/tfds/testing/mock_data VOC+COCO 무작위 데이터 생성
@@ -63,19 +88,8 @@ size_variance = 0.2
 
 
 
+# for voc
 
-specs = [
-            Spec(int(IMAGE_SIZE[0]/16), int(IMAGE_SIZE[0]/32),
-                 BoxSizes(int(IMAGE_SIZE[0]*0.1), int(IMAGE_SIZE[0]*0.24)), [2, 3]),  # 0.2
-            Spec(int(IMAGE_SIZE[0]/32), int(IMAGE_SIZE[0]/16),
-                 BoxSizes(int(IMAGE_SIZE[0]*0.24), int(IMAGE_SIZE[0]*0.37)), [2, 3]),  # 0.37
-            Spec(int(IMAGE_SIZE[0]/64), int(IMAGE_SIZE[0]/8),
-                 BoxSizes(int(IMAGE_SIZE[0]*0.45), int(IMAGE_SIZE[0]*0.58)), [2, 3]),  # 0.54
-            Spec(int(IMAGE_SIZE[0]/128), int(IMAGE_SIZE[0]/4),
-                 BoxSizes(int(IMAGE_SIZE[0]*0.6), int(IMAGE_SIZE[0]*0.76)), [2]),  # 0.71
-            Spec(int(IMAGE_SIZE[0] / 256), int(IMAGE_SIZE[0]/2),
-                 BoxSizes(int(IMAGE_SIZE[0] * 0.76), int(IMAGE_SIZE[0] * 0.9)), [2]) # 0.88 / 0.95
-        ]
 print(specs)
 
 priors = create_priors_boxes(specs, IMAGE_SIZE[0])
