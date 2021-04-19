@@ -7,6 +7,11 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from model.model_builder import model_build
 from metrics import f1score, precision, recall , cross_entropy, localization
 from callbacks import Scalar_LR
+from tensorflow.keras.mixed_precision import experimental as mixed_precision
+
+policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
+mixed_precision.set_policy(policy)
+
 
 parser = argparse.ArgumentParser()
 
@@ -166,6 +171,7 @@ tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_grap
 
 testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
 
+optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')
 
 model.compile(
     optimizer=optimizer,

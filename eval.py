@@ -64,7 +64,7 @@ specs = [
             Spec(int(IMAGE_SIZE[0]/128), int(IMAGE_SIZE[0]/4),
                  BoxSizes(int(IMAGE_SIZE[0]*0.6), int(IMAGE_SIZE[0]*0.76)), [2]),  # 0.71
             Spec(int(IMAGE_SIZE[0] / 256), int(IMAGE_SIZE[0]/2),
-                 BoxSizes(int(IMAGE_SIZE[0] * 0.76), int(IMAGE_SIZE[0] * 0.9)), [2]) # 0.88 / 0.95
+                 BoxSizes(int(IMAGE_SIZE[0] * 0.76), int(IMAGE_SIZE[0]  *0.9)), [2]) # 0.88 / 0.95
         ]
 
 priors = create_priors_boxes(specs, IMAGE_SIZE[0])
