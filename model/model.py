@@ -85,7 +85,7 @@ def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512])
         base = efn.EfficientNetB7(weights=weights, include_top=False, input_shape=[*IMAGE_SIZE, 3])
 
     base = remove_dropout(base)
-    base.trainable = True
+    base.trainable = False
 
     return base
 

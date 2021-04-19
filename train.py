@@ -68,15 +68,15 @@ if TRAIN_MODE == 'voc':
 else:
     specs = [
         Spec(int(IMAGE_SIZE[0] / 16), int(IMAGE_SIZE[0] / 32),
-             BoxSizes(int(IMAGE_SIZE[0] * 0.07), int(IMAGE_SIZE[0] * 0.21)), [2, 3]),  # 0.2
+             BoxSizes(int(IMAGE_SIZE[0] * 0.1), int(IMAGE_SIZE[0] * 0.24)), [2, 3]),  # 0.2
         Spec(int(IMAGE_SIZE[0] / 32), int(IMAGE_SIZE[0] / 16),
-             BoxSizes(int(IMAGE_SIZE[0] * 0.21), int(IMAGE_SIZE[0] * 0.34)), [2, 3]),  # 0.37
+             BoxSizes(int(IMAGE_SIZE[0] * 0.24), int(IMAGE_SIZE[0] * 0.37)), [2, 3]),  # 0.37
         Spec(int(IMAGE_SIZE[0] / 64), int(IMAGE_SIZE[0] / 8),
-             BoxSizes(int(IMAGE_SIZE[0] * 0.42), int(IMAGE_SIZE[0] * 0.55)), [2, 3]),  # 0.54
+             BoxSizes(int(IMAGE_SIZE[0] * 0.45), int(IMAGE_SIZE[0] * 0.58)), [2, 3]),  # 0.54
         Spec(int(IMAGE_SIZE[0] / 128), int(IMAGE_SIZE[0] / 4),
-             BoxSizes(int(IMAGE_SIZE[0] * 0.57), int(IMAGE_SIZE[0] * 0.73)), [2]),  # 0.71
+             BoxSizes(int(IMAGE_SIZE[0] * 0.6), int(IMAGE_SIZE[0] * 0.76)), [2]),  # 0.71
         Spec(int(IMAGE_SIZE[0] / 256), int(IMAGE_SIZE[0] / 2),
-             BoxSizes(int(IMAGE_SIZE[0] * 0.73), int(IMAGE_SIZE[0] * 0.87)), [2])  # 0.88 / 0.95
+             BoxSizes(int(IMAGE_SIZE[0] * 0.76), int(IMAGE_SIZE[0] * 0.9)), [2])  # 0.88 / 0.95
     ]
     num_classes = 81
 
@@ -158,10 +158,6 @@ validation_steps = number_test // BATCH_SIZE
 print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
 model.summary()
-
-from calc_flops import get_flops
-flops = get_flops(model, 1)
-print(f"FLOPS: {flops}")
 
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-6, verbose=1)
 checkpoint = ModelCheckpoint(CHECKPOINT_DIR + SAVE_MODEL_NAME + '.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)

@@ -13,7 +13,7 @@ cocoGt=COCO(annFile)
 cocoDt=cocoGt.loadRes('datasets/coco_predictions.json')
 
 imgIds=sorted(cocoGt.getImgIds())
-
+imgIds = imgIds[0:100]
 cocoEval = COCOeval(cocoGt,cocoDt,annType)
 cocoEval.params.imgIds  = imgIds
 #cocoEval.params.catIds = [1]
