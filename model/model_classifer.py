@@ -99,6 +99,6 @@ def create_classifier(source_layers, num_priors, normalizations, num_classes=21,
     # mbox_conf = Activation('softmax', name='mbox_conf_final')(mbox_conf)
 
     # predictions/concat:0, shape=(Batch, 8732, 25)
-    predictions = Concatenate(axis=2, name='predictions', dtype=tf.float32)([mbox_loc, mbox_conf])
+    predictions = Concatenate(axis=2, name='predictions')([mbox_loc, mbox_conf])
 
     return predictions
