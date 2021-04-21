@@ -53,7 +53,7 @@ def remove_dropout(model):
 
 
 
-def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512]):
+def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], trainable=True):
     if pretrained is False:
         weights = None
 
@@ -85,7 +85,7 @@ def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512])
         base = efn.EfficientNetB7(weights=weights, include_top=False, input_shape=[*IMAGE_SIZE, 3])
 
     base = remove_dropout(base)
-    base.trainable = False
+    base.trainable = trainable
 
     return base
 
@@ -99,7 +99,7 @@ def SeparableConvBlock(num_channels, kernel_size, strides, name, freeze_bn=False
     # f2 = BatchNormalization(freeze=freeze_bn, name=f'{name}/bn')
     return reduce(lambda f, g: lambda *args, **kwargs: g(f(*args, **kwargs)), (f1, f2))
 
-def build_BiFPN(features, num_channels=64 , id=0, resize=False, freeze_bn=False):
+def build_BiFPN(features, num_channels=64 , id=0, resize=False, bn_trainable=True):
     if resize:
         padding = 'valid'
     else:
@@ -114,7 +114,7 @@ def build_BiFPN(features, num_channels=64 , id=0, resize=False, freeze_bn=False)
         P5_in = C5 # 9x9
 
         P6_in = Conv2D(num_channels, kernel_size=1, padding='same', name='resample_p6/conv2d')(C5)
-        P6_in = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, name='resample_p6/bn')(P6_in)
+        P6_in = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON,  trainable=bn_trainable, name='resample_p6/bn')(P6_in)
 
         # padding
         P6_in = MaxPooling2D(pool_size=3, strides=2, padding=padding, name='resample_p6/maxpool')(P6_in) # 4x4
@@ -128,7 +128,7 @@ def build_BiFPN(features, num_channels=64 , id=0, resize=False, freeze_bn=False)
                                    name='fpn_cells/cell_/fnode0/op_after_combine5')(P6_td)
         P5_in_1 = Conv2D(num_channels, kernel_size=1, padding='same',
                                 name='fpn_cells/cell_/fnode1/resample_0_2_6/conv2d')(P5_in)
-        P5_in_1 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON,
+        P5_in_1 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=bn_trainable,
                                             name='fpn_cells/cell_/fnode1/resample_0_2_6/bn')(P5_in_1)
 
         if resize:
@@ -142,7 +142,7 @@ def build_BiFPN(features, num_channels=64 , id=0, resize=False, freeze_bn=False)
                                    name='fpn_cells/cell_/fnode1/op_after_combine6')(P5_td)
         P4_in_1 = Conv2D(num_channels, kernel_size=1, padding='same',
                                 name='fpn_cells/cell_/fnode2/resample_0_1_7/conv2d')(P4_in) # 18x18
-        P4_in_1 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON,
+        P4_in_1 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=bn_trainable,
                                             name='fpn_cells/cell_/fnode2/resample_0_1_7/bn')(P4_in_1)
 
         P5_U = UpSampling2D()(P5_td)
@@ -152,7 +152,7 @@ def build_BiFPN(features, num_channels=64 , id=0, resize=False, freeze_bn=False)
                                    name='fpn_cells/cell_/fnode2/op_after_combine7')(P4_td)
         P3_in = Conv2D(num_channels, kernel_size=1, padding='same',
                               name='fpn_cells/cell_/fnode3/resample_0_0_8/conv2d')(P3_in) # 36x36
-        P3_in = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON,
+        P3_in = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=bn_trainable,
                                           name=f'fpn_cells/cell_/fnode3/resample_0_0_8/bn')(P3_in)
 
         P4_U = UpSampling2D()(P4_td) # 18x18 to 36x36
@@ -162,7 +162,7 @@ def build_BiFPN(features, num_channels=64 , id=0, resize=False, freeze_bn=False)
                                     name='fpn_cells/cell_/fnode3/op_after_combine8')(P3_out)
         P4_in_2 = Conv2D(num_channels, kernel_size=1, padding='same',
                                 name='fpn_cells/cell_/fnode4/resample_0_1_9/conv2d')(P4_in)
-        P4_in_2 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON,
+        P4_in_2 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=bn_trainable,
                                             name='fpn_cells/cell_/fnode4/resample_0_1_9/bn')(P4_in_2)
 
         P3_D = MaxPooling2D(pool_size=3, strides=2, padding='same')(P3_out)
@@ -173,7 +173,7 @@ def build_BiFPN(features, num_channels=64 , id=0, resize=False, freeze_bn=False)
 
         P5_in_2 = Conv2D(num_channels, kernel_size=1, padding='same',
                                 name='fpn_cells/cell_/fnode5/resample_0_2_10/conv2d')(P5_in)
-        P5_in_2 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON,
+        P5_in_2 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=bn_trainable,
                                             name='fpn_cells/cell_/fnode5/resample_0_2_10/bn')(P5_in_2)
 
         P4_D = MaxPooling2D(pool_size=3, strides=2, padding='same')(P4_out)
@@ -259,9 +259,17 @@ def build_BiFPN(features, num_channels=64 , id=0, resize=False, freeze_bn=False)
         return [P3_out, P4_td, P5_td, P6_td, P7_out]
 
 
-def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512]):
+def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], backbone_trainable=True):
+
+    if backbone_trainable == True:
+        bn_trainable = False
+    else:
+        bn_trainable = True
+
+    print("backbone_trainable", backbone_trainable)
+    print("bn_trainable", bn_trainable)
     source_layers = []
-    base = create_efficientNet(base_model_name, pretrained, IMAGE_SIZE)
+    base = create_efficientNet(base_model_name, pretrained, IMAGE_SIZE, trainable=backbone_trainable)
 
     layer_names = GET_EFFICIENT_NAME[base_model_name]
 
@@ -282,7 +290,8 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512]):
 
     for i in range(FPN_TIMES[MODEL_NAME[base_model_name]]):
         print("times", i)
-        features = build_BiFPN(features=features, num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]], id=i, resize=feature_resize)
+        features = build_BiFPN(features=features, num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]],
+                               id=i, resize=feature_resize, bn_trainable=bn_trainable)
 
     # extra_p8 = SeparableConvBlock(num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]], kernel_size=3, strides=2,
     #                    name='extra_conv/p8')(features[4])
