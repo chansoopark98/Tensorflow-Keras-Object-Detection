@@ -94,7 +94,6 @@ center_variance = 0.1
 size_variance = 0.2
 
 
-
 # for voc
 
 print(specs)
@@ -155,23 +154,29 @@ else :
 
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
-model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=False)
+
+
+testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-6, verbose=1)
+checkpoint = ModelCheckpoint(CHECKPOINT_DIR + SAVE_MODEL_NAME + '.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
+tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
 
 if CONTINUE_TRAINING is True:
-    model.load_weights(CHECKPOINT_DIR + '0217_main' + '.h5')
+    weight_name = '0421'
+
+    model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=False)
+    model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
+    callback = [checkpoint]
+
+else:
+    model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
+    callback = [reduce_lr, checkpoint, tensorboard, testCallBack]
 
 steps_per_epoch = number_train // BATCH_SIZE
 validation_steps = number_test // BATCH_SIZE
 print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
 model.summary()
-
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-6, verbose=1)
-checkpoint = ModelCheckpoint(CHECKPOINT_DIR + SAVE_MODEL_NAME + '.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
-tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
-
-
-testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
 
 optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')
 
@@ -186,5 +191,6 @@ history = model.fit(training_dataset,
                     steps_per_epoch=steps_per_epoch,
                     validation_steps=validation_steps,
                     epochs=EPOCHS,
-                    callbacks=[reduce_lr, checkpoint, tensorboard, testCallBack])
+                    callbacks=callback
+                    )
 
