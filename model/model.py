@@ -121,7 +121,12 @@ def build_BiFPN(features, num_channels=64 , id=0, resize=False, bn_trainable=Tru
 
         P7_in = MaxPooling2D(pool_size=3, strides=2, padding='same', name='resample_p7/maxpool')(P6_in) # 2x2
 
-        P7_U = UpSampling2D()(P7_in) # 2x2 to 4x4
+
+        if resize:
+            P7_U = tf.image.resize(P7_in, (P6_in.shape[1:3]))
+        else:
+            P7_U = UpSampling2D()(P7_in) # 2x2 to 4x4
+
         P6_td = Add(name='fpn_cells/cell_/fnode0/add')([P6_in, P7_U])
         P6_td = Activation(lambda x: tf.nn.swish(x))(P6_td)
         P6_td = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
@@ -203,7 +208,13 @@ def build_BiFPN(features, num_channels=64 , id=0, resize=False, bn_trainable=Tru
 
         P3_in, P4_in, P5_in, P6_in, P7_in = features
 
-        P7_U = UpSampling2D()(P7_in) # 2x2 to 4x4
+
+
+        if resize:
+            P7_U = tf.image.resize(P7_in, (P6_in.shape[1:3]))
+        else:
+            P7_U = UpSampling2D()(P7_in) # 2x2 to 4x4
+
         P6_td = Add(name=f'fpn_cells/cell_{id}/fnode0/add')([P6_in, P7_U])
         P6_td = Activation(lambda x: tf.nn.swish(x))(P6_td)
         P6_td = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,

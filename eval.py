@@ -9,6 +9,7 @@ from tensorflow.keras.utils import plot_model
 from calc_flops import get_flops
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
+from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from tqdm import tqdm
 from pprint import pprint
 import csv
@@ -16,13 +17,19 @@ import json
 import argparse
 import os
 
+tf.keras.backend.clear_session()
+
+policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
+mixed_precision.set_policy(policy)
+
+
 parser = argparse.ArgumentParser()
 
 
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
 # parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0410_81.9%_b1_/0410.h5')
-parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0416.h5')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0422.h5')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
 parser.add_argument("--eval_testdev",  type=str,   help="COCO TESTDEV 평가", default=True)

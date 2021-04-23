@@ -1,3 +1,5 @@
+from utils.priors import *
+
 MODEL_INPUT_SIZE = {
     'B0': 512,
     'B1': 576,
@@ -9,19 +11,27 @@ MODEL_INPUT_SIZE = {
     'B7': 960
 }
 
-
+# Input 512
 specs = [
-            Spec(int(IMAGE_SIZE[0]/16), int(IMAGE_SIZE[0]/32),
-                 BoxSizes(int(IMAGE_SIZE[0]*0.1), int(IMAGE_SIZE[0]*0.24)), [2, 3]),  # 0.2
-            Spec(int(IMAGE_SIZE[0]/32), int(IMAGE_SIZE[0]/16),
-                 BoxSizes(int(IMAGE_SIZE[0]*0.24), int(IMAGE_SIZE[0]*0.37)), [2, 3]),  # 0.37
-            Spec(int(IMAGE_SIZE[0]/64), int(IMAGE_SIZE[0]/8),
-                 BoxSizes(int(IMAGE_SIZE[0]*0.45), int(IMAGE_SIZE[0]*0.58)), [2, 3]),  # 0.54
-            Spec(int(IMAGE_SIZE[0]/128), int(IMAGE_SIZE[0]/4),
-                 BoxSizes(int(IMAGE_SIZE[0]*0.6), int(IMAGE_SIZE[0]*0.76)), [2]),  # 0.71
-            Spec(int(IMAGE_SIZE[0] / 256), int(IMAGE_SIZE[0]/2),
-                 BoxSizes(int(IMAGE_SIZE[0] * 0.76), int(IMAGE_SIZE[0] * 0.9)), [2]) # 0.88 / 0.95
-        ]
+    Spec(32, 16, BoxSizes(51, 122), [2,3]),
+    Spec(16, 32, BoxSizes(122, 189), [2,3]),
+    Spec(8, 64, BoxSizes(230, 296), [2,3]),
+    Spec(4, 128, BoxSizes(307, 389), [2]),
+    Spec(2, 256, BoxSizes(389, 460), [2]),
+
+]
+# specs = [
+#             Spec(int(IMAGE_SIZE[0]/16), int(IMAGE_SIZE[0]/32),
+#                  BoxSizes(int(IMAGE_SIZE[0]*0.1), int(IMAGE_SIZE[0]*0.24)), [2, 3]),  # 0.2
+#             Spec(int(IMAGE_SIZE[0]/32), int(IMAGE_SIZE[0]/16),
+#                  BoxSizes(int(IMAGE_SIZE[0]*0.24), int(IMAGE_SIZE[0]*0.37)), [2, 3]),  # 0.37
+#             Spec(int(IMAGE_SIZE[0]/64), int(IMAGE_SIZE[0]/8),
+#                  BoxSizes(int(IMAGE_SIZE[0]*0.45), int(IMAGE_SIZE[0]*0.58)), [2, 3]),  # 0.54
+#             Spec(int(IMAGE_SIZE[0]/128), int(IMAGE_SIZE[0]/4),
+#                  BoxSizes(int(IMAGE_SIZE[0]*0.6), int(IMAGE_SIZE[0]*0.76)), [2]),  # 0.71
+#             Spec(int(IMAGE_SIZE[0] / 256), int(IMAGE_SIZE[0]/2),
+#                  BoxSizes(int(IMAGE_SIZE[0] * 0.76), int(IMAGE_SIZE[0] * 0.9)), [2]) # 0.88 / 0.95
+#         ]
 
 
 """ 0408 test
