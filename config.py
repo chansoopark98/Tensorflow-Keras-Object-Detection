@@ -10,16 +10,47 @@ MODEL_INPUT_SIZE = {
     'B6': 896,
     'B7': 960
 }
+def set_priorBox(model_name):
+    IMAGE_SIZE = MODEL_INPUT_SIZE[model_name]
+    if model_name == 'B0':
 
-# Input 512
-specs = [
-    Spec(32, 16, BoxSizes(51, 122), [2,3]),
-    Spec(16, 32, BoxSizes(122, 189), [2,3]),
-    Spec(8, 64, BoxSizes(230, 296), [2,3]),
-    Spec(4, 128, BoxSizes(307, 389), [2]),
-    Spec(2, 256, BoxSizes(389, 460), [2]),
+        return [
+            Spec(32, 16, BoxSizes(51, 122), [2,3]),
+            Spec(16, 32, BoxSizes(122, 189), [2,3]),
+            Spec(8, 64, BoxSizes(230, 296), [2,3]),
+            Spec(4, 128, BoxSizes(307, 389), [2]),
+            Spec(2, 256, BoxSizes(389, 460), [2]),
+        ]
 
-]
+    elif model_name == 'B1':
+
+        return [
+            Spec(36, 18,  BoxSizes(int(IMAGE_SIZE*0.1), int(IMAGE_SIZE*0.24)), [2, 3]),
+            Spec(18, 36, BoxSizes(int(IMAGE_SIZE*0.24), int(IMAGE_SIZE*0.37)), [2, 3]),
+            Spec(9, 72, BoxSizes(int(IMAGE_SIZE*0.45), int(IMAGE_SIZE*0.58)), [2, 3]),
+            Spec(4, 144, BoxSizes(int(IMAGE_SIZE*0.6), int(IMAGE_SIZE*0.76)), [2]),
+            Spec(2, 288, BoxSizes(int(IMAGE_SIZE * 0.76), int(IMAGE_SIZE * 0.9)), [2])
+        ]
+    elif model_name == 'B2':
+
+        return [
+            Spec(40, 20,  BoxSizes(int(IMAGE_SIZE*0.1), int(IMAGE_SIZE*0.24)), [2, 3]),
+            Spec(20, 40, BoxSizes(int(IMAGE_SIZE*0.24), int(IMAGE_SIZE*0.37)), [2, 3]),
+            Spec(10, 80, BoxSizes(int(IMAGE_SIZE*0.45), int(IMAGE_SIZE*0.58)), [2, 3]),
+            Spec(4, 160, BoxSizes(int(IMAGE_SIZE*0.6), int(IMAGE_SIZE*0.76)), [2]),
+            Spec(2, 320, BoxSizes(int(IMAGE_SIZE * 0.76), int(IMAGE_SIZE * 0.9)), [2])
+        ]
+
+    elif model_name == 'B3':
+
+        return [
+            Spec(44, 22,  BoxSizes(int(IMAGE_SIZE*0.1), int(IMAGE_SIZE*0.24)), [2, 3]),
+            Spec(22, 44, BoxSizes(int(IMAGE_SIZE*0.24), int(IMAGE_SIZE*0.37)), [2, 3]),
+            Spec(11, 88, BoxSizes(int(IMAGE_SIZE*0.45), int(IMAGE_SIZE*0.58)), [2, 3]),
+            Spec(5, 176, BoxSizes(int(IMAGE_SIZE*0.6), int(IMAGE_SIZE*0.76)), [2]),
+            Spec(3, 352, BoxSizes(int(IMAGE_SIZE * 0.76), int(IMAGE_SIZE * 0.9)), [2])
+        ]
+
 # specs = [
 #             Spec(int(IMAGE_SIZE[0]/16), int(IMAGE_SIZE[0]/32),
 #                  BoxSizes(int(IMAGE_SIZE[0]*0.1), int(IMAGE_SIZE[0]*0.24)), [2, 3]),  # 0.2
