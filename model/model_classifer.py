@@ -76,11 +76,13 @@ def create_classifier(source_layers, num_priors, normalizations, num_classes=21,
         x2 = SeparableConv2D(num_priors[i] * 4, 3, padding='same',
                              depthwise_initializer=initializers.VarianceScaling(),
                              pointwise_initializer=initializers.VarianceScaling(),
+                             bias_initializer=tf.zeros_initializer(),
                              name= name + '_mbox_loc_1')(x)
         for loc_times in range(classifier_times - 1):
             x2 = SeparableConv2D(num_priors[i] * 4, 3, padding='same',
                                  depthwise_initializer=initializers.VarianceScaling(),
                                  pointwise_initializer=initializers.VarianceScaling(),
+                                 bias_initializer=tf.zeros_initializer(),
                                  name= name + '_mbox_loc_'+str(loc_times+2))(x2)
 
         x2 = Flatten(name=name + '_mbox_loc_flat')(x2)

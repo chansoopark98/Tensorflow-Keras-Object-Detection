@@ -8,17 +8,21 @@ from tqdm import tqdm
 import cv2
 import argparse
 
+# tf.keras.backend.clear_session()
+#
+# policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
+# mixed_precision.set_policy(policy)
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=32)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=2)
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
-parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0410_81.9%_b1_/0410.h5')
-parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./datasets/test/VOCdevkit/VOC2007/JPEGImages/')
-# parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./inputs/')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0422.h5')
+# parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./datasets/test/VOCdevkit/VOC2007/JPEGImages/')
+parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./inputs/')
 parser.add_argument("--output_dir", type=str,   help="테스트 결과 이미지 디렉토리 설정", default='./outputs/')
-parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B1')
-parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
 
 MODEL_INPUT_SIZE = {
     'B0': 512,
@@ -104,7 +108,7 @@ def draw_bounding(img , bboxes, labels, img_size):
         cv2.rectangle(img_box, (xmin, ymin), (xmax, ymax), color, 2)
         cv2.rectangle(img_box, (xmin - 1, ymin), (xmax + 1, ymin - 20), color, cv2.FILLED)
         font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(img_box, CLASSES[int(labels[i]-1)], (xmin + 5, ymin - 5), font, 0.5,
+        cv2.putText(img_box, COCO_CLASSES[int(labels[i]-1)], (xmin + 5, ymin - 5), font, 0.5,
                     (255, 255, 255), 1, cv2.LINE_AA)
         alpha = 0.8
         cv2.addWeighted(img_box, alpha, img, 1. - alpha, 0, img)
@@ -113,7 +117,7 @@ def draw_bounding(img , bboxes, labels, img_size):
 for batch in tqdm(dataset, total=test_steps):
 
     pred = model.predict_on_batch(batch)
-    predictions = post_process(pred, target_transform, classes=CLASSES_NUM, confidence_threshold=0.4)
+    predictions = post_process(pred, target_transform, classes=CLASSES_NUM, confidence_threshold=0.15, iou_threshold=0.8)
 
     for i, path in enumerate(filenames[x:y]):
 
