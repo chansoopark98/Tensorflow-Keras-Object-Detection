@@ -28,11 +28,11 @@ parser = argparse.ArgumentParser()
 
 
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=8)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
 # parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0410_81.9%_b1_/0410.h5')
-parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0426.h5')
-parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B2')
-parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0422.h5')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
 parser.add_argument("--eval_testdev",  type=str,   help="COCO TESTDEV 평가", default=True)
 parser.add_argument("--calc_flops",  type=str,   help="모델 FLOPS 계산", default=False)
 args = parser.parse_args()
@@ -136,13 +136,14 @@ if TRAIN_MODE == 'coco':
     # (img, img_shape , img_id, cat_id)
     # for x, img_shape, img_id, cat_id in tqdm(coco_dataset, total=test_steps):
 
-    for sample in test_data:
-        img_shapes.append(sample['image'].shape)
-        img_id.append(np.int(sample['image/id'].numpy().astype('int32').item()))
+    # for sample in test_data:
+    #     img_shapes.append(sample['image'].shape)
+    #     img_id.append(np.int(sample['image/id'].numpy().astype('int32').item()))
 
-    for x, pred_id in tqdm(coco_dataset, total=test_steps):
+    for x, pred_id, img_shapes in tqdm(coco_dataset, total=test_steps):
         pred = model.predict_on_batch(x)
-        predictions = post_process(pred, target_transform, confidence_threshold=0.001, top_k=200, iou_threshold=0.4, classes=CLASSES_NUM)
+        # predictions = post_process(pred, target_transform, confidence_threshold=0.001, top_k=200, iou_threshold=0.4, classes=CLASSES_NUM)
+        predictions = post_process(pred, target_transform, classes=CLASSES_NUM)
         pred_ids.append(pred_id)
         for boxes, scores, labels in predictions:
             for i in range(len(labels)):
@@ -164,10 +165,10 @@ if TRAIN_MODE == 'coco':
             bbox = pred_boxes[index][i]
             xmin, ymin, xmax, ymax = bbox
 
-            xmin = xmin * img_shapes[index][1]
-            ymin = ymin * img_shapes[index][0]
-            xmax = xmax * img_shapes[index][1]
-            ymax = ymax * img_shapes[index][0]
+            xmin = xmin * img_shapes[index][0]
+            ymin = ymin * img_shapes[index][1]
+            xmax = xmax * img_shapes[index][0]
+            ymax = ymax * img_shapes[index][1]
             x = round(float(xmin), 2)
             y = round(float(ymin), 2)
             w = round(float((xmax - xmin) + 1), 2)

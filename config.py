@@ -1,8 +1,8 @@
 from utils.priors import *
 
-iou_threshold = 0.45
-center_variance = 0.1
-size_variance = 0.2
+iou_threshold = 0.5 # 0.5
+center_variance = 0.1 # 0.1
+size_variance = 0.2 # 0.2
 
 
 MODEL_INPUT_SIZE = {
