@@ -4,7 +4,7 @@ import tensorflow as tf
 from utils.augmentations import *
 
 AUTO = tf.data.experimental.AUTOTUNE
-image_size = [512, 512]
+
 
 @tf.function
 def data_augment(image, boxes, labels):

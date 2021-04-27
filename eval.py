@@ -9,6 +9,7 @@ from tensorflow.keras.utils import plot_model
 from calc_flops import get_flops
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
+from config import *
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from tqdm import tqdm
 from pprint import pprint
@@ -27,11 +28,11 @@ parser = argparse.ArgumentParser()
 
 
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=8)
 # parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0410_81.9%_b1_/0410.h5')
-parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0422.h5')
-parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
-parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0426.h5')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B2')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--eval_testdev",  type=str,   help="COCO TESTDEV 평가", default=True)
 parser.add_argument("--calc_flops",  type=str,   help="모델 FLOPS 계산", default=False)
 args = parser.parse_args()
@@ -57,23 +58,7 @@ IMAGE_SIZE = [MODEL_INPUT_SIZE[MODEL_NAME], MODEL_INPUT_SIZE[MODEL_NAME]]
 EVAL_TESTDEV = args.eval_testdev
 os.makedirs(DATASET_DIR, exist_ok=True)
 
-iou_threshold = 0.5
-center_variance = 0.1
-size_variance = 0.2
-
-specs = [
-            Spec(int(IMAGE_SIZE[0]/16), int(IMAGE_SIZE[0]/32),
-                 BoxSizes(int(IMAGE_SIZE[0]*0.1), int(IMAGE_SIZE[0]*0.24)), [2, 3]),  # 0.2
-            Spec(int(IMAGE_SIZE[0]/32), int(IMAGE_SIZE[0]/16),
-                 BoxSizes(int(IMAGE_SIZE[0]*0.24), int(IMAGE_SIZE[0]*0.37)), [2, 3]),  # 0.37
-            Spec(int(IMAGE_SIZE[0]/64), int(IMAGE_SIZE[0]/8),
-                 BoxSizes(int(IMAGE_SIZE[0]*0.45), int(IMAGE_SIZE[0]*0.58)), [2, 3]),  # 0.54
-            Spec(int(IMAGE_SIZE[0]/128), int(IMAGE_SIZE[0]/4),
-                 BoxSizes(int(IMAGE_SIZE[0]*0.6), int(IMAGE_SIZE[0]*0.76)), [2]),  # 0.71
-            Spec(int(IMAGE_SIZE[0] / 256), int(IMAGE_SIZE[0]/2),
-                 BoxSizes(int(IMAGE_SIZE[0] * 0.76), int(IMAGE_SIZE[0]  *0.9)), [2]) # 0.88 / 0.95
-        ]
-
+specs = set_priorBox(MODEL_NAME)
 priors = create_priors_boxes(specs, IMAGE_SIZE[0])
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
@@ -117,7 +102,7 @@ else:
                                      target_transform, TRAIN_MODE, train=False)
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
-model = model_build(TRAIN_MODE, MODEL_NAME, pretrained=False)
+model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, pretrained=False)
 
 print("모델 가중치 로드...")
 model.load_weights(CHECKPOINT_DIR)

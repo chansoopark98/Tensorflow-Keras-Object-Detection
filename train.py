@@ -4,9 +4,9 @@ import argparse
 import time
 import os
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
+from callbacks import Scalar_LR
 from model.model_builder import model_build
 from metrics import f1score, precision, recall , cross_entropy, localization
-from callbacks import Scalar_LR
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from config import *
 
@@ -14,7 +14,6 @@ tf.keras.backend.clear_session()
 
 policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
 mixed_precision.set_policy(policy)
-
 
 parser = argparse.ArgumentParser()
 
@@ -91,14 +90,9 @@ else:
 
 # TODO https://www.tensorflow.org/datasets/api_docs/python/tfds/testing/mock_data VOC+COCO 무작위 데이터 생성
 
-iou_threshold = 0.5
-center_variance = 0.1
-size_variance = 0.2
-
 
 # for voc
 specs = set_priorBox(MODEL_NAME)
-
 print(specs)
 
 priors = create_priors_boxes(specs, IMAGE_SIZE[0])
@@ -158,11 +152,11 @@ else :
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 
-
-testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
+#testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=5, min_lr=1e-5, verbose=1)
 checkpoint = ModelCheckpoint(CHECKPOINT_DIR + SAVE_MODEL_NAME + '.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
+
 
 if CONTINUE_TRAINING is True:
     weight_name = '0421'
@@ -173,7 +167,7 @@ if CONTINUE_TRAINING is True:
 
 else:
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
-    callback = [reduce_lr, checkpoint, tensorboard, testCallBack]
+    callback = [reduce_lr, checkpoint]
 
 steps_per_epoch = number_train // BATCH_SIZE
 validation_steps = number_test // BATCH_SIZE
@@ -186,7 +180,7 @@ optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')
 model.compile(
     optimizer=optimizer,
     loss=total_loss,
-    metrics=[f1score, precision, recall, cross_entropy, localization]
+    metrics=[precision, recall, cross_entropy, localization]
 )
 
 history = model.fit(training_dataset,

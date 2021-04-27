@@ -277,10 +277,6 @@ def iou_of(boxes0, boxes1, eps=1e-5):
     area1 = area_of(boxes1[..., :2], boxes1[..., 2:])
     return overlap_area / (area0 + area1 - overlap_area + eps)
 
-
-import sys
-
-
 @tf.function
 def center_form_to_corner_form(locations):
     output = tf.concat([locations[..., :2] - locations[..., 2:] / 2,

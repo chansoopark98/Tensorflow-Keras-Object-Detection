@@ -7,6 +7,7 @@ from preprocessing import prepare_for_prediction
 from tqdm import tqdm
 import cv2
 import argparse
+from config import *
 
 # tf.keras.backend.clear_session()
 #
@@ -53,9 +54,7 @@ else:
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-iou_threshold = 0.5
-center_variance = 0.1
-size_variance = 0.2
+
 
 specs = [
             Spec(int(IMAGE_SIZE[0]/16), int(IMAGE_SIZE[0]/32),
@@ -117,7 +116,7 @@ def draw_bounding(img , bboxes, labels, img_size):
 for batch in tqdm(dataset, total=test_steps):
 
     pred = model.predict_on_batch(batch)
-    predictions = post_process(pred, target_transform, classes=CLASSES_NUM, confidence_threshold=0.15, iou_threshold=0.8)
+    predictions = post_process(pred, target_transform, classes=CLASSES_NUM, confidence_threshold=0.3)
 
     for i, path in enumerate(filenames[x:y]):
 
