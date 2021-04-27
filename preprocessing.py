@@ -1,3 +1,5 @@
+import sys
+
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 
 import tensorflow as tf
@@ -57,14 +59,11 @@ def prepare_cocoEval_input(sample):
 
     img_id = sample['image/id']
 
-    img_shape = sample['image'].shape
-
-
 
     img = preprocess_input(img, mode='torch')
     img = tf.image.resize(img, [512, 512])
     # return (img, img_shape , img_id, cat_id)
-    return (img, img_id, img_shape)
+    return (img, img_id)
 
 
 
