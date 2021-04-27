@@ -30,11 +30,11 @@ def batched_nms(boxes, scores, idxs, iou_threshold, top_k=100):
     max_coordinate = tf.reduce_max(boxes)
     offsets = idxs * (max_coordinate + 1)
     boxes_for_nms = boxes + offsets[:, None]
-    #keep = tf.image.non_max_suppression(boxes_for_nms, scores, top_k, iou_threshold) # 기존
-    keep, _ = tf.image.non_max_suppression_with_scores(boxes_for_nms, scores, top_k, iou_threshold, soft_nms_sigma=0.5) # 기존
-    keep, selected_scores = tf.image.non_max_suppression_with_scores(boxes_for_nms, scores, top_k, iou_threshold, soft_nms_sigma=0.5) # 기존
+    keep = tf.image.non_max_suppression(boxes_for_nms, scores, top_k, iou_threshold) # 기존
+    # keep, selected_scores = tf.image.non_max_suppression_with_scores(boxes_for_nms, scores, top_k, iou_threshold, soft_nms_sigma=0.5) # 기존
+    # soft nms일 경우 selected_socres 추가
 
-    return keep, selected_scores
+    return keep
 
 # #작업중
 # def hard_nms(box_scores, iou_threshold, top_k=100, candidate_size=200):
@@ -110,9 +110,14 @@ def post_process(detections, target_transform, confidence_threshold=0.01, top_k=
                                                                                           low_scoring_mask), tf.boolean_mask(
             labels, low_scoring_mask)
 
-        keep, selected_scores = batched_nms(boxes, scores, labels, iou_threshold, top_k)
-        scores = selected_scores
+        keep  = batched_nms(boxes, scores, labels, iou_threshold, top_k)
+
         boxes, scores, labels = tf.gather(boxes, keep), tf.gather(scores, keep), tf.gather(labels, keep)
+
+        # test soft-nms
+        # keep, selected_scores = batched_nms(boxes, scores, labels, iou_threshold, top_k)
+        # scores = selected_scores
+        # boxes, labels = tf.gather(boxes, keep), tf.gather(labels, keep)
 
         results.append(Predictions(boxes.numpy(), scores.numpy(), labels.numpy()))
 
