@@ -30,9 +30,45 @@ def batched_nms(boxes, scores, idxs, iou_threshold, top_k=100):
     max_coordinate = tf.reduce_max(boxes)
     offsets = idxs * (max_coordinate + 1)
     boxes_for_nms = boxes + offsets[:, None]
-    keep = tf.image.non_max_suppression(boxes_for_nms, scores, top_k, iou_threshold)
+    #keep = tf.image.non_max_suppression(boxes_for_nms, scores, top_k, iou_threshold) # 기존
+    keep, _ = tf.image.non_max_suppression_with_scores(boxes_for_nms, scores, top_k, iou_threshold, soft_nms_sigma=0.5) # 기존
+    keep, selected_scores = tf.image.non_max_suppression_with_scores(boxes_for_nms, scores, top_k, iou_threshold, soft_nms_sigma=0.5) # 기존
 
-    return keep
+    return keep, selected_scores
+
+# #작업중
+# def hard_nms(box_scores, iou_threshold, top_k=100, candidate_size=200):
+#     """
+#     Args:
+#         box_scores (N, 5): 코너 형식의 box와 확률값
+#         iou_threshold: IoU 임계값
+#         top_k: 값 유지    If k <= 0, 모든 값 유지
+#         candidate_size: 가장 높은 점수를 가지는 후보 경계만 사용.
+#     Returns:
+#          picked: bbox index 리스트
+#     """
+#     scores = box_scores[:, 4]
+#     boxes = box_scores[:, :-2]
+#     picked = []
+#     indexes = np.argsort(scores)[::-1]
+#     indexes = indexes[:candidate_size]
+#
+#     while len(indexes) > 0:
+#         current = indexes[0]
+#         picked.append(current)
+#         if 0 < top_k == len(picked) or len(indexes) == 1:
+#             break
+#         current_box = boxes[current, :]
+#         indexes = indexes[1:]
+#         rest_boxes = boxes[indexes, :]
+#         iou = iou_of(
+#             rest_boxes,
+#             np.expand_dims(current_box, axis=0),
+#         ).numpy()
+#         indexes = indexes[iou <= iou_threshold]
+#
+#     return box_scores[picked, :]
+
 
 
 def post_process(detections, target_transform, confidence_threshold=0.01, top_k=100, iou_threshold=0.5, classes=21):
@@ -74,8 +110,10 @@ def post_process(detections, target_transform, confidence_threshold=0.01, top_k=
                                                                                           low_scoring_mask), tf.boolean_mask(
             labels, low_scoring_mask)
 
-        keep = batched_nms(boxes, scores, labels, iou_threshold, top_k)
+        keep, selected_scores = batched_nms(boxes, scores, labels, iou_threshold, top_k)
+        scores = selected_scores
         boxes, scores, labels = tf.gather(boxes, keep), tf.gather(scores, keep), tf.gather(labels, keep)
+
         results.append(Predictions(boxes.numpy(), scores.numpy(), labels.numpy()))
 
     return results

@@ -77,8 +77,8 @@ if TRAIN_MODE == 'voc':
 else:
     if EVAL_TESTDEV:
         test_data, test_info = tfds.load('coco/2017', data_dir=DATASET_DIR, split='validation', with_info=True)
-        test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
-        test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
+        # test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
+        # test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
 
     else:
         test_dev_idList = []
@@ -154,7 +154,7 @@ if TRAIN_MODE == 'coco':
     for x, pred_id in tqdm(coco_dataset, total=test_steps):
         pred = model.predict_on_batch(x)
         # predictions = post_process(pred, target_transform, confidence_threshold=0.001, top_k=200, iou_threshold=0.4, classes=CLASSES_NUM)
-        predictions = post_process(pred, target_transform, iou_threshold=0.5, confidence_threshold=0.005, classes=CLASSES_NUM)
+        predictions = post_process(pred, target_transform, confidence_threshold=0.05, classes=CLASSES_NUM)
         pred_ids.append(pred_id)
 
         for boxes, scores, labels in predictions:
@@ -170,6 +170,7 @@ if TRAIN_MODE == 'coco':
             pred_labels.append(labels)
             pred_boxes.append(np.round(boxes.tolist(),2).astype('float32'))
             pred_scores.append(np.round(scores.tolist(),2).astype('float32'))
+
 
 
     for index in range(len(pred_ids)):
