@@ -28,6 +28,7 @@ parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B2')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 가중치 로드", default=False)
+parser.add_argument("--backbone_pretrained",  type=bool,  help="efficientNet 사전 학습 유무", default=True)
 
 MODEL_INPUT_SIZE = {
     'B0': 512,
@@ -52,6 +53,7 @@ MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
 CONTINUE_TRAINING = args.pretrain_mode
 IMAGE_SIZE = [MODEL_INPUT_SIZE[MODEL_NAME], MODEL_INPUT_SIZE[MODEL_NAME]]
+BACKBONE_PRETRAINED = args.backbone_pretrained
 print("입력 이미지 크기 : ", IMAGE_SIZE)
 
 os.makedirs(DATASET_DIR, exist_ok=True)
@@ -159,12 +161,12 @@ tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_grap
 
 
 if CONTINUE_TRAINING is True:
-    model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=False)
+    model = model_build(TRAIN_MODE, MODEL_NAME, pretrained=BACKBONE_PRETRAINED, image_size=IMAGE_SIZE, backbone_trainable=False)
     callback = [checkpoint]
 
 else:
     weight_name = '0421'
-    model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
+    model = model_build(TRAIN_MODE, MODEL_NAME, pretrained=BACKBONE_PRETRAINED, image_size=IMAGE_SIZE, backbone_trainable=True)
     model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
     callback = [reduce_lr, checkpoint]
 
