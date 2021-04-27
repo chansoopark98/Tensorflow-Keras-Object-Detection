@@ -40,12 +40,12 @@ args = parser.parse_args()
 MODEL_INPUT_SIZE = {
     'B0': 512,
     'B1': 512,
-    'B2': 640,
-    'B3': 704,
-    'B4': 768,
-    'B5': 832,
-    'B6': 896,
-    'B7': 960
+    'B2': 512,
+    'B3': 512,
+    'B4': 512,
+    'B5': 512,
+    'B6': 512,
+    'B7': 512
 }
 
 BATCH_SIZE = args.batch_size

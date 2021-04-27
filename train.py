@@ -31,13 +31,13 @@ parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 �
 
 MODEL_INPUT_SIZE = {
     'B0': 512,
-    'B1': 576,
-    'B2': 640,
-    'B3': 704,
-    'B4': 768,
-    'B5': 832,
-    'B6': 896,
-    'B7': 960
+    'B1': 512,
+    'B2': 512,
+    'B3': 512,
+    'B4': 512,
+    'B5': 512,
+    'B6': 512,
+    'B7': 512
 }
 
 args = parser.parse_args()
@@ -159,14 +159,13 @@ tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_grap
 
 
 if CONTINUE_TRAINING is True:
-    weight_name = '0421'
-
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=False)
-    model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
     callback = [checkpoint]
 
 else:
+    weight_name = '0421'
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
+    model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
     callback = [reduce_lr, checkpoint]
 
 steps_per_epoch = number_train // BATCH_SIZE
