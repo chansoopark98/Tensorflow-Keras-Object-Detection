@@ -9,14 +9,20 @@ dataDir='./datasets/'
 dataType='val2017'
 annFile = 'datasets/instances_val2017.json'
 cocoGt=COCO(annFile)
-cocoGt.loadAnns(1108034)
 cocoDt=cocoGt.loadRes('datasets/coco_predictions.json')
 
 imgIds=sorted(cocoGt.getImgIds())
-#imgIds = imgIds[0:100]
+imgIds = imgIds[0:100]
+# imgIds = imgIds[0:4952]
+
 cocoEval = COCOeval(cocoGt,cocoDt,annType)
 cocoEval.params.imgIds  = imgIds
+
+
+# cocoEval.params.maxDets=[200]
 #cocoEval.params.catIds = [1]
+
+
 cocoEval.evaluate()
 cocoEval.accumulate()
 cocoEval.summarize()
