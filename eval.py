@@ -165,10 +165,10 @@ if TRAIN_MODE == 'coco':
             bbox = pred_boxes[index][i]
             xmin, ymin, xmax, ymax = bbox
 
-            xmin = xmin * img_shapes[index][0]
-            ymin = ymin * img_shapes[index][1]
-            xmax = xmax * img_shapes[index][0]
-            ymax = ymax * img_shapes[index][1]
+            xmin = xmin * img_shapes[index][1]
+            ymin = ymin * img_shapes[index][0]
+            xmax = xmax * img_shapes[index][1]
+            ymax = ymax * img_shapes[index][0]
             x = round(float(xmin), 2)
             y = round(float(ymin), 2)
             w = round(float((xmax - xmin) + 1), 2)
