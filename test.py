@@ -1,17 +1,15 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Conv2D, MaxPooling2D
+from random import randint
 
-tensor = tf.ones([1, 704, 704,3])
+dims = 8
+pos  = randint(0, dims - 1)
 
-tensor = Conv2D(3, 3, (2, 2), padding='same')(tensor) # 352
-tensor = Conv2D(3, 3, (2, 2), padding='same')(tensor) # 176
-tensor = Conv2D(3, 3, (2, 2), padding='same')(tensor) # 88
+logits = tf.random.uniform([dims], maxval=3, dtype=tf.float32)
+labels = tf.one_hot(pos, dims)
 
-tensor = Conv2D(3, 3, (2, 2), padding='same')(tensor) # 44
-tensor = Conv2D(3, 3, (2, 2), padding='same')(tensor) # 22
-tensor = Conv2D(3, 3, (2, 2), padding='same')(tensor) # 11
+res1 = tf.nn.softmax_cross_entropy_with_logits(       logits=logits, labels=labels)
+res2 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=tf.constant(pos))
 
-pool1 = MaxPooling2D(pool_size=3, strides=2, padding='valid')(tensor) # 4x4
-pool2 = MaxPooling2D(pool_size=3, strides=2, padding='valid')(pool1) # 4x4
-print(pool1.shape)
-print(pool2.shape)
+
+print(res1, res2)
+print(res1 == res2)

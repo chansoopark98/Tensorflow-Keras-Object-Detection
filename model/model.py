@@ -297,7 +297,7 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], b
     if base_model_name == 'B0':
         feature_resize = False
     else:
-        feature_resize = True
+        feature_resize = False
 
     for i in range(FPN_TIMES[MODEL_NAME[base_model_name]]):
         print("times", i)
