@@ -17,7 +17,7 @@ mixed_precision.set_policy(policy)
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=4)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
 parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=512)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
@@ -27,7 +27,7 @@ parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉�
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
-parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 가중치 로드", default=True)
+parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 가중치 로드", default=False) # 처음엔 false 두번째 true
 parser.add_argument("--backbone_pretrained",  type=bool,  help="efficientNet 사전 학습 유무", default=True)
 
 MODEL_INPUT_SIZE = {
@@ -126,8 +126,8 @@ if TRAIN_MODE == 'voc':
                                                 target_transform, TRAIN_MODE, train=False)
 
 else :
-    # from model.coco_loss import total_loss
-    from model.focal_loss import total_loss
+    from model.coco_loss import total_loss
+    # from model.focal_loss import total_loss
     from preprocessing import coco_prepare_dataset
 
     train_data = tfds.load('coco/2017', data_dir=DATASET_DIR, split='train')
@@ -161,7 +161,7 @@ checkpoint = ModelCheckpoint(CHECKPOINT_DIR + SAVE_MODEL_NAME + '.h5', monitor='
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
 
 
-if CONTINUE_TRAINING is True:
+if CONTINUE_TRAINING is False:
     model = model_build(TRAIN_MODE, MODEL_NAME, pretrained=BACKBONE_PRETRAINED, image_size=IMAGE_SIZE, backbone_trainable=False)
     callback = [checkpoint]
 
