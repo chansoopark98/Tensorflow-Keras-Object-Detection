@@ -92,7 +92,6 @@ else:
 
 # TODO https://www.tensorflow.org/datasets/api_docs/python/tfds/testing/mock_data VOC+COCO 무작위 데이터 생성
 
-
 # for voc
 specs = set_priorBox(MODEL_NAME)
 print(specs)
@@ -126,8 +125,8 @@ if TRAIN_MODE == 'voc':
                                                 target_transform, TRAIN_MODE, train=False)
 
 else :
-    from model.coco_loss import total_loss
-    # from model.focal_loss import total_loss
+    # from model.coco_loss import total_loss
+    from model.focal_loss import total_loss
     from preprocessing import coco_prepare_dataset
 
     train_data = tfds.load('coco/2017', data_dir=DATASET_DIR, split='train')
