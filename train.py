@@ -27,7 +27,7 @@ parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉�
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
-parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 가중치 로드", default=False) # 처음엔 false 두번째 true
+parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 가중치 로드", default=True) # 처음엔 false 두번째 true
 parser.add_argument("--backbone_pretrained",  type=bool,  help="efficientNet 사전 학습 유무", default=True)
 
 MODEL_INPUT_SIZE = {
@@ -62,32 +62,7 @@ os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 if TRAIN_MODE == 'voc':
     num_classes = 21
 
-    # specs = [
-    #     Spec(int(IMAGE_SIZE[0] / 16), int(IMAGE_SIZE[0] / 32),
-    #          BoxSizes(int(IMAGE_SIZE[0] * 0.1), int(IMAGE_SIZE[0] * 0.24)), [2, 3]),  # 0.2
-    #     Spec(int(IMAGE_SIZE[0] / 32), int(IMAGE_SIZE[0] / 16),
-    #          BoxSizes(int(IMAGE_SIZE[0] * 0.24), int(IMAGE_SIZE[0] * 0.37)), [2, 3]),  # 0.37
-    #     Spec(int(IMAGE_SIZE[0] / 64), int(IMAGE_SIZE[0] / 8),
-    #          BoxSizes(int(IMAGE_SIZE[0] * 0.45), int(IMAGE_SIZE[0] * 0.58)), [2, 3]),  # 0.54
-    #     Spec(int(IMAGE_SIZE[0] / 128), int(IMAGE_SIZE[0] / 4),
-    #          BoxSizes(int(IMAGE_SIZE[0] * 0.6), int(IMAGE_SIZE[0] * 0.76)), [2]),  # 0.71
-    #     Spec(int(IMAGE_SIZE[0] / 256), int(IMAGE_SIZE[0] / 2),
-    #          BoxSizes(int(IMAGE_SIZE[0] * 0.76), int(IMAGE_SIZE[0] * 0.9)), [2])  # 0.88 / 0.95
-    # ]
-
 else:
-    specs = [
-        Spec(int(IMAGE_SIZE[0] / 16), int(IMAGE_SIZE[0] / 32),
-             BoxSizes(int(IMAGE_SIZE[0] * 0.1), int(IMAGE_SIZE[0] * 0.24)), [2, 3]),  # 0.2
-        Spec(int(IMAGE_SIZE[0] / 32), int(IMAGE_SIZE[0] / 16),
-             BoxSizes(int(IMAGE_SIZE[0] * 0.24), int(IMAGE_SIZE[0] * 0.37)), [2, 3]),  # 0.37
-        Spec(int(IMAGE_SIZE[0] / 64), int(IMAGE_SIZE[0] / 8),
-             BoxSizes(int(IMAGE_SIZE[0] * 0.45), int(IMAGE_SIZE[0] * 0.58)), [2, 3]),  # 0.54
-        Spec(int(IMAGE_SIZE[0] / 128), int(IMAGE_SIZE[0] / 4),
-             BoxSizes(int(IMAGE_SIZE[0] * 0.6), int(IMAGE_SIZE[0] * 0.76)), [2]),  # 0.71
-        Spec(int(IMAGE_SIZE[0] / 256), int(IMAGE_SIZE[0] / 2),
-             BoxSizes(int(IMAGE_SIZE[0] * 0.76), int(IMAGE_SIZE[0] * 0.9)), [2])  # 0.88 / 0.95
-    ]
     num_classes = 81
 
 # TODO https://www.tensorflow.org/datasets/api_docs/python/tfds/testing/mock_data VOC+COCO 무작위 데이터 생성
@@ -125,8 +100,8 @@ if TRAIN_MODE == 'voc':
                                                 target_transform, TRAIN_MODE, train=False)
 
 else :
-    # from model.coco_loss import total_loss
-    from model.focal_loss import total_loss
+    from model.coco_loss import total_loss
+    # from model.focal_loss import total_loss
     from preprocessing import coco_prepare_dataset
 
     train_data = tfds.load('coco/2017', data_dir=DATASET_DIR, split='train')
@@ -155,7 +130,7 @@ else :
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 
 #testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=5, min_lr=1e-5, verbose=1)
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
 checkpoint = ModelCheckpoint(CHECKPOINT_DIR + SAVE_MODEL_NAME + '.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
 
@@ -167,7 +142,7 @@ if CONTINUE_TRAINING is False:
 else:
     weight_name = '0421'
     model = model_build(TRAIN_MODE, MODEL_NAME, pretrained=BACKBONE_PRETRAINED, image_size=IMAGE_SIZE, backbone_trainable=True)
-    model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
+    # model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
     callback = [reduce_lr, checkpoint]
 
 steps_per_epoch = number_train // BATCH_SIZE

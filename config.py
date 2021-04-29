@@ -24,9 +24,9 @@ MODEL_INPUT_SIZE = {
 def set_priorBox(model_name):
         return [
             Spec(64, 8, BoxSizes(25, 51), [2]),
-            Spec(32, 16, BoxSizes(51, 122), [2,3]),
-            Spec(16, 32, BoxSizes(122, 189), [2,3]),
-            Spec(8, 64, BoxSizes(230, 296), [2,3]),
+            Spec(32, 16, BoxSizes(51, 122), [2]),
+            Spec(16, 32, BoxSizes(122, 189), [2]),
+            Spec(8, 64, BoxSizes(230, 296), [2]),
             Spec(4, 128, BoxSizes(307, 389), [2]),
         ]
 

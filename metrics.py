@@ -2,7 +2,7 @@ import tensorflow as tf
 import tensorflow.keras.backend as K
 from tensorflow.keras.metrics import sparse_categorical_crossentropy
 
-num_classes = 21
+num_classes = 81
 
 def recall(y_target, y_pred):
     y_target_yn = K.round(K.clip(y_target, 0, 1)) # 실제값을 0(Negative) 또는 1(Positive)로 설정한다

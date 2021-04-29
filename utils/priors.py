@@ -47,16 +47,6 @@ def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
                 h
             ])
 
-            # 큰 bbox
-            size = np.sqrt(spec.box_sizes.max * spec.box_sizes.min)
-            h = w = size / image_size
-            priors.append([
-                x_center,
-                y_center,
-                w,
-                h
-            ])
-
             # 작은 bbox 높이, 너비 비율 변경
             size = spec.box_sizes.min
             h = w = size / image_size
@@ -103,15 +93,9 @@ def assign_gt2_priors(gt_boxes, gt_labels, corner_form_priors,
         labels (num_priors): gt 라벨
     """
     # size: num_priors x num_targets
-    # gt_boxes를 expand_dims 0차원으로 하면 (num_targets, 4) -> (1, num_targets, 4)
     ious = iou_of(tf.expand_dims(gt_boxes, axis=0), tf.expand_dims(corner_form_priors, axis=1))
-    # ious shape : (num_targets, 4) : iou 임계치 이상 허용되는 샘플만 양수 샘플로 사용
 
     # size: num_priors
-    """
-    tf.math.reduce_max(ious, axis=1) : shape이 [2, 4인 경우]
-    output = [n, n, n, n]
-    """
     best_target_per_prior = tf.math.reduce_max(ious, axis=1)
     best_target_per_prior_index = tf.math.argmax(ious, axis=1)
     # size: num_targets
