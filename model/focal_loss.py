@@ -1,5 +1,8 @@
+import sys
+
 import tensorflow as tf
 import numpy as np
+from tensorflow import keras
 
 def smooth_l1(labels, scores, sigma=1.0):
     diff = scores-labels
@@ -31,7 +34,29 @@ def total_loss(y_true, y_pred, num_classes=81):
 
     confidence = tf.boolean_mask(confidence, mask)
 
-    classification_loss = tf.math.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(
+    alpha = 0.25
+    gamma = 1.5
+    focal_labels = y_true[:,:,:num_classes]
+    anchor_state = tf.boolean_mask(labels, mask)
+    classification = loss
+
+
+    # filter out "ignore" anchors
+    indices = tf.where(keras.backend.not_equal(anchor_state, 0))
+    focal_labels = tf.gather_nd(tf.cast(focal_labels, tf.float32), indices)
+    classification = tf.gather_nd(classification, indices)
+
+    # compute the focal loss
+    alpha_factor = keras.backend.ones_like(focal_labels) * alpha
+    alpha_factor = tf.where(keras.backend.equal(focal_labels, 1), alpha_factor, 1 - alpha_factor)
+    # (1 - 0.99) ** 2 = 1e-4, (1 - 0.9) ** 2 = 1e-2
+    focal_weight = tf.where(keras.backend.equal(focal_labels, 1), 1 - classification, classification)
+    focal_weight = alpha_factor * focal_weight ** gamma
+
+
+
+
+    classification_loss = tf.math.reduce_sum( focal_weight * tf.nn.sparse_softmax_cross_entropy_with_logits(
         logits = tf.reshape(confidence, [-1, num_classes]),
         labels = tf.boolean_mask(labels, mask)))
 
