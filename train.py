@@ -18,6 +18,8 @@ from config import *
 
 policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
 mixed_precision.set_policy(policy)
+#tf.compat.v1.enable_eager_execution()
+#tf.config.optimizer.set_jit(True)
 
 parser = argparse.ArgumentParser()
 
