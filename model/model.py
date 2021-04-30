@@ -87,6 +87,13 @@ def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512],
     base = remove_dropout(base)
     base.trainable = trainable
 
+    # for layer in base.layers:
+    #
+    #     if isinstance(layer, tf.keras.layers.BatchNormalization):
+    #         print("bn 제거")
+    #         layer._per_input_updates = {}
+
+
     return base
 
 

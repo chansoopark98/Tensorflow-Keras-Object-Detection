@@ -4,7 +4,6 @@ import argparse
 import time
 import os
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
-
 from callbacks import Scalar_LR
 from model.model_builder import model_build
 from metrics import f1score, precision, recall , cross_entropy, localization
@@ -20,8 +19,9 @@ mixed_precision.set_policy(policy)
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=2)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=64)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
+parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=512)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름", default=str(time.strftime('%m%d', time.localtime(time.time()))))
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
@@ -29,7 +29,8 @@ parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉�
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
-parser.add_argument("--transfer_learning",  type=bool,  help="전이 학습 처음엔 false 두번째 true", default=True)
+parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 가중치 로드", default=True) # 처음엔 false 두번째 true
+parser.add_argument("--backbone_pretrained",  type=bool,  help="efficientNet 사전 학습 유무", default=True)
 
 MODEL_INPUT_SIZE = {
     'B0': 512,
@@ -43,7 +44,6 @@ MODEL_INPUT_SIZE = {
 }
 
 args = parser.parse_args()
-
 BATCH_SIZE = args.batch_size
 EPOCHS = args.epoch
 base_lr = args.lr
@@ -53,8 +53,9 @@ CHECKPOINT_DIR = args.checkpoint_dir
 TENSORBOARD_DIR = args.tensorboard_dir
 MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
-TRANSFER_LEARNING = args.transfer_learning
+CONTINUE_TRAINING = args.pretrain_mode
 IMAGE_SIZE = [MODEL_INPUT_SIZE[MODEL_NAME], MODEL_INPUT_SIZE[MODEL_NAME]]
+BACKBONE_PRETRAINED = args.backbone_pretrained
 print("입력 이미지 크기 : ", IMAGE_SIZE)
 
 os.makedirs(DATASET_DIR, exist_ok=True)
@@ -130,44 +131,47 @@ else :
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 
-testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
+#testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
 checkpoint = ModelCheckpoint(CHECKPOINT_DIR + SAVE_MODEL_NAME + '.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
-polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=0.01, decay_steps=number_train // BATCH_SIZE,
-                                                             end_learning_rate=0.0001, power=0.5)
-lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
-if TRANSFER_LEARNING is False:
-    model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=False)
-    callback = [lr_scheduler, checkpoint]
+
+if CONTINUE_TRAINING is False:
+    #model = model_build(TRAIN_MODE, MODEL_NAME, pretrained=BACKBONE_PRETRAINED, image_size=IMAGE_SIZE, backbone_trainable=False)
+    callback = [checkpoint]
 
 else:
     weight_name = '0421'
-    model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
+
     # model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
-    callback = [lr_scheduler, checkpoint]
+    callback = [reduce_lr, checkpoint]
 
 steps_per_epoch = number_train // BATCH_SIZE
 validation_steps = number_test // BATCH_SIZE
 print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
 
+
 optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')
+mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
+print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
 
-model.summary()
+with mirrored_strategy.scope():
 
-model.compile(
-    optimizer=optimizer,
-    loss=total_loss,
-    metrics=[precision, recall, cross_entropy, localization]
-)
+    model = model_build(TRAIN_MODE, MODEL_NAME, pretrained=BACKBONE_PRETRAINED, image_size=IMAGE_SIZE, backbone_trainable=True)
+    model.compile(
+        optimizer=optimizer,
+        loss=total_loss,
+        metrics=[precision, recall, cross_entropy, localization]
+    )
 
-history = model.fit(training_dataset,
-            validation_data=validation_dataset,
-            steps_per_epoch=steps_per_epoch,
-            validation_steps=validation_steps,
-            epochs=EPOCHS,
-            callbacks=callback
-            )
+    #model.summary()
+    history = model.fit(training_dataset,
+                validation_data=validation_dataset,
+                steps_per_epoch=steps_per_epoch,
+                validation_steps=validation_steps,
+                epochs=EPOCHS,
+                callbacks=callback
+                )
 
