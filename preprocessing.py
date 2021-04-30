@@ -1,7 +1,5 @@
 import sys
-
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
-
 import tensorflow as tf
 from utils.augmentations import *
 
@@ -66,7 +64,6 @@ def prepare_cocoEval_input(sample):
     return (img, img_id)
 
 
-
 # 타겟 연결 오리지날
 def join_target(image, bbox, labels, image_size, target_transform, classes):
     locations, labels = target_transform(tf.cast(bbox, tf.float32), labels)
@@ -94,6 +91,7 @@ def coco_prepare_dataset(dataset, image_size, batch_size, target_transform, trai
                                 num_parallel_calls=AUTO)
         dataset = dataset.padded_batch(batch_size)
         dataset = dataset.prefetch(AUTO)
+
     else:
         dataset = dataset.map(prepare_input, num_parallel_calls=AUTO)
         dataset = dataset.map(lambda image, boxes,
