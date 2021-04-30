@@ -47,6 +47,18 @@ def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
                 h
             ])
 
+
+            # # 큰 bbox
+            # size = np.sqrt(spec.box_sizes.max * spec.box_sizes.min)
+            # h = w = size / image_size
+            # priors.append([
+            #     x_center,
+            #     y_center,
+            #     w,
+            #     h
+            # ])
+
+
             # 작은 bbox 높이, 너비 비율 변경
             size = spec.box_sizes.min
             h = w = size / image_size
