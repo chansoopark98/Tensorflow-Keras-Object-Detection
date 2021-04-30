@@ -19,7 +19,7 @@ mixed_precision.set_policy(policy)
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=4)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=64)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
 parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=512)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
