@@ -10,6 +10,8 @@ from metrics import f1score, precision, recall , cross_entropy, localization
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from config import *
 
+# multi-gpu 중 하나만 실행되는 경우에 아래 주석 해제
+#tf.compat.v1.disable_eager_execution()
 tf.keras.backend.clear_session()
 
 policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
@@ -17,7 +19,7 @@ mixed_precision.set_policy(policy)
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=64)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
 parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=512)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
@@ -136,12 +138,12 @@ tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_grap
 
 
 if CONTINUE_TRAINING is False:
-    model = model_build(TRAIN_MODE, MODEL_NAME, pretrained=BACKBONE_PRETRAINED, image_size=IMAGE_SIZE, backbone_trainable=False)
+    #model = model_build(TRAIN_MODE, MODEL_NAME, pretrained=BACKBONE_PRETRAINED, image_size=IMAGE_SIZE, backbone_trainable=False)
     callback = [checkpoint]
 
 else:
     weight_name = '0421'
-    model = model_build(TRAIN_MODE, MODEL_NAME, pretrained=BACKBONE_PRETRAINED, image_size=IMAGE_SIZE, backbone_trainable=True)
+
     # model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
     callback = [reduce_lr, checkpoint]
 
@@ -149,16 +151,22 @@ steps_per_epoch = number_train // BATCH_SIZE
 validation_steps = number_test // BATCH_SIZE
 print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
-model.summary()
+
 
 optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')
+mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
+print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
 
-model.compile(
-    optimizer=optimizer,
-    loss=total_loss,
-    metrics=[precision, recall, cross_entropy, localization]
-)
+with mirrored_strategy.scope():
 
+    model = model_build(TRAIN_MODE, MODEL_NAME, pretrained=BACKBONE_PRETRAINED, image_size=IMAGE_SIZE, backbone_trainable=True)
+    model.compile(
+        optimizer=optimizer,
+        loss=total_loss,
+        metrics=[precision, recall, cross_entropy, localization]
+    )
+
+model.summary()
 history = model.fit(training_dataset,
                     validation_data=validation_dataset,
                     steps_per_epoch=steps_per_epoch,
