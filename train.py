@@ -12,14 +12,14 @@ from config import *
 
 # multi-gpu 중 하나만 실행되는 경우에 아래 주석 해제
 #tf.compat.v1.disable_eager_execution()
-tf.keras.backend.clear_session()
+#tf.keras.backend.clear_session()
 
 policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
 mixed_precision.set_policy(policy)
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=64)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=4)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
 parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=512)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
@@ -166,12 +166,12 @@ with mirrored_strategy.scope():
         metrics=[precision, recall, cross_entropy, localization]
     )
 
-model.summary()
-history = model.fit(training_dataset,
-                    validation_data=validation_dataset,
-                    steps_per_epoch=steps_per_epoch,
-                    validation_steps=validation_steps,
-                    epochs=EPOCHS,
-                    callbacks=callback
-                    )
+    #model.summary()
+    history = model.fit(training_dataset,
+                validation_data=validation_dataset,
+                steps_per_epoch=steps_per_epoch,
+                validation_steps=validation_steps,
+                epochs=EPOCHS,
+                callbacks=callback
+                )
 

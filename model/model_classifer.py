@@ -43,7 +43,7 @@ def create_classifier(source_layers, num_priors, normalizations, num_classes=21,
         # <<< reduce norm
         if normalizations is not None and normalizations[i] > 0:
            x = Normalize(normalizations[i], name=name + '_norm')(x)
-           print('norm_feature : '+x.name)
+           #print('norm_feature : '+x.name)
 
         # x = activation_5/Relu:0, shape=(Batch, 1, 1, 256)
         # print("start_multibox_head.py")
@@ -59,7 +59,7 @@ def create_classifier(source_layers, num_priors, normalizations, num_classes=21,
                              pointwise_initializer=initializers.VarianceScaling(),
                              name= name + '_mbox_conf_1')(x)
         for cls_times in range(classifier_times-1):
-            print('cls_times', cls_times)
+            #print('cls_times', cls_times)
             x1 = SeparableConv2D(num_priors[i] * num_classes, 3, padding='same',
                                  depthwise_initializer=initializers.VarianceScaling(),
                                  pointwise_initializer=initializers.VarianceScaling(),
