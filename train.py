@@ -7,7 +7,8 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 
 from callbacks import Scalar_LR
 from model.model_builder import model_build
-from metrics import f1score, precision, recall , cross_entropy, localization
+#from metrics import f1score, precision, recall , cross_entropy, localization
+from metrics import CreateMetrics
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from config import *
 
@@ -28,8 +29,8 @@ parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
-parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
-parser.add_argument("--transfer_learning",  type=bool,  help="전이 학습 처음엔 false 두번째 true", default=True)
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
+parser.add_argument("--transfer_learning",  type=bool,  help="전이 학습 처음엔 false 두번째 true", default=False)
 
 MODEL_INPUT_SIZE = {
     'B0': 512,
@@ -132,21 +133,29 @@ print("백본 EfficientNet{0} .".format(MODEL_NAME))
 
 testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
-checkpoint = ModelCheckpoint(CHECKPOINT_DIR + SAVE_MODEL_NAME + '.h5', monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
+checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME + '.h5',
+                             monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
-polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=0.01, decay_steps=number_train // BATCH_SIZE,
-                                                             end_learning_rate=0.0001, power=0.5)
-lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
+
 
 if TRANSFER_LEARNING is False:
+    polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=0.01,
+                                                              decay_steps=number_train // BATCH_SIZE,
+                                                              end_learning_rate=0.001, power=0.5)
+    lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
+
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=False)
-    callback = [lr_scheduler, checkpoint]
+    callback = [lr_scheduler, checkpoint, testCallBack, tensorboard]
 
 else:
     weight_name = '0421'
+    polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=0.001,
+                                                              decay_steps=number_train // BATCH_SIZE,
+                                                              end_learning_rate=0.0001, power=0.5)
+    lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
-    # model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
-    callback = [lr_scheduler, checkpoint]
+    model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
+    callback = [reduce_lr, checkpoint]
 
 steps_per_epoch = number_train // BATCH_SIZE
 validation_steps = number_test // BATCH_SIZE
@@ -157,10 +166,12 @@ optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')
 
 model.summary()
 
+metric = CreateMetrics(num_classes)
+
 model.compile(
     optimizer=optimizer,
     loss=total_loss,
-    metrics=[precision, recall, cross_entropy, localization]
+    metrics=[metric.precision, metric.recall, metric.cross_entropy, metric.localization]
 )
 
 history = model.fit(training_dataset,
