@@ -31,7 +31,7 @@ parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
-parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
 parser.add_argument("--transfer_learning",  type=bool,  help="전이 학습 처음엔 false 두번째 true", default=False)
 
 MODEL_INPUT_SIZE = {
@@ -147,7 +147,7 @@ if TRANSFER_LEARNING is False:
     lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=False)
-    callback = [lr_scheduler, checkpoint, testCallBack, tensorboard]
+    callback = [checkpoint]
 
 else:
     weight_name = '0421'
