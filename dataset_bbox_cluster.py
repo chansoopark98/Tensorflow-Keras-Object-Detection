@@ -32,9 +32,23 @@ else:
     test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
     train_data = train_data.concatenate(test_data)
 
-s_obj = 0
-m_obj = 0
-l_obj = 0
+obj_lower_10 = 0
+obj_10 = 0
+obj_20 = 0
+obj_30 = 0
+obj_40 = 0
+obj_50 = 0
+obj_60 = 0
+obj_70 = 0
+obj_80 = 0
+obj_90 = 0
+obj_100 = 0
+obj_110 = 0
+obj_120 = 0
+obj_130 = 0
+obj_140 = 0
+obj_150 = 0
+
 non_obj = 0
 for sample in train_data:
     img = sample['image'].numpy()
@@ -56,36 +70,89 @@ for sample in train_data:
 
         bbox_area = x_size * y_size
 
-        if bbox_area <= 32 ** 2:
-            s_obj += 1
-        elif bbox_area > 32 ** 2 and bbox_area < 96 ** 2 :
-            m_obj += 1
-        elif bbox_area >= 96 ** 2 :
-            l_obj += 1
-        else:
-            non_obj += 1
+        if bbox_area <= 10 ** 2:
+            obj_lower_10 += 1
+        elif bbox_area <= 20 ** 2:
+            obj_10 += 1
+        elif bbox_area <= 30 ** 2:
+            obj_20 += 1
+        elif bbox_area <= 40 ** 2:
+            obj_30 += 1
+        elif bbox_area <= 50 ** 2:
+            obj_40 += 1
+        elif bbox_area <= 60 ** 2:
+            obj_50 += 1
+        elif bbox_area <= 70 ** 2:
+            obj_60 += 1
+        elif bbox_area <= 80 ** 2:
+            obj_70 += 1
+        elif bbox_area <= 90 ** 2:
+            obj_80 += 1
+        elif bbox_area <= 100 ** 2:
+            obj_90 += 1
+        elif bbox_area <= 110 ** 2:
+            obj_100 += 1
+        elif bbox_area <= 120 ** 2:
+            obj_110 += 1
+        elif bbox_area <= 130 ** 2:
+            obj_120 += 1
+        elif bbox_area <= 140 ** 2:
+            obj_130 += 1
+        elif bbox_area <= 150 ** 2:
+            obj_140 += 1
+        elif bbox_area <= 160 ** 2:
+            obj_150 += 1
 
 
 
-print("s_obj", s_obj)
-print("m_obj", m_obj)
-print("l_obj", l_obj)
-print("total", s_obj+m_obj+l_obj)
+print("obj_lower_10", obj_lower_10)
+print("obj_10", obj_10)
+print("obj_20", obj_20)
+print("obj_30", obj_30)
+print("obj_40", obj_40)
+print("obj_50", obj_50)
+print("obj_60", obj_60)
+print("obj_70", obj_70)
+print("obj_80", obj_80)
+print("obj_90", obj_90)
+print("obj_100", obj_100)
+print("obj_110", obj_110)
+print("obj_120", obj_120)
+print("obj_130", obj_130)
+print("obj_140", obj_140)
+print("obj_150", obj_150)
 
-sizes = ['small', 'medium', 'large']
-value = [s_obj, m_obj, l_obj]
+sizes = ['obj_lower_10', 'obj_10', 'obj_20', 'obj_30', 'obj_40', 'obj_50',  'obj_60', 'obj_70', 'obj_80', 'obj_90', 'obj_100', 'obj_110', 'obj_120', 'obj_130'
+         , 'obj_140', 'obj_150']
+value = [obj_lower_10,
+obj_10,
+obj_20,
+obj_30,
+obj_40,
+obj_50,
+obj_60,
+obj_70,
+obj_80,
+obj_90,
+obj_100,
+obj_110,
+obj_120,
+obj_130,
+obj_140,
+obj_150,
+]
 
 ## 데이터
 ## 시각화
-plt.figure(figsize=(10, 10))  ## Figure 생성 사이즈는 10 by 10
+plt.figure(figsize=(20, 20))  ## Figure 생성 사이즈는 10 by 10
 xtick_label_position = list(range(len(sizes)))  ## x축 눈금 라벨이 표시될 x좌표
 plt.xticks(xtick_label_position, sizes)  ## x축 눈금 라벨 출력
 
 ## 바 차트 출력, 막대기 색깔을 초록색으로 설정
 plt.bar(xtick_label_position, value, color='green')
 
-plt.title('PASCAL VOC OBJECT SIZE', fontsize=20)  ## 타이틀 출력
-plt.xlabel('Object scale')  ## x축 라벨 출력
-plt.ylabel('samples')  ## y축 라벨 출력
+plt.title('COCO OBJECT SIZE', fontsize=25)  ## 타이틀 출력
+plt.xlabel('Object scale', fontsize=15)  ## x축 라벨 출력
+plt.ylabel('samples', fontsize=15)  ## y축 라벨 출력
 plt.show()
 
