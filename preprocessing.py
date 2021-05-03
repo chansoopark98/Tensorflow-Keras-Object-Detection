@@ -83,7 +83,7 @@ def coco_prepare_dataset(dataset, image_size, batch_size, target_transform, trai
 
     if train:
         dataset = dataset.map(prepare_input, num_parallel_calls=AUTO)
-        dataset = dataset.shuffle(1000)
+        dataset = dataset.shuffle(batch_size*10)
         dataset = dataset.repeat()
         dataset = dataset.map(data_augment, num_parallel_calls=AUTO)
         dataset = dataset.map(lambda image, boxes,
@@ -120,7 +120,7 @@ def pascal_prepare_dataset(dataset, image_size, batch_size, target_transform, tr
 
     dataset = dataset.map(prepare_input, num_parallel_calls=AUTO)
     if train:
-        dataset = dataset.shuffle(1000)
+        dataset = dataset.shuffle(batch_size*10)
         dataset = dataset.repeat()
         dataset = dataset.map(data_augment, num_parallel_calls=AUTO)
     dataset = dataset.map(lambda image, boxes,
