@@ -60,7 +60,8 @@ def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
 
 
             # 작은 bbox 높이, 너비 비율 변경
-            size = spec.box_sizes.min
+            #size = spec.box_sizes.min 기존
+            size = np.sqrt(spec.box_sizes.max * spec.box_sizes.min)
             h = w = size / image_size
             if spec.aspect_ratios :
                 for ratio in spec.aspect_ratios:

@@ -34,13 +34,19 @@ MODEL_INPUT_SIZE = {
 # Spec(8, 64, BoxSizes(230, 296), [2, 3]),
 # Spec(4, 128, BoxSizes(307, 389), [2]),
 
+# # 0504 voc b0 mAP 81.6%
+# Spec(64, 8, BoxSizes(25, 51), [2]),
+# Spec(32, 16, BoxSizes(51, 122), [2]),
+# Spec(16, 32, BoxSizes(122, 189), [2]),
+# Spec(8, 64, BoxSizes(230, 296), [2]),
+# Spec(4, 128, BoxSizes(307, 389), [2]),
 def set_priorBox(model_name):
         return [
-            Spec(64, 8, BoxSizes(25, 51), [2]),
-            Spec(32, 16, BoxSizes(51, 122), [2]),
-            Spec(16, 32, BoxSizes(122, 189), [2]),
-            Spec(8, 64, BoxSizes(230, 296), [2]),
-            Spec(4, 128, BoxSizes(307, 389), [2]),
+            Spec(64, 8, BoxSizes(20, 25), [2]), # 0.039
+            Spec(32, 16, BoxSizes(41, 51), [2]), # 0.099
+            Spec(16, 32, BoxSizes(92, 112), [2]), # 0.238 -> 0.199
+            Spec(8, 64, BoxSizes(194, 224), [2]), # 0.449 -> 0.398
+            Spec(4, 128, BoxSizes(307, 347), [2]), # 0.599
         ]
 
 
