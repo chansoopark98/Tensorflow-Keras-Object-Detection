@@ -23,7 +23,7 @@ mixed_precision.set_policy(policy)
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=64)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=4)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름", default=str(time.strftime('%m%d', time.localtime(time.time()))))
@@ -142,25 +142,27 @@ tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_grap
 
 if TRANSFER_LEARNING is False:
     polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=0.01,
-                                                              decay_steps=number_train // BATCH_SIZE,
+                                                              decay_steps=50,
                                                               end_learning_rate=0.001, power=0.5)
     lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=False)
-    callback = [checkpoint]
+    callback = [testCallBack, tensorboard, checkpoint, lr_scheduler]
 
 else:
     weight_name = '0421'
     polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=0.001,
-                                                              decay_steps=number_train // BATCH_SIZE,
+                                                              decay_steps=200,
                                                               end_learning_rate=0.0001, power=0.5)
     lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
     model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
     callback = [reduce_lr, checkpoint]
 
-steps_per_epoch = number_train // BATCH_SIZE
-validation_steps = number_test // BATCH_SIZE
+# steps_per_epoch = number_train // BATCH_SIZE
+steps_per_epoch = 1
+# validation_steps = number_test // BATCH_SIZE
+validation_steps = 1
 print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
 
