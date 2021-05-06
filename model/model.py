@@ -280,7 +280,7 @@ def build_BiFPN(features, num_channels=64 , id=0, resize=False, bn_trainable=Tru
 def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], backbone_trainable=True):
 
     if backbone_trainable == True:
-        bn_trainable = False
+        bn_trainable = True
     else:
         bn_trainable = True
 

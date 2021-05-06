@@ -159,10 +159,8 @@ else:
     model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
     callback = [reduce_lr, checkpoint]
 
-# steps_per_epoch = number_train // BATCH_SIZE
-steps_per_epoch = 1
-# validation_steps = number_test // BATCH_SIZE
-validation_steps = 1
+steps_per_epoch = number_train // BATCH_SIZE
+validation_steps = number_test // BATCH_SIZE
 print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
 
