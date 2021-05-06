@@ -9,7 +9,7 @@ from model.model_builder import model_build
 from metrics import CreateMetrics
 from config import *
 
-#from tensorflow.keras.mixed_precision import experimental as mixed_precision
+from tensorflow.keras.mixed_precision import experimental as mixed_precision
 
 
 
@@ -23,7 +23,7 @@ tf.keras.mixed_precision.Policy('mixed_float16')
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=4)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름", default=str(time.strftime('%m%d', time.localtime(time.time()))))
@@ -133,14 +133,26 @@ else :
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 
-testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
-checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME + '.h5',
-                             monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
-tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
 
+steps_per_epoch = number_train // BATCH_SIZE
+validation_steps = number_test // BATCH_SIZE
+print("학습 배치 개수:", steps_per_epoch)
+print("검증 배치 개수:", validation_steps)
+
+metric = CreateMetrics(num_classes)
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
+
+
+# optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic') # tf2.4.1 이전
+optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer, initial_scale=1024) # tf2.4.1 이후
 
 if TRANSFER_LEARNING is False:
+    testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
+
+    checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME + '.h5',
+                                 monitor='loss', save_best_only=True, save_weights_only=True, verbose=1)
+    tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
+
     polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=0.01,
                                                               decay_steps=50,
                                                               end_learning_rate=0.001, power=0.5)
@@ -149,38 +161,45 @@ if TRANSFER_LEARNING is False:
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=False)
     callback = [testCallBack, tensorboard, checkpoint, lr_scheduler]
 
+    model.compile(
+        optimizer=optimizer,
+        loss=total_loss,
+        metrics=[metric.precision, metric.recall, metric.cross_entropy, metric.localization]
+    )
+
+    model.summary()
+
+    history = model.fit(training_dataset,
+                        steps_per_epoch=steps_per_epoch,
+                        epochs=EPOCHS,
+                        callbacks=callback)
+
 else:
     weight_name = '0421'
+    checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME + '.h5',
+                                 monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
     polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=0.001,
                                                               decay_steps=200,
                                                               end_learning_rate=0.0001, power=0.5)
     lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
-    model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
-    model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
+
     callback = [reduce_lr, checkpoint]
 
-steps_per_epoch = number_train // BATCH_SIZE
-validation_steps = number_test // BATCH_SIZE
-print("학습 배치 개수:", steps_per_epoch)
-print("검증 배치 개수:", validation_steps)
+    model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
+    model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
-# optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')
-optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer, initial_scale=1024)
+    model.compile(
+        optimizer=optimizer,
+        loss=total_loss,
+        metrics=[metric.precision, metric.recall, metric.cross_entropy, metric.localization]
+    )
 
-model.summary()
+    model.summary()
 
-metric = CreateMetrics(num_classes)
+    history = model.fit(training_dataset,
+                validation_data=validation_dataset,
+                steps_per_epoch=steps_per_epoch,
+                validation_steps=validation_steps,
+                epochs=EPOCHS,
+                callbacks=callback)
 
-model.compile(
-    optimizer=optimizer,
-    loss=total_loss,
-    metrics=[metric.precision, metric.recall, metric.cross_entropy, metric.localization]
-)
-
-history = model.fit(training_dataset,
-            validation_data=validation_dataset,
-            steps_per_epoch=steps_per_epoch,
-            validation_steps=validation_steps,
-            epochs=EPOCHS,
-            callbacks=callback,
-            )
