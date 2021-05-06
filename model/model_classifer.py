@@ -2,7 +2,9 @@ from tensorflow.keras.layers import Conv2D, BatchNormalization,\
     Activation, Dense, Concatenate, Flatten, Reshape, Dropout,\
     SeparableConv2D, GlobalAveragePooling2D
 from tensorflow.keras.regularizers import l2
-from keras.engine.topology import Layer
+# from keras.engine.topology import Layer
+from tensorflow.keras.layers import Layer
+
 from tensorflow.keras.initializers import Constant
 import tensorflow.keras.backend as K
 from tensorflow.keras import initializers

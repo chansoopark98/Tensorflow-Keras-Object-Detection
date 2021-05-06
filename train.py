@@ -183,4 +183,3 @@ history = model.fit(training_dataset,
             epochs=EPOCHS,
             callbacks=callback,
             )
-

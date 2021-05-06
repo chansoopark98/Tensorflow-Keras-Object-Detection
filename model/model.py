@@ -8,6 +8,7 @@ from tensorflow.keras.layers import GlobalAveragePooling2D,  Reshape, Dense, mul
 from tensorflow.keras import backend as K
 from functools import reduce
 
+
 # activation = tf.keras.activations.swish
 # activation = tfa.activations.mish
 
