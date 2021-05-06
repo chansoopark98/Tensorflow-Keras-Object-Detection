@@ -1,23 +1,23 @@
 import tensorflow_datasets as tfds
-# from utils.priors import *
 import argparse
 import time
 import os
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
-
 from callbacks import Scalar_LR
 from model.model_builder import model_build
 #from metrics import f1score, precision, recall , cross_entropy, localization
 from metrics import CreateMetrics
-from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from config import *
 
-# multi-gpu 중 하나만 실행되는 경우에 아래 주석 해제
-#tf.compat.v1.disable_eager_execution()
-#tf.keras.backend.clear_session()
+#from tensorflow.keras.mixed_precision import experimental as mixed_precision
 
-policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
-mixed_precision.set_policy(policy)
+
+
+tf.keras.mixed_precision.Policy('mixed_float16')
+
+
+# policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
+# mixed_precision.set_policy(policy)
 #tf.compat.v1.enable_eager_execution()
 #tf.config.optimizer.set_jit(True)
 
@@ -164,7 +164,8 @@ validation_steps = number_test // BATCH_SIZE
 print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
 
-optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')
+# optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')
+optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer, initial_scale=1024)
 
 model.summary()
 
