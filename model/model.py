@@ -1,4 +1,4 @@
-import efficientnet.keras as efn
+#import efficientnet.keras as efn
 import tensorflow as tf
 # import tensorflow_addons as tfa
 from tensorflow import keras
@@ -7,6 +7,8 @@ from tensorflow.keras.layers import GlobalAveragePooling2D,  Reshape, Dense, mul
     Conv2D, Add, Activation, Dropout ,BatchNormalization, DepthwiseConv2D, Lambda ,  UpSampling2D, SeparableConv2D, MaxPooling2D
 from tensorflow.keras import backend as K
 from functools import reduce
+from tensorflow.keras.applications import efficientnet as efn
+
 
 
 # activation = tf.keras.activations.swish
@@ -57,6 +59,8 @@ def remove_dropout(model):
 def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], trainable=True):
     if pretrained is False:
         weights = None
+
+
 
     else:
         weights = "imagenet"
