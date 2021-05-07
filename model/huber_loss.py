@@ -34,10 +34,10 @@ def total_loss(y_true, y_pred, num_classes=21):
     alpha = 0.25
     gamma = 1.5
     #indices = labels > 0
-    indices = f_labels > 0
-    f_labels = tf.boolean_mask(f_labels, indices)
+    indices = tf.cast(f_labels > 0, tf.float32)
+    f_labels = tf.gather_nd(f_labels, indices)
 
-    classification = tf.boolean_mask(confidence, indices)
+    classification = tf.gather_nd(confidence, indices)
     #f_labels = tf.gather_nd(labels, indices)
     #classification = tf.gather_nd(confidence, indices)
 
