@@ -11,8 +11,6 @@ from config import *
 
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 
-
-
 tf.keras.mixed_precision.Policy('mixed_float16')
 
 
@@ -23,7 +21,7 @@ tf.keras.mixed_precision.Policy('mixed_float16')
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=4)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름", default=str(time.strftime('%m%d', time.localtime(time.time()))))
@@ -79,7 +77,8 @@ priors = create_priors_boxes(specs, IMAGE_SIZE[0])
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
 if TRAIN_MODE == 'voc':
-    from model.pascal_loss import total_loss
+    #from model.pascal_loss import total_loss
+    from model.huber_loss import total_loss
     from preprocessing import pascal_prepare_dataset
     train_pascal_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
     valid_train_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
@@ -167,7 +166,7 @@ if TRANSFER_LEARNING is False:
         metrics=[metric.precision, metric.recall, metric.cross_entropy, metric.localization]
     )
 
-    model.summary()
+    #model.summary()
 
     history = model.fit(training_dataset,
                         steps_per_epoch=steps_per_epoch,
