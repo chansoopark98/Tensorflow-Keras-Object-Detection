@@ -1,5 +1,6 @@
 import sys
-from tensorflow.keras.applications.imagenet_utils import preprocess_input
+#from tensorflow.keras.applications.imagenet_utils import preprocess_input
+from tensorflow.keras.applications.efficientnet import preprocess_input
 import tensorflow as tf
 from utils.augmentations import *
 
@@ -41,7 +42,7 @@ def prepare_input(sample, convert_to_normal=True):
     # filter_nan = lambda x: not tf.reduce_any(tf.math.is_nan(img)) and not tf.math.is_nan(img)
     #
     # train_data = train_data.filter(filter_nan)
-    img = preprocess_input(img, mode='torch')
+    img = preprocess_input(img)
 
     # img = tf.cast(img, tf.float32) # 형변환
 
