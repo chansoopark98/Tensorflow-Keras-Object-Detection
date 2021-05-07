@@ -33,15 +33,17 @@ def total_loss(y_true, y_pred, num_classes=21):
 
     alpha = 0.25
     gamma = 1.5
-    indices = labels > 0
-    tf.print(indices, sys.stdout)
+    #indices = labels > 0
+    indices = f_labels > 0
     f_labels = tf.boolean_mask(f_labels, indices)
+
     classification = tf.boolean_mask(confidence, indices)
     #f_labels = tf.gather_nd(labels, indices)
     #classification = tf.gather_nd(confidence, indices)
 
     # compute the focal loss
     alpha_factor = keras.backend.ones_like(f_labels) * alpha
+    tf.print(alpha_factor, sys.stdout)
     alpha_factor = tf.where(keras.backend.equal(f_labels, 1), alpha_factor, 1 - alpha_factor)
     # (1 - 0.99) ** 2 = 1e-4, (1 - 0.9) ** 2 = 1e-2
     focal_weight = tf.where(keras.backend.equal(f_labels, 1), 1 - classification, classification)
