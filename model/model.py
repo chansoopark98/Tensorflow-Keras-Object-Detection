@@ -1,4 +1,4 @@
-# import efficientnet.keras as efn
+import efficientnet.keras as efn
 import tensorflow as tf
 # import tensorflow_addons as tfa
 from tensorflow import keras
@@ -7,7 +7,7 @@ from tensorflow.keras.layers import GlobalAveragePooling2D,  Reshape, Dense, mul
     Conv2D, Add, Activation, Dropout ,BatchNormalization, DepthwiseConv2D, Lambda ,  UpSampling2D, SeparableConv2D, MaxPooling2D
 from tensorflow.keras import backend as K
 from functools import reduce
-from tensorflow.keras.applications import efficientnet as efn
+#from tensorflow.keras.applications import efficientnet as efn
 
 
 

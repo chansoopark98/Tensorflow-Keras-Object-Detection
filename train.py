@@ -11,11 +11,11 @@ from config import *
 
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 
-tf.keras.mixed_precision.Policy('mixed_float16')
+#tf.keras.mixed_precision.Policy('mixed_float16') # tf2.4.1 이후
 
 
-# policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
-# mixed_precision.set_policy(policy)
+policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
+mixed_precision.set_policy(policy)
 #tf.compat.v1.enable_eager_execution()
 #tf.config.optimizer.set_jit(True)
 
@@ -77,8 +77,8 @@ priors = create_priors_boxes(specs, IMAGE_SIZE[0])
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
 if TRAIN_MODE == 'voc':
-    #from model.pascal_loss import total_loss
-    from model.huber_loss import total_loss
+    from model.pascal_loss import total_loss
+    #from model.huber_loss import total_loss
     from preprocessing import pascal_prepare_dataset
     train_pascal_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
     valid_train_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
@@ -142,8 +142,8 @@ metric = CreateMetrics(num_classes)
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
 
 
-# optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic') # tf2.4.1 이전
-optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer, initial_scale=1024) # tf2.4.1 이후
+optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic') # tf2.4.1 이전
+#optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer, initial_scale=1024) # tf2.4.1 이후
 
 if TRANSFER_LEARNING is False:
     testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
