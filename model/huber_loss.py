@@ -286,7 +286,7 @@ def total_loss(y_true, y_pred, num_classes=21):
     confidence = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0] # B, N
     #confidence = tf.reshape(confidence, [-1, num_classes])
 
-    ce_loss = SparseCategoricalFocalLoss(gamma=gamma)(y_true=pos_labels,
+    ce_loss = SparseCategoricalFocalLoss(gamma=gamma,from_logits=True)(y_true=pos_labels,
                                                              y_pred=confidence)
 
     tf.print(ce_loss, sys.stdout,summarize=-1)
