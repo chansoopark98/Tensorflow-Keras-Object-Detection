@@ -1,6 +1,5 @@
-numpy==1.17
-pycocotools
 tensorflow==2.2.0
+pycocotools
 keras
 matplotlib
 tensorflow_datasets

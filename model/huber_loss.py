@@ -1,7 +1,7 @@
 import sys
-
 import tensorflow as tf
 import numpy as np
+import tensorflow.keras.backend
 from tensorflow import keras
 
 def smooth_l1(labels, scores, sigma=1.0):
@@ -24,40 +24,67 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
 
 
 def total_loss(y_true, y_pred, num_classes=21):
-    labels = tf.argmax(y_true[:,:,:num_classes], axis=2)
-    f_labels = y_true[:, :, :num_classes]
-    # f_labels = tf.cast(tf.argmax(y_true[:,:,:num_classes], axis=2), tf.float32)
-    confidence = y_pred[:,:,:num_classes]
+    labels = tf.argmax(y_true[:,:,:num_classes], axis=2) # (None, 16368)
+    classification = tf.argmax(y_pred[:,:,:num_classes], axis=2)
+
+
     predicted_locations = y_pred[:,:,num_classes:]
     gt_locations = y_true[:,:,num_classes:]
 
     alpha = 0.25
     gamma = 1.5
-    #indices = labels > 0
-    indices = tf.cast(f_labels > 0, tf.float32)
-    f_labels = tf.gather_nd(f_labels, indices)
+    eps = tensorflow.keras.backend.epsilon()
 
-    classification = tf.gather_nd(confidence, indices)
-    #f_labels = tf.gather_nd(labels, indices)
-    #classification = tf.gather_nd(confidence, indices)
+    confidence = y_pred[:, :, :num_classes]  # batch, None, 21
+    confidence = -tf.nn.softmax(confidence, axis=2)[:, :, 0] # None, None
 
-    # compute the focal loss
-    alpha_factor = keras.backend.ones_like(f_labels) * alpha
-    tf.print(alpha_factor, sys.stdout)
-    alpha_factor = tf.where(keras.backend.equal(f_labels, 1), alpha_factor, 1 - alpha_factor)
-    # (1 - 0.99) ** 2 = 1e-4, (1 - 0.9) ** 2 = 1e-2
-    focal_weight = tf.where(keras.backend.equal(f_labels, 1), 1 - classification, classification)
-    focal_weight = alpha_factor * focal_weight ** gamma
+    labels_mask = labels > 0
+    labels_ce = tf.boolean_mask(labels, labels_mask)
 
+    clip_labels = tf.clip_by_value(tf.cast(labels, tf.float32), 0, 1) # None, 16368
 
-    classification_loss= focal_weight * keras.backend.binary_crossentropy(f_labels, classification)
+    alpha_factor = clip_labels * alpha # None, 16368
+    alpha_factor = tf.where(keras.backend.equal(clip_labels, 1), alpha_factor, 1 - alpha_factor)  # None, 16368
+    focal_weight = tf.where(keras.backend.equal(clip_labels, 1), 1 - confidence, confidence) # None, 16368
+    focal_weight = alpha_factor * focal_weight ** gamma # None, 16368
 
-    # compute the normalizer: the number of positive anchors
-    normalizer = tf.where(keras.backend.equal(f_labels, 1))
-    normalizer = keras.backend.cast(keras.backend.shape(normalizer)[0], keras.backend.floatx())
-    normalizer = keras.backend.maximum(keras.backend.cast_to_floatx(1.0), normalizer)
-
-    classification_loss = keras.backend.sum(classification_loss) / normalizer
+    tf.print(focal_weight, sys.stdout, summarize=-1)
+    #
+    #
+    #
+    # #indices = labels > 0
+    # #indices = tf.cast(labels > 0, tf.float32) # (None, 16368)
+    # # anchor_state = labels > 0
+    # #indices = tf.where(keras.backend.not_equal(labels, 0)) # (None, 2)
+    # indices = labels > 0 #None, 16368)
+    # #tf.print(indices, sys.stdout, summarize=-1)
+    #
+    # classification = tf.boolean_mask(classification, indices) # (None,)
+    #
+    # # labels = tf.boolean_mask(labels, indices) # (None,)
+    # labels_f = tf.clip_by_value(labels, 0, 1)
+    #
+    # classification = tf.cast(classification, tf.float32) # (None,)
+    #
+    # # compute the focal loss
+    # alpha_factor = keras.backend.ones_like(labels_f) * alpha # (None,)
+    #
+    # alpha_factor = tf.where(keras.backend.not_equal(labels_f, 0), alpha_factor, 1 - alpha_factor) #(None,)
+    # # (1 - 0.99) ** 2 = 1e-4, (1 - 0.9) ** 2 = 1e-2
+    # focal_weight = tf.where(keras.backend.not_equal(labels_f, 0), 1 - classification, classification) #(None,)
+    # focal_weight = alpha_factor * focal_weight ** gamma
+    #
+    #
+    # classification_loss= focal_weight * keras.backend.binary_crossentropy(labels, classification) # (None,)
+    #
+    # # compute the normalizer: the number of positive anchors
+    # ##normalizer = tf.where(keras.backend.equal(labels, 1)) #(None, 1)
+    # # normalizer = tf.where(keras.backend.not_equal(labels, 0)) #(None, 1)
+    # #normalizer = keras.backend.cast(keras.backend.shape(normalizer)[0], keras.backend.floatx())
+    # #normalizer = keras.backend.maximum(keras.backend.cast_to_floatx(1.0), normalizer)
+    #
+    # #classification_loss = keras.backend.sum(classification_loss) / normalizer
+    # classification_loss = keras.backend.sum(classification_loss)
 
     # neg_pos_ratio = 3.0
     # loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]
@@ -82,5 +109,5 @@ def total_loss(y_true, y_pred, num_classes=21):
     # divide num_pos objects
     loc_loss = smooth_l1_loss / num_pos
 
-    mbox_loss = loc_loss + classification_loss
+    mbox_loss = loc_loss
     return mbox_loss
