@@ -145,21 +145,19 @@ reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr
 
 optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic') # tf2.4.1 이전
 #optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer, initial_scale=1024) # tf2.4.1 이후
+checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME + '.h5',
+                                 monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
+testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
+tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
 
 if TRANSFER_LEARNING is False:
-    testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
-
-    checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME + '.h5',
-                                 monitor='loss', save_best_only=True, save_weights_only=True, verbose=1)
-    tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
-
     polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=0.01,
-                                                              decay_steps=50,
+                                                              decay_steps=100,
                                                               end_learning_rate=0.001, power=0.5)
     lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=False)
-    callback = [testCallBack, tensorboard, checkpoint, lr_scheduler]
+    callback = [checkpoint, lr_scheduler]
 
     model.compile(
         optimizer=optimizer,
@@ -170,14 +168,14 @@ if TRANSFER_LEARNING is False:
     #model.summary()
 
     history = model.fit(training_dataset,
-                        steps_per_epoch=steps_per_epoch,
-                        epochs=EPOCHS,
-                        callbacks=callback)
-
+                validation_data=validation_dataset,
+                steps_per_epoch=steps_per_epoch,
+                validation_steps=validation_steps,
+                epochs=EPOCHS,
+                callbacks=callback)
 else:
     weight_name = '0421'
-    checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME + '.h5',
-                                 monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
+
     polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=0.001,
                                                               decay_steps=200,
                                                               end_learning_rate=0.0001, power=0.5)
