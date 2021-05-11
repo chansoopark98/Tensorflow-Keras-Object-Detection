@@ -1,8 +1,5 @@
 import tensorflow as tf
 import numpy as np
-import sys
-from tensorflow import keras
-
 import itertools
 from typing import Any, Optional
 _EPSILON = tf.keras.backend.epsilon()
@@ -286,10 +283,9 @@ def total_loss(y_true, y_pred, num_classes=21):
     #confidence = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0] # B, N
     #confidence = tf.reshape(confidence, [-1, num_classes])
 
-    ce_loss = SparseCategoricalFocalLoss(gamma=gamma,from_logits=True)(y_true=pos_labels,
+    focal_loss = SparseCategoricalFocalLoss(gamma=gamma,from_logits=True)(y_true=pos_labels,
                                                              y_pred=confidence)
 
-    tf.print(ce_loss, sys.stdout,summarize=-1)
 
 
 
@@ -301,6 +297,6 @@ def total_loss(y_true, y_pred, num_classes=21):
     # divide num_pos objects
     loc_loss = smooth_l1_loss / num_pos
 
-    mbox_loss = loc_loss
+    mbox_loss = loc_loss + focal_loss
     return mbox_loss
 

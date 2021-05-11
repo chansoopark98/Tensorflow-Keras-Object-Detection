@@ -79,7 +79,7 @@ target_transform = MatchingPriors(priors, center_variance, size_variance, iou_th
 
 if TRAIN_MODE == 'voc':
     # from model.pascal_loss import total_loss
-    from model.huber_loss import total_loss
+    from model.focal_loss import total_loss
     from preprocessing import pascal_prepare_dataset
     train_pascal_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
     valid_train_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
