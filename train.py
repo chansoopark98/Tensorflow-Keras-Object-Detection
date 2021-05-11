@@ -174,7 +174,7 @@ if TRANSFER_LEARNING is False:
                 epochs=EPOCHS,
                 callbacks=callback)
 else:
-    weight_name = '0421'
+    load_weight = False
 
     polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=0.001,
                                                               decay_steps=200,
@@ -184,7 +184,10 @@ else:
     callback = [reduce_lr, checkpoint]
 
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
-    model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
+
+    if load_weight:
+        weight_name = '0421'
+        model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
     model.compile(
         optimizer=optimizer,

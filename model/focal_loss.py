@@ -51,9 +51,10 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
         y_true = tf.reshape(y_true, [-1])
         y_pred = tf.reshape(y_pred, [-1, y_pred_shape[-1]])
 
-    if from_logits:
+    if from_logits: # this
         logits = y_pred
-        probs = tf.nn.softmax(y_pred, axis=-1)
+        #probs = tf.nn.softmax(y_pred, axis=-1)
+        probs = -tf.nn.log_softmax(y_pred, axis=1)
     else:
         probs = y_pred
         logits = tf.math.log(tf.clip_by_value(y_pred, _EPSILON, 1 - _EPSILON))
@@ -68,6 +69,9 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
     if not scalar_gamma:
         gamma = tf.gather(gamma, y_true, axis=0, batch_dims=y_true_rank)
     focal_modulation = (1 - probs) ** gamma
+
+
+
     loss = focal_modulation * xent_loss
 
     if class_weight is not None:
@@ -181,15 +185,14 @@ def total_loss(y_true, y_pred, num_classes=21):
     #confidence = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0] # B, N
     #confidence = tf.reshape(confidence, [-1, num_classes])
 
-    focal_loss = SparseCategoricalFocalLoss(gamma=gamma,from_logits=True)(y_true=pos_labels,
+    focal_loss = tf.reduce_sum(SparseCategoricalFocalLoss(gamma=gamma,from_logits=True)(y_true=pos_labels,
                                                              y_pred=confidence)
+                               )
 
 
 
     predicted_locations = tf.reshape(tf.boolean_mask(predicted_locations, pos_mask), [-1, 4])
     gt_locations = tf.reshape(tf.boolean_mask(gt_locations, pos_mask), [-1, 4])
-
-    giou_value = calc_giou(pred_boxes=predicted_locations, gt_boxes=gt_locations)
 
 
     # calc localization loss
