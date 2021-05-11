@@ -108,6 +108,7 @@ def assign_gt2_priors(gt_boxes, gt_labels, corner_form_priors,
     # size: num_priors x num_targets
     ious = iou_of(tf.expand_dims(gt_boxes, axis=0), tf.expand_dims(corner_form_priors, axis=1))
 
+
     # size: num_priors
     best_target_per_prior = tf.math.reduce_max(ious, axis=1)
     best_target_per_prior_index = tf.math.argmax(ious, axis=1)
