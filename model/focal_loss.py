@@ -53,8 +53,7 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
 
     if from_logits: # this
         logits = y_pred
-        #probs = tf.nn.softmax(y_pred, axis=-1)
-        probs = -tf.nn.log_softmax(y_pred, axis=1)
+        probs = tf.nn.softmax(y_pred, axis=-1)
     else:
         probs = y_pred
         logits = tf.math.log(tf.clip_by_value(y_pred, _EPSILON, 1 - _EPSILON))
@@ -172,22 +171,29 @@ def calc_giou(pred_boxes, gt_boxes):
 
 
 def total_loss(y_true, y_pred, num_classes=21):
-    pos_labels = tf.argmax(y_true[:,:,:num_classes], axis=2) # B, 16368
+    labels = tf.argmax(y_true[:,:,:num_classes], axis=2) # B, 16368
     predicted_locations = y_pred[:,:,num_classes:]
     gt_locations = y_true[:,:,num_classes:]
-    pos_mask = pos_labels > 0
+    pos_mask = labels > 0
     """
         y_true: (B, N, num_classes).
         y_pred:  (B, N, num_classes).     """
-    gamma = 2.0
-    alpha = 0.25
+    gamma = 2
+    neg_pos_ratio = 3.0
     confidence = y_pred[:, :, :num_classes] # B, N, 21
-    #confidence = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0] # B, N
-    #confidence = tf.reshape(confidence, [-1, num_classes])
 
-    focal_loss = tf.reduce_sum(SparseCategoricalFocalLoss(gamma=gamma,from_logits=True)(y_true=pos_labels,
-                                                             y_pred=confidence)
-                               )
+    loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]
+    loss = tf.stop_gradient(loss)
+
+    mask = hard_negative_mining(loss, labels, neg_pos_ratio)
+    mask = tf.stop_gradient(mask) # neg sample 마스크
+
+    confidence = tf.boolean_mask(confidence, mask)
+
+    focal_loss = tf.reduce_sum(SparseCategoricalFocalLoss(gamma=gamma,from_logits=False)(y_true=tf.boolean_mask(labels, mask),
+                                                             y_pred=tf.reshape(confidence, [-1, num_classes])))
+                                                             #y_pred=tf.reshape(confidence, [-1, num_classes])))
+
 
 
 
@@ -200,7 +206,7 @@ def total_loss(y_true, y_pred, num_classes=21):
     num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
     # divide num_pos objects
     loc_loss = smooth_l1_loss / num_pos
-    focal_loss = focal_loss / num_pos
+    focal_loss = focal_loss# / num_pos
     mbox_loss = loc_loss + focal_loss
     return mbox_loss
 
