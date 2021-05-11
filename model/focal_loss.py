@@ -200,7 +200,7 @@ def total_loss(y_true, y_pred, num_classes=21):
     num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
     # divide num_pos objects
     loc_loss = smooth_l1_loss / num_pos
-
+    focal_loss = focal_loss / num_pos
     mbox_loss = loc_loss + focal_loss
     return mbox_loss
 
