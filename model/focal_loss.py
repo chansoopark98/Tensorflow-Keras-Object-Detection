@@ -69,7 +69,7 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
     if from_logits:  # this
         logits = y_pred
         # probs = tf.nn.softmax(y_pred, axis=-1)
-        probs = tf.nn.log_softmax(y_pred, axis=-1)
+        probs = -tf.nn.log_softmax(y_pred, axis=-1)
 
         # focal loss test 해볼거
         # focal_beta_loss에서 현재 reshape한거로 probs를 생성했는데
@@ -229,7 +229,7 @@ def total_loss(y_true, y_pred, num_classes=21):
     num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
     # divide num_pos objects
     loc_loss = smooth_l1_loss / num_pos
-    focal_loss = focal_loss  # / num_pos
+    focal_loss = focal_loss / num_pos
     mbox_loss = loc_loss + focal_loss
     return mbox_loss
 
