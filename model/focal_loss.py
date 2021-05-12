@@ -190,7 +190,7 @@ def total_loss(y_true, y_pred, num_classes=21):
     predicted_locations = y_pred[:, :, num_classes:]  # B, None, 4
     gt_locations = y_true[:, :, num_classes:]  # B, 16368, None
     pos_mask = labels > 0  # B, 16368
-    tf.print(pos_mask, sys.stdout, summarize=-1)
+
     """
         y_true: (B, N, num_classes).
         y_pred:  (B, N, num_classes).     """

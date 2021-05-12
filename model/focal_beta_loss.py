@@ -144,11 +144,12 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
     num_neg = num_pos * neg_pos_ratio
 
     loss = tf.where(pos_mask, tf.convert_to_tensor(np.NINF), loss)
-    tf.print(loss, sys.stdout, summarize=-1)
-    indexes = tf.argsort(loss, axis=1, direction='DESCENDING')
 
+    indexes = tf.argsort(loss, axis=1, direction='DESCENDING')
     orders = tf.argsort(indexes, axis=1)
+
     neg_mask = tf.cast(orders, tf.float32) < num_neg
+    tf.print(neg_mask, sys.stdout, summarize=-1)
 
     return tf.logical_or(pos_mask, neg_mask)
 
@@ -158,7 +159,7 @@ def total_loss(y_true, y_pred, num_classes=21):
     labels = tf.argmax(y_true[:, :, :num_classes], axis=2)  # B, 16368
     predicted_locations = y_pred[:, :, num_classes:]  # B, None, 4
     gt_locations = y_true[:, :, num_classes:]  # B, 16368, None
-    pos_mask = labels > 0  # B, 16368
+
 
     """
         y_true: (B, N, num_classes).
@@ -175,14 +176,27 @@ def total_loss(y_true, y_pred, num_classes=21):
 
     confidence = tf.boolean_mask(confidence, mask)  # B, 21
 
-    t_pred = tf.reshape(confidence, [-1, num_classes])
-    t_true = tf.boolean_mask(labels, mask)
+    # probs = confidence # N, N
+    # t_labels = tf.reshape(labels, [-1]) # N,
+    # probs = tf.gather(probs, t_labels, axis=-1, batch_dims=t_labels.shape.rank) # N,
+    # focal_modulation = (1 - probs) ** 2.0 # N,
+    # tf.print(focal_modulation, sys.stdout, summarize=-1)
 
-    focal_loss = tf.reduce_sum(
-        SparseCategoricalFocalLoss(gamma=gamma, from_logits=True)(y_true=tf.boolean_mask(labels, mask),
-                                                                  y_pred=tf.reshape(confidence, [-1, num_classes])))
-    # y_pred=tf.reshape(confidence, [-1, num_classes])))
+    t_pred = tf.reshape(confidence, [-1, num_classes]) # None, 21
+    t_true = tf.boolean_mask(labels, mask) # None,
 
+    probs = tf.gather(t_pred, t_true, axis=-1, batch_dims=t_true.shape.rank)  # N,
+    focal_modulation = (1 - probs) ** 2.0  # N,
+
+
+
+
+    ce_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=tf.reshape(confidence, [-1, num_classes]),
+                                                       labels=tf.boolean_mask(labels, mask))
+    classification_loss = tf.math.reduce_sum(focal_modulation * ce_loss)
+
+
+    pos_mask = labels > 0  # B, 16368
     predicted_locations = tf.reshape(tf.boolean_mask(predicted_locations, pos_mask), [-1, 4])
     gt_locations = tf.reshape(tf.boolean_mask(gt_locations, pos_mask), [-1, 4])
 
@@ -191,7 +205,7 @@ def total_loss(y_true, y_pred, num_classes=21):
     num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
     # divide num_pos objects
     loc_loss = smooth_l1_loss / num_pos
-    focal_loss = focal_loss  # / num_pos
+    focal_loss = classification_loss  / num_pos
     mbox_loss = loc_loss + focal_loss
     return mbox_loss
 
