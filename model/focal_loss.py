@@ -12,41 +12,56 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
                                   from_logits: bool = False, axis: int = -1
                                   ) -> tf.Tensor:
     # Process focusing parameter
-    gamma = tf.convert_to_tensor(gamma, dtype=tf.dtypes.float32)
-    gamma_rank = gamma.shape.rank
-    scalar_gamma = gamma_rank == 0
+    gamma = tf.convert_to_tensor(gamma, dtype=tf.dtypes.float32) # ()
+    gamma_rank = gamma.shape.rank # 0
+    scalar_gamma = gamma_rank == 0 # True
 
-    # Process class weight
+    # Process class weight - 사용 x
     if class_weight is not None:
         class_weight = tf.convert_to_tensor(class_weight,
                                             dtype=tf.dtypes.float32)
 
     # Process prediction tensor
-    y_pred = tf.convert_to_tensor(y_pred)
-    y_pred_rank = y_pred.shape.rank
+    y_pred = tf.convert_to_tensor(y_pred) # B, 21
+    y_pred_rank = y_pred.shape.rank # RANK = 2
     if y_pred_rank is not None:
-        axis %= y_pred_rank
-        if axis != y_pred_rank - 1:
+        axis %= y_pred_rank # axis = 1
+
+        if axis != y_pred_rank - 1: # 실행 안함
             # Put channel axis last for sparse_softmax_cross_entropy_with_logits
             perm = list(itertools.chain(range(axis),
                                         range(axis + 1, y_pred_rank), [axis]))
             y_pred = tf.transpose(y_pred, perm=perm)
-    elif axis != -1:
+
+    elif axis != -1: # 실행 안함
         raise ValueError(
             f'Cannot compute sparse categorical focal loss with axis={axis} on '
             'a prediction tensor with statically unknown rank.')
-    y_pred_shape = tf.shape(y_pred)
+    y_pred_shape = tf.shape(y_pred) # y_pred_shape ==> (2,)
 
     # Process ground truth tensor
     y_true = tf.dtypes.cast(y_true, dtype=tf.dtypes.int64)
-    y_true_rank = y_true.shape.rank
+    y_true_rank = y_true.shape.rank # rank = 1
 
     if y_true_rank is None:
         raise NotImplementedError('Sparse categorical focal loss not supported '
                                   'for target/label tensors of unknown rank')
 
-    reshape_needed = (y_true_rank is not None and y_pred_rank is not None and
+    reshape_needed = (y_true_rank is not None and y_pred_rank is not None and #
                       y_pred_rank != y_true_rank + 1)
+    # 기존 코드
+    # if reshape_needed:
+    #     y_true = tf.reshape(y_true, [-1])
+    #     y_pred = tf.reshape(y_pred, [-1, y_pred_shape[-1]])
+    #
+    # if from_logits: # this
+    #     logits = y_pred
+    #     probs = tf.nn.softmax(y_pred, axis=-1)
+    # else:
+    #     probs = y_pred
+    #     logits = tf.math.log(tf.clip_by_value(y_pred, _EPSILON, 1 - _EPSILON))
+
+
     if reshape_needed:
         y_true = tf.reshape(y_true, [-1])
         y_pred = tf.reshape(y_pred, [-1, y_pred_shape[-1]])
@@ -58,6 +73,7 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
         probs = y_pred
         logits = tf.math.log(tf.clip_by_value(y_pred, _EPSILON, 1 - _EPSILON))
 
+        
     xent_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
         labels=y_true,
         logits=logits,
@@ -172,9 +188,10 @@ def calc_giou(pred_boxes, gt_boxes):
 
 def total_loss(y_true, y_pred, num_classes=21):
     labels = tf.argmax(y_true[:,:,:num_classes], axis=2) # B, 16368
-    predicted_locations = y_pred[:,:,num_classes:]
-    gt_locations = y_true[:,:,num_classes:]
-    pos_mask = labels > 0
+    predicted_locations = y_pred[:,:,num_classes:] # B, None, 4
+    gt_locations = y_true[:,:,num_classes:]  # B, 16368, None
+    pos_mask = labels > 0 # B, 16368
+    tf.print(pos_mask, sys.stdout, summarize=-1)
     """
         y_true: (B, N, num_classes).
         y_pred:  (B, N, num_classes).     """
@@ -182,13 +199,13 @@ def total_loss(y_true, y_pred, num_classes=21):
     neg_pos_ratio = 3.0
     confidence = y_pred[:, :, :num_classes] # B, N, 21
 
-    loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]
+    loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0] # B, N
     loss = tf.stop_gradient(loss)
 
-    mask = hard_negative_mining(loss, labels, neg_pos_ratio)
+    mask = hard_negative_mining(loss, labels, neg_pos_ratio) # B, 16368
     mask = tf.stop_gradient(mask) # neg sample 마스크
 
-    confidence = tf.boolean_mask(confidence, mask)
+    confidence = tf.boolean_mask(confidence, mask) # B, 21
 
     focal_loss = tf.reduce_sum(SparseCategoricalFocalLoss(gamma=gamma,from_logits=False)(y_true=tf.boolean_mask(labels, mask),
                                                              y_pred=tf.reshape(confidence, [-1, num_classes])))
