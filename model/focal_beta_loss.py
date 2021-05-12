@@ -80,9 +80,11 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
 
     y_true_rank = y_true.shape.rank
     probs = tf.gather(probs, y_true, axis=-1, batch_dims=y_true_rank)
+
     if not scalar_gamma:
         gamma = tf.gather(gamma, y_true, axis=0, batch_dims=y_true_rank)
     focal_modulation = (1 - probs) ** gamma
+
 
     loss = focal_modulation * xent_loss
 
@@ -142,47 +144,14 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
     num_neg = num_pos * neg_pos_ratio
 
     loss = tf.where(pos_mask, tf.convert_to_tensor(np.NINF), loss)
-
+    tf.print(loss, sys.stdout, summarize=-1)
     indexes = tf.argsort(loss, axis=1, direction='DESCENDING')
+
     orders = tf.argsort(indexes, axis=1)
     neg_mask = tf.cast(orders, tf.float32) < num_neg
 
     return tf.logical_or(pos_mask, neg_mask)
 
-
-def calc_giou(pred_boxes, gt_boxes):
-    pred_boxes = tf.abs(pred_boxes)
-    gt_boxes = tf.abs(gt_boxes)
-    pred_xmin, pred_ymin, pred_xmax, pred_ymax = tf.unstack(pred_boxes, 4, axis=-1)
-    gt_xmin, gt_ymin, gt_xmax, gt_ymax = tf.unstack(gt_boxes, 4, axis=-1)
-
-    pred_w = tf.abs(pred_xmax - pred_xmin)
-    pred_h = tf.abs(pred_ymax - pred_ymin)
-    gt_w = tf.abs(gt_xmax - gt_xmin)
-    gt_h = tf.abs(gt_ymax - gt_ymin)
-
-    pred_area = pred_w * pred_h
-    gt_area = gt_w * gt_h
-
-    top_left = tf.maximum(pred_boxes[..., :2], gt_boxes[..., :2])
-    bottom_right = tf.minimum(pred_boxes[..., 2:], gt_boxes[..., 2:])
-
-    intersection_xy = tf.maximum(bottom_right - top_left, 0.0)
-    intersection_area = intersection_xy[..., 0] * intersection_xy[..., 1]
-
-    union_area = pred_area + gt_area - intersection_area
-
-    iou = 1.0 * intersection_area / (union_area + tf.keras.backend.epsilon())
-    tf.print(iou, sys.stdout, summarize=-1)
-    enclose_top_left = tf.minimum(pred_boxes[..., :2], gt_boxes[..., :2])
-    enclose_bottom_right = tf.maximum(pred_boxes[..., 2:], gt_boxes[..., 2:])
-
-    enclose_xy = enclose_bottom_right - enclose_top_left
-    enclose_area = enclose_xy[..., 0] * enclose_xy[..., 1]
-
-    giou = iou - tf.math.divide_no_nan(enclose_area - union_area, enclose_area)
-
-    return giou
 
 
 def total_loss(y_true, y_pred, num_classes=21):
@@ -190,7 +159,7 @@ def total_loss(y_true, y_pred, num_classes=21):
     predicted_locations = y_pred[:, :, num_classes:]  # B, None, 4
     gt_locations = y_true[:, :, num_classes:]  # B, 16368, None
     pos_mask = labels > 0  # B, 16368
-    tf.print(pos_mask, sys.stdout, summarize=-1)
+
     """
         y_true: (B, N, num_classes).
         y_pred:  (B, N, num_classes).     """
@@ -206,8 +175,8 @@ def total_loss(y_true, y_pred, num_classes=21):
 
     confidence = tf.boolean_mask(confidence, mask)  # B, 21
 
-    # t_pred = tf.reshape(confidence, [-1, num_classes])
-    # t_true = tf.boolean_mask(labels, mask)
+    t_pred = tf.reshape(confidence, [-1, num_classes])
+    t_true = tf.boolean_mask(labels, mask)
 
     focal_loss = tf.reduce_sum(
         SparseCategoricalFocalLoss(gamma=gamma, from_logits=True)(y_true=tf.boolean_mask(labels, mask),
