@@ -68,7 +68,14 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
 
     if from_logits:  # this
         logits = y_pred
-        probs = tf.nn.softmax(y_pred, axis=-1)
+        # probs = tf.nn.softmax(y_pred, axis=-1)
+        probs = tf.nn.log_softmax(y_pred, axis=-1)
+
+        # focal loss test 해볼거
+        # focal_beta_loss에서 현재 reshape한거로 probs를 생성했는데
+        # softmax 또는 log_softmax한 값으로 prbos를 추출해야함
+        # 0513 기준으로 map 77까지는 나옴
+
     else:
         probs = y_pred
         logits = tf.math.log(tf.clip_by_value(y_pred, _EPSILON, 1 - _EPSILON))
