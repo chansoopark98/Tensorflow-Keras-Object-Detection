@@ -22,7 +22,7 @@ mixed_precision.set_policy(policy)
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=2)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름", default=str(time.strftime('%m%d', time.localtime(time.time()))))
@@ -79,8 +79,8 @@ target_transform = MatchingPriors(priors, center_variance, size_variance, iou_th
 
 if TRAIN_MODE == 'voc':
     # from model.pascal_loss import total_loss
-    from model.focal_loss import total_loss
-    #from model.focal_beta_loss import total_loss
+    # from model.focal_loss import total_loss
+    from model.focal_beta_loss import total_loss
     from preprocessing import pascal_prepare_dataset
     train_pascal_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
     valid_train_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')

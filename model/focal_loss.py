@@ -23,7 +23,7 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
                                             dtype=tf.dtypes.float32)
 
     # Process prediction tensor
-    y_pred = tf.convert_to_tensor(y_pred)  # B, 21
+    #y_pred = tf.convert_to_tensor(y_pred)  # B, 21
     y_pred_rank = y_pred.shape.rank  # RANK = 2
     if y_pred_rank is not None:
         axis %= y_pred_rank  # axis = 1
@@ -41,7 +41,7 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
     y_pred_shape = tf.shape(y_pred)  # y_pred_shape ==> (2,)
 
     # Process ground truth tensor
-    y_true = tf.dtypes.cast(y_true, dtype=tf.dtypes.int64)
+    #y_true = tf.dtypes.cast(y_true, dtype=tf.dtypes.int64)
     y_true_rank = y_true.shape.rank  # rank = 1
 
     if y_true_rank is None:
@@ -68,8 +68,8 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
 
     if from_logits:  # this
         logits = y_pred
-        # probs = tf.nn.softmax(y_pred, axis=-1)
-        probs = -tf.nn.log_softmax(y_pred, axis=-1)
+        probs = tf.nn.softmax(y_pred, axis=-1)
+        # probs = -tf.nn.log_softmax(y_pred, axis=-1)
 
         # focal loss test 해볼거
         # focal_beta_loss에서 현재 reshape한거로 probs를 생성했는데
@@ -87,10 +87,13 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
 
     y_true_rank = y_true.shape.rank
     probs = tf.gather(probs, y_true, axis=-1, batch_dims=y_true_rank)
+
+
     if not scalar_gamma:
         gamma = tf.gather(gamma, y_true, axis=0, batch_dims=y_true_rank)
     focal_modulation = (1 - probs) ** gamma
-
+    tf.print(focal_modulation, sys.stdout, summarize=-1
+             )
     loss = focal_modulation * xent_loss
 
     if class_weight is not None:
@@ -229,7 +232,7 @@ def total_loss(y_true, y_pred, num_classes=21):
     num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
     # divide num_pos objects
     loc_loss = smooth_l1_loss / num_pos
-    focal_loss = focal_loss / num_pos
+    focal_loss = focal_loss #/ num_pos
     mbox_loss = loc_loss + focal_loss
     return mbox_loss
 
