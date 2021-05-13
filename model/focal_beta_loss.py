@@ -27,7 +27,7 @@ def total_loss(y_true, y_pred, num_classes=21):
     confidence = y_pred[:,:,:num_classes]
     predicted_locations = y_pred[:,:,num_classes:]
     gt_locations = y_true[:,:,num_classes:]
-    neg_pos_ratio = 3.0
+    neg_pos_ratio = 5.0
     loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]
     loss = tf.stop_gradient(loss)
 
