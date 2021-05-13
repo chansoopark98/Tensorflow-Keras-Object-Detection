@@ -42,7 +42,9 @@ def total_loss(y_true, y_pred, num_classes=21):
 
     probs = tf.nn.softmax(ce_logit, axis=-1)
     probs = tf.gather(probs, ce_label, axis=-1, batch_dims= ce_label.shape.rank)
+    probs = tf.stop_gradient(probs) # 이거 테스트 해볼거
     focal_modulation = (1 - probs) ** 2.0
+
 
 
 
