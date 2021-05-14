@@ -166,7 +166,7 @@ if TRANSFER_LEARNING is False:
         metrics=[metric.precision, metric.recall, metric.cross_entropy, metric.localization]
     )
 
-    #model.summary()
+    model.summary()
 
     history = model.fit(training_dataset,
                 validation_data=validation_dataset,
@@ -185,6 +185,7 @@ else:
     callback = [reduce_lr, checkpoint]
 
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
+
 
     if load_weight:
         weight_name = '0421'
