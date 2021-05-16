@@ -172,7 +172,7 @@ def total_loss(y_true, y_pred, num_classes=21):
         y_true: (B, N, num_classes).
         y_pred:  (B, N, num_classes).     """
     gamma = 2
-    neg_pos_ratio = 1.0
+    neg_pos_ratio = 3.0
     confidence = y_pred[:, :, :num_classes]  # B, N, 21
 
     loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]  # B, N
@@ -198,7 +198,7 @@ def total_loss(y_true, y_pred, num_classes=21):
     num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
     # divide num_pos objects
     loc_loss = smooth_l1_loss / num_pos
-    focal_loss = focal_loss #/ num_pos
+    focal_loss = focal_loss / num_pos
     mbox_loss = loc_loss + focal_loss
     return mbox_loss
 
