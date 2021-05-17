@@ -161,6 +161,7 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
 
     return tf.logical_or(pos_mask, neg_mask)
 
+import tensorflow_addons as tfa
 
 def total_loss(y_true, y_pred, num_classes=21):
     labels = tf.argmax(y_true[:, :, :num_classes], axis=2)  # B, 16368

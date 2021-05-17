@@ -22,7 +22,7 @@ mixed_precision.set_policy(policy)
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=2)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름", default=str(time.strftime('%m%d', time.localtime(time.time()))))
@@ -31,7 +31,7 @@ parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉�
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
-parser.add_argument("--transfer_learning",  type=bool,  help="전이 학습 처음엔 false 두번째 true", default=False)
+parser.add_argument("--transfer_learning",  type=bool,  help="전이 학습 처음엔 false 두번째 true", default=True)
 
 MODEL_INPUT_SIZE = {
     'B0': 512,
@@ -199,10 +199,10 @@ else:
 
     model.summary()
 
-    history = model.fit(training_dataset,
-                validation_data=validation_dataset,
-                steps_per_epoch=steps_per_epoch,
-                validation_steps=validation_steps,
-                epochs=EPOCHS,
-                callbacks=callback)
+    history2 = model.fit(training_dataset,
+            validation_data=validation_dataset,
+            steps_per_epoch=steps_per_epoch,
+            validation_steps=validation_steps,
+            epochs=EPOCHS,
+            callbacks=callback)
 
