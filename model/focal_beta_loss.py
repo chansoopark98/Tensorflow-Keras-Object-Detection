@@ -1,6 +1,39 @@
 import tensorflow as tf
 import numpy as np
-import tensorflow_addons as tfa
+#import tensorflow_addons as tfa
+
+def giou_loss(gt_boxes, pred_boxes):
+    zero = tf.convert_to_tensor(0., gt_boxes.dtype)
+    b1_ymin, b1_xmin, b1_ymax, b1_xmax = tf.unstack(gt_boxes, 4, axis=-1)
+    b2_ymin, b2_xmin, b2_ymax, b2_xmax = tf.unstack(pred_boxes, 4, axis=-1)
+    b1_width = tf.maximum(zero, b1_xmax - b1_xmin)
+    b1_height = tf.maximum(zero, b1_ymax - b1_ymin)
+    b2_width = tf.maximum(zero, b2_xmax - b2_xmin)
+    b2_height = tf.maximum(zero, b2_ymax - b2_ymin)
+    b1_area = b1_width * b1_height
+    b2_area = b2_width * b2_height
+
+    intersect_ymin = tf.maximum(b1_ymin, b2_ymin)
+    intersect_xmin = tf.maximum(b1_xmin, b2_xmin)
+    intersect_ymax = tf.minimum(b1_ymax, b2_ymax)
+    intersect_xmax = tf.minimum(b1_xmax, b2_xmax)
+    intersect_width = tf.maximum(zero, intersect_xmax - intersect_xmin)
+    intersect_height = tf.maximum(zero, intersect_ymax - intersect_ymin)
+    intersect_area = intersect_width * intersect_height
+
+    union_area = b1_area + b2_area - intersect_area
+    iou = tf.math.divide_no_nan(intersect_area, union_area)
+
+    enclose_ymin = tf.minimum(b1_ymin, b2_ymin)
+    enclose_xmin = tf.minimum(b1_xmin, b2_xmin)
+    enclose_ymax = tf.maximum(b1_ymax, b2_ymax)
+    enclose_xmax = tf.maximum(b1_xmax, b2_xmax)
+    enclose_width = tf.maximum(zero, enclose_xmax - enclose_xmin)
+    enclose_height = tf.maximum(zero, enclose_ymax - enclose_ymin)
+    enclose_area = enclose_width * enclose_height
+    giou = iou - tf.math.divide_no_nan(
+        (enclose_area - union_area), enclose_area)
+    return giou
 
 def smooth_l1(labels, scores, sigma=1.0):
     diff = scores-labels
@@ -42,8 +75,10 @@ def total_loss(y_true, y_pred, num_classes=21):
     predicted_locations = tf.reshape(tf.boolean_mask(predicted_locations, pos_mask), [-1, 4])
     gt_locations = tf.reshape(tf.boolean_mask(gt_locations, pos_mask), [-1, 4])
 
-    giou = tfa.losses.GIoULoss(reduction=tf.keras.losses.Reduction.SUM)(y_true=gt_locations,
-                         y_pred=predicted_locations)
+    # giou = tfa.losses.GIoULoss(reduction=tf.keras.losses.Reduction.SUM)(y_true=gt_locations,
+    #                      y_pred=predicted_locations)
+
+    giou = tf.reduce_sum(giou_loss(gt_boxes=gt_locations, pred_boxes=predicted_locations))
 
     # calc localization loss
     #smooth_l1_loss = tf.math.reduce_sum(smooth_l1(scores=predicted_locations,labels=gt_locations))
