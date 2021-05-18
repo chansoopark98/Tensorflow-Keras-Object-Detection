@@ -1,90 +1,203 @@
+import sys
+
 import tensorflow as tf
 import numpy as np
-#import tensorflow_addons as tfa
+import itertools
+from typing import Any, Optional
 
-def giou_loss(gt_boxes, pred_boxes):
-    zero = tf.convert_to_tensor(0., gt_boxes.dtype)
-    b1_ymin, b1_xmin, b1_ymax, b1_xmax = tf.unstack(gt_boxes, 4, axis=-1)
-    b2_ymin, b2_xmin, b2_ymax, b2_xmax = tf.unstack(pred_boxes, 4, axis=-1)
-    b1_width = tf.maximum(zero, b1_xmax - b1_xmin)
-    b1_height = tf.maximum(zero, b1_ymax - b1_ymin)
-    b2_width = tf.maximum(zero, b2_xmax - b2_xmin)
-    b2_height = tf.maximum(zero, b2_ymax - b2_ymin)
-    b1_area = b1_width * b1_height
-    b2_area = b2_width * b2_height
+_EPSILON = tf.keras.backend.epsilon()
 
-    intersect_ymin = tf.maximum(b1_ymin, b2_ymin)
-    intersect_xmin = tf.maximum(b1_xmin, b2_xmin)
-    intersect_ymax = tf.minimum(b1_ymax, b2_ymax)
-    intersect_xmax = tf.minimum(b1_xmax, b2_xmax)
-    intersect_width = tf.maximum(zero, intersect_xmax - intersect_xmin)
-    intersect_height = tf.maximum(zero, intersect_ymax - intersect_ymin)
-    intersect_area = intersect_width * intersect_height
 
-    union_area = b1_area + b2_area - intersect_area
-    iou = tf.math.divide_no_nan(intersect_area, union_area)
+def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
+                                  class_weight: Optional[Any] = None,
+                                  from_logits: bool = False, axis: int = -1
+                                  ) -> tf.Tensor:
+    # Process focusing parameter
+    gamma = tf.convert_to_tensor(gamma, dtype=tf.dtypes.float32)  # ()
+    gamma_rank = gamma.shape.rank  # 0
+    scalar_gamma = gamma_rank == 0  # True
 
-    enclose_ymin = tf.minimum(b1_ymin, b2_ymin)
-    enclose_xmin = tf.minimum(b1_xmin, b2_xmin)
-    enclose_ymax = tf.maximum(b1_ymax, b2_ymax)
-    enclose_xmax = tf.maximum(b1_xmax, b2_xmax)
-    enclose_width = tf.maximum(zero, enclose_xmax - enclose_xmin)
-    enclose_height = tf.maximum(zero, enclose_ymax - enclose_ymin)
-    enclose_area = enclose_width * enclose_height
-    giou = iou - tf.math.divide_no_nan(
-        (enclose_area - union_area), enclose_area)
-    return giou
+    # Process class weight - 사용 x
+    if class_weight is not None:
+        class_weight = tf.convert_to_tensor(class_weight,
+                                            dtype=tf.dtypes.float32)
+
+    # Process prediction tensor
+    #y_pred = tf.convert_to_tensor(y_pred)  # B, 21
+    y_pred_rank = y_pred.shape.rank  # RANK = 2
+    if y_pred_rank is not None:
+        axis %= y_pred_rank  # axis = 1
+
+        if axis != y_pred_rank - 1:  # 실행 안함
+            # Put channel axis last for sparse_softmax_cross_entropy_with_logits
+            perm = list(itertools.chain(range(axis),
+                                        range(axis + 1, y_pred_rank), [axis]))
+            y_pred = tf.transpose(y_pred, perm=perm)
+
+    elif axis != -1:  # 실행 안함
+        raise ValueError(
+            f'Cannot compute sparse categorical focal loss with axis={axis} on '
+            'a prediction tensor with statically unknown rank.')
+    y_pred_shape = tf.shape(y_pred)  # y_pred_shape ==> (2,)
+
+    # Process ground truth tensor
+    #y_true = tf.dtypes.cast(y_true, dtype=tf.dtypes.int64)
+    y_true_rank = y_true.shape.rank  # rank = 1
+
+    if y_true_rank is None:
+        raise NotImplementedError('Sparse categorical focal loss not supported '
+                                  'for target/label tensors of unknown rank')
+
+    reshape_needed = (y_true_rank is not None and y_pred_rank is not None and  #
+                      y_pred_rank != y_true_rank + 1)
+    # 기존 코드
+    # if reshape_needed:
+    #     y_true = tf.reshape(y_true, [-1])
+    #     y_pred = tf.reshape(y_pred, [-1, y_pred_shape[-1]])
+    #
+    # if from_logits: # this
+    #     logits = y_pred
+    #     probs = tf.nn.softmax(y_pred, axis=-1)
+    # else:
+    #     probs = y_pred
+    #     logits = tf.math.log(tf.clip_by_value(y_pred, _EPSILON, 1 - _EPSILON))
+
+    if reshape_needed:
+        y_true = tf.reshape(y_true, [-1])
+        y_pred = tf.reshape(y_pred, [-1, y_pred_shape[-1]])
+
+    if from_logits:  # this
+        logits = y_pred
+        probs = tf.nn.softmax(y_pred, axis=-1)
+        # probs = -tf.nn.log_softmax(y_pred, axis=-1)
+
+        # focal loss test 해볼거
+        # focal_beta_loss에서 현재 reshape한거로 probs를 생성했는데
+        # softmax 또는 log_softmax한 값으로 prbos를 추출해야함
+        # 0513 기준으로 map 77까지는 나옴
+
+    else:
+        probs = y_pred
+        logits = tf.math.log(tf.clip_by_value(y_pred, _EPSILON, 1 - _EPSILON))
+
+    xent_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+        labels=y_true,
+        logits=logits,
+    )
+
+    y_true_rank = y_true.shape.rank
+    probs = tf.gather(probs, y_true, axis=-1, batch_dims=y_true_rank)
+
+
+    if not scalar_gamma:
+        gamma = tf.gather(gamma, y_true, axis=0, batch_dims=y_true_rank)
+    focal_modulation = (1 - probs) ** gamma
+    loss = focal_modulation * xent_loss
+
+    if class_weight is not None:
+        class_weight = tf.gather(class_weight, y_true, axis=0,
+                                 batch_dims=y_true_rank)
+        loss *= class_weight
+
+    if reshape_needed:
+        loss = tf.reshape(loss, y_pred_shape[:-1])
+
+    return loss
+
+
+@tf.keras.utils.register_keras_serializable()
+class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
+    def __init__(self, gamma, class_weight: Optional[Any] = None,
+                 from_logits: bool = False, **kwargs):
+        super().__init__(**kwargs)
+        self.gamma = gamma
+        self.class_weight = class_weight
+        self.from_logits = from_logits
+
+    def get_config(self):
+        config = super().get_config()
+        config.update(gamma=self.gamma, class_weight=self.class_weight,
+                      from_logits=self.from_logits)
+        return config
+
+    def call(self, y_true, y_pred):
+        """
+        Args:
+            y_true : tensor-like, shape (N,)
+                Integer class labels.
+            y_pred : tensor-like, shape (N, K)
+                Either probabilities or logits, depending on the `from_logits`
+                parameter.
+        Returns:
+            :class:`tf.Tensor`
+        """
+
+        return sparse_categorical_focal_loss(y_true=y_true, y_pred=y_pred,
+                                             class_weight=self.class_weight,
+                                             gamma=self.gamma,
+                                             from_logits=self.from_logits)
+
 
 def smooth_l1(labels, scores, sigma=1.0):
-    diff = scores-labels
+    diff = scores - labels
     abs_diff = tf.abs(diff)
-    return tf.where(tf.less(abs_diff, 1/(sigma**2)), 0.5*(sigma*diff)**2, abs_diff-1/(2*sigma**2))
+    return tf.where(tf.less(abs_diff, 1 / (sigma ** 2)), 0.5 * (sigma * diff) ** 2, abs_diff - 1 / (2 * sigma ** 2))
+
 
 def hard_negative_mining(loss, labels, neg_pos_ratio):
-    pos_mask = labels > 0
-    num_pos = tf.math.reduce_sum(tf.cast(pos_mask, tf.float32), axis=1, keepdims=True)
-    num_neg = num_pos * neg_pos_ratio
+    """loss > softmax한 confidence"""
+    pos_mask = labels > 0 # None, 16368
+    num_pos = tf.math.reduce_sum(tf.cast(pos_mask, tf.float32), axis=1, keepdims=True) # None, 1 예 > [[2][3]]
+    num_neg = num_pos * neg_pos_ratio # [[2*3][3*3]]
 
-    loss = tf.where(pos_mask, tf.convert_to_tensor(np.NINF), loss)
+    loss = tf.where(pos_mask, tf.convert_to_tensor(np.NINF), loss) # N, 16368 객체에 대해서만 INF
 
-    indexes = tf.argsort(loss, axis=1, direction='DESCENDING')
-    orders = tf.argsort(indexes, axis=1)
-    neg_mask = tf.cast(orders, tf.float32) < num_neg
 
-    return tf.logical_or(pos_mask ,neg_mask)
+    indexes = tf.argsort(loss, axis=1, direction='DESCENDING') # N, N 내림차순 정렬
 
+    orders = tf.argsort(indexes, axis=1) # N, N 오름차순 정렬
+
+    neg_mask = tf.cast(orders, tf.float32) < num_neg # N, N
+
+    return tf.logical_or(pos_mask, neg_mask)
+
+import tensorflow_addons as tfa
 
 def total_loss(y_true, y_pred, num_classes=21):
-    labels = tf.argmax(y_true[:,:,:num_classes], axis=2)
-    confidence = y_pred[:,:,:num_classes]
-    predicted_locations = y_pred[:,:,num_classes:]
-    gt_locations = y_true[:,:,num_classes:]
-    neg_pos_ratio = 3.0
-    loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]
-    loss = tf.stop_gradient(loss)
+    labels = tf.argmax(y_true[:, :, :num_classes], axis=2)  # B, 16368
+    predicted_locations = y_pred[:, :, num_classes:]  # B, None, 4
+    gt_locations = y_true[:, :, num_classes:]  # B, 16368, None
+    pos_mask = labels > 0  # B, 16368
 
-    mask = hard_negative_mining(loss, labels, neg_pos_ratio)
-    mask = tf.stop_gradient(mask) # neg sample 마스크
+    """
+        y_true: (B, N, num_classes).
+        y_pred:  (B, N, num_classes).     """
+    gamma = 2
+    confidence = y_pred[:, :, :num_classes]  # B, N, 21
 
-    confidence = tf.boolean_mask(confidence, mask)
-    # calc classification loss
-    classification_loss = tf.math.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(logits = tf.reshape(confidence, [-1, num_classes]), labels = tf.boolean_mask(labels, mask)))
-    pos_mask = labels > 0
+    y_pred_shape = tf.shape(confidence) # 3
+    #confidence = tf.boolean_mask(confidence, mask)  # B, 21
+    ce_label = tf.reshape(labels, [-1]) # None,
+    ce_logit = tf.reshape(confidence, [-1, y_pred_shape[-1]]) # N, N
 
+    probs = tf.nn.softmax(ce_logit, axis=-1) # N, N
+    y_true_rank = ce_label.shape.rank # 1
+    probs = tf.gather(probs, ce_label, axis=-1, batch_dims=y_true_rank) # N,
+    focal_modulation = (1 - probs) ** gamma # N,
+
+    classification_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=ce_logit, labels=ce_label)
+
+    focal_loss = tf.reduce_sum(focal_modulation * classification_loss)
 
     predicted_locations = tf.reshape(tf.boolean_mask(predicted_locations, pos_mask), [-1, 4])
     gt_locations = tf.reshape(tf.boolean_mask(gt_locations, pos_mask), [-1, 4])
 
-    # giou = tfa.losses.GIoULoss(reduction=tf.keras.losses.Reduction.SUM)(y_true=gt_locations,
-    #                      y_pred=predicted_locations)
-
-    giou = tf.reduce_sum(giou_loss(gt_boxes=gt_locations, pred_boxes=predicted_locations))
-
     # calc localization loss
-    #smooth_l1_loss = tf.math.reduce_sum(smooth_l1(scores=predicted_locations,labels=gt_locations))
+    smooth_l1_loss = tf.math.reduce_sum(smooth_l1(scores=predicted_locations, labels=gt_locations))
     num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
     # divide num_pos objects
-    loc_loss = giou / num_pos
-    class_loss = classification_loss / num_pos
-    mbox_loss = loc_loss + class_loss
+    loc_loss = smooth_l1_loss / num_pos
+    focal_loss = focal_loss / num_pos
+    mbox_loss = loc_loss + focal_loss
     return mbox_loss
+
