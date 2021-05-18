@@ -161,7 +161,6 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
 
     return tf.logical_or(pos_mask, neg_mask)
 
-import tensorflow_addons as tfa
 
 def total_loss(y_true, y_pred, num_classes=21):
     labels = tf.argmax(y_true[:, :, :num_classes], axis=2)  # B, 16368
@@ -175,10 +174,18 @@ def total_loss(y_true, y_pred, num_classes=21):
     gamma = 2
     confidence = y_pred[:, :, :num_classes]  # B, N, 21
 
-    y_pred_shape = tf.shape(confidence) # 3
+    neg_pos_ratio = 3.0
+    loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]
+    loss = tf.stop_gradient(loss)
+
+    mask = hard_negative_mining(loss, labels, neg_pos_ratio)
+    mask = tf.stop_gradient(mask) # neg sample 마스크
+
     #confidence = tf.boolean_mask(confidence, mask)  # B, 21
-    ce_label = tf.reshape(labels, [-1]) # None,
-    ce_logit = tf.reshape(confidence, [-1, y_pred_shape[-1]]) # N, N
+    #ce_label = tf.reshape(labels, [-1]) # None,
+    ce_label = tf.boolean_mask(labels, mask)
+    confidence = tf.boolean_mask(confidence, mask)
+    ce_logit = tf.reshape(confidence, [-1, num_classes])
 
     probs = tf.nn.softmax(ce_logit, axis=-1) # N, N
     y_true_rank = ce_label.shape.rank # 1
@@ -187,7 +194,7 @@ def total_loss(y_true, y_pred, num_classes=21):
 
     classification_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=ce_logit, labels=ce_label)
 
-    focal_loss = tf.reduce_sum(focal_modulation * classification_loss)
+    focal_loss = tf.math.reduce_sum(focal_modulation * classification_loss)
 
     predicted_locations = tf.reshape(tf.boolean_mask(predicted_locations, pos_mask), [-1, 4])
     gt_locations = tf.reshape(tf.boolean_mask(gt_locations, pos_mask), [-1, 4])
