@@ -89,10 +89,13 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
     probs = tf.gather(probs, y_true, axis=-1, batch_dims=y_true_rank)
 
 
+
     if not scalar_gamma:
         gamma = tf.gather(gamma, y_true, axis=0, batch_dims=y_true_rank)
     focal_modulation = (1 - probs) ** gamma
+
     loss = focal_modulation * xent_loss
+    loss = tf.reduce_sum(loss)
 
     if class_weight is not None:
         class_weight = tf.gather(class_weight, y_true, axis=0,
@@ -172,29 +175,23 @@ def total_loss(y_true, y_pred, num_classes=21):
         y_true: (B, N, num_classes).
         y_pred:  (B, N, num_classes).     """
     gamma = 2
+    neg_pos_ratio = 3.0
     confidence = y_pred[:, :, :num_classes]  # B, N, 21
 
-    neg_pos_ratio = 3.0
-    loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]
+    loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]  # B, N
     loss = tf.stop_gradient(loss)
 
-    mask = hard_negative_mining(loss, labels, neg_pos_ratio)
-    mask = tf.stop_gradient(mask) # neg sample 마스크
+    mask = hard_negative_mining(loss, labels, neg_pos_ratio)  # B, 16368
+    mask = tf.stop_gradient(mask)  # neg sample 마스크
 
-    #confidence = tf.boolean_mask(confidence, mask)  # B, 21
-    #ce_label = tf.reshape(labels, [-1]) # None,
-    ce_label = tf.boolean_mask(labels, mask)
-    confidence = tf.boolean_mask(confidence, mask)
+    confidence = tf.boolean_mask(confidence, mask)  # B, 21
     ce_logit = tf.reshape(confidence, [-1, num_classes])
 
-    probs = tf.nn.softmax(ce_logit, axis=-1) # N, N
-    y_true_rank = ce_label.shape.rank # 1
-    probs = tf.gather(probs, ce_label, axis=-1, batch_dims=y_true_rank) # N,
-    focal_modulation = (1 - probs) ** gamma # N,
+    ce_label = tf.boolean_mask(labels, mask)
 
-    classification_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=ce_logit, labels=ce_label)
 
-    focal_loss = tf.math.reduce_sum(focal_modulation * classification_loss)
+    focal_loss = SparseCategoricalFocalLoss(gamma=gamma, from_logits=True)(y_true=ce_label, y_pred=ce_logit)
+
 
     predicted_locations = tf.reshape(tf.boolean_mask(predicted_locations, pos_mask), [-1, 4])
     gt_locations = tf.reshape(tf.boolean_mask(gt_locations, pos_mask), [-1, 4])
