@@ -69,7 +69,6 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
     if from_logits:  # this
         logits = y_pred
         probs = tf.nn.softmax(y_pred, axis=-1)
-        # probs = -tf.nn.log_softmax(y_pred, axis=-1)
 
         # focal loss test 해볼거
         # focal_beta_loss에서 현재 reshape한거로 probs를 생성했는데
@@ -77,22 +76,27 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
         # 0513 기준으로 map 77까지는 나옴
 
     else:
-        probs = y_pred
-        logits = tf.math.log(tf.clip_by_value(y_pred, _EPSILON, 1 - _EPSILON))
+        probs = y_pred # None, 21
+        logits = tf.math.log(tf.clip_by_value(y_pred, _EPSILON, 1 - _EPSILON)) # None, 21
 
     xent_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
         labels=y_true,
         logits=logits,
     )
 
-    y_true_rank = y_true.shape.rank
+    y_true_rank = y_true.shape.rank # 1
     probs = tf.gather(probs, y_true, axis=-1, batch_dims=y_true_rank)
+
+    tf.print("  gather 이후 probs -1 ", probs, output_stream=sys.stdout)
 
 
     if not scalar_gamma:
         gamma = tf.gather(gamma, y_true, axis=0, batch_dims=y_true_rank)
     focal_modulation = (1 - probs) ** gamma
+
+
     loss = focal_modulation * xent_loss
+    loss = tf.reduce_sum(loss)
 
     if class_weight is not None:
         class_weight = tf.gather(class_weight, y_true, axis=0,
@@ -161,7 +165,6 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
 
     return tf.logical_or(pos_mask, neg_mask)
 
-import tensorflow_addons as tfa
 
 def total_loss(y_true, y_pred, num_classes=21):
     labels = tf.argmax(y_true[:, :, :num_classes], axis=2)  # B, 16368
@@ -183,11 +186,12 @@ def total_loss(y_true, y_pred, num_classes=21):
     mask = tf.stop_gradient(mask)  # neg sample 마스크
 
     confidence = tf.boolean_mask(confidence, mask)  # B, 21
+    ce_logit = tf.reshape(confidence, [-1, num_classes])
+
+    ce_label = tf.boolean_mask(labels, mask)
 
 
-    focal_loss = tf.reduce_sum(
-        SparseCategoricalFocalLoss(gamma=gamma, from_logits=True)(y_true=tf.boolean_mask(labels, mask),
-                                                                  y_pred=tf.reshape(confidence, [-1, num_classes])))
+    focal_loss = SparseCategoricalFocalLoss(gamma=gamma, from_logits=True)(y_true=ce_label, y_pred=ce_logit)
 
 
     predicted_locations = tf.reshape(tf.boolean_mask(predicted_locations, pos_mask), [-1, 4])
@@ -198,7 +202,7 @@ def total_loss(y_true, y_pred, num_classes=21):
     num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
     # divide num_pos objects
     loc_loss = smooth_l1_loss / num_pos
-    focal_loss = focal_loss
+    focal_loss = focal_loss / num_pos
     mbox_loss = loc_loss + focal_loss
     return mbox_loss
 

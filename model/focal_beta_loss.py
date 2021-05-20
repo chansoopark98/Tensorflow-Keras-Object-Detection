@@ -68,8 +68,7 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
 
     if from_logits:  # this
         logits = y_pred
-        probs = tf.nn.softmax(y_pred, axis=-1)
-        # probs = -tf.nn.log_softmax(y_pred, axis=-1)
+        probs = -tf.nn.softmax(y_pred, axis=-1)
 
         # focal loss test 해볼거
         # focal_beta_loss에서 현재 reshape한거로 probs를 생성했는데
@@ -77,22 +76,24 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
         # 0513 기준으로 map 77까지는 나옴
 
     else:
-        probs = y_pred
-        logits = tf.math.log(tf.clip_by_value(y_pred, _EPSILON, 1 - _EPSILON))
+        probs = y_pred # None, 21
+        logits = tf.math.log(tf.clip_by_value(y_pred, _EPSILON, 1 - _EPSILON)) # None, 21
 
     xent_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
         labels=y_true,
         logits=logits,
     )
 
-    y_true_rank = y_true.shape.rank
+    y_true_rank = y_true.shape.rank # 1
     probs = tf.gather(probs, y_true, axis=-1, batch_dims=y_true_rank)
 
+    tf.print("  gather 이후 probs -1 ", probs, output_stream=sys.stdout)
 
 
     if not scalar_gamma:
         gamma = tf.gather(gamma, y_true, axis=0, batch_dims=y_true_rank)
     focal_modulation = (1 - probs) ** gamma
+
 
     loss = focal_modulation * xent_loss
     loss = tf.reduce_sum(loss)
@@ -164,6 +165,7 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
 
     return tf.logical_or(pos_mask, neg_mask)
 
+import tensorflow.keras.backend as K
 
 def total_loss(y_true, y_pred, num_classes=21):
     labels = tf.argmax(y_true[:, :, :num_classes], axis=2)  # B, 16368
@@ -174,23 +176,36 @@ def total_loss(y_true, y_pred, num_classes=21):
     """
         y_true: (B, N, num_classes).
         y_pred:  (B, N, num_classes).     """
-    gamma = 2
-    neg_pos_ratio = 3.0
-    confidence = y_pred[:, :, :num_classes]  # B, N, 21
-
-    loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]  # B, N
-    loss = tf.stop_gradient(loss)
-
-    mask = hard_negative_mining(loss, labels, neg_pos_ratio)  # B, 16368
-    mask = tf.stop_gradient(mask)  # neg sample 마스크
-
-    confidence = tf.boolean_mask(confidence, mask)  # B, 21
-    ce_logit = tf.reshape(confidence, [-1, num_classes])
-
-    ce_label = tf.boolean_mask(labels, mask)
 
 
-    focal_loss = SparseCategoricalFocalLoss(gamma=gamma, from_logits=True)(y_true=ce_label, y_pred=ce_logit)
+
+    epsilon = tf.keras.backend.epsilon()
+    alpha = 0.25
+    gamma = 1.5
+    ce_true = y_true[:, :, :num_classes]
+
+
+    ce_pred = y_pred[:, :, :num_classes]  # B, N, 21
+    ce_pred = tf.clip_by_value(ce_pred, epsilon, 1.0 - epsilon)
+    cross_entropy = -ce_true * tf.math.log(ce_pred)
+    weight = alpha * ce_true * tf.math.pow((1 - ce_pred), gamma)
+    loss = weight * cross_entropy
+    loss = tf.math.reduce_sum(loss, axis=1)
+
+    #tf.print(loss, output_stream=sys.stdout, summarize=-1)
+
+
+    # Add the epsilon to prediction value
+    # y_pred = y_pred + epsilon
+    # Clip the prediction value
+
+
+
+    #ce_logit = tf.reshape(confidence, [-1, num_classes])
+    #ce_label = tf.boolean_mask(labels, mask)
+
+
+    #focal_loss = SparseCategoricalFocalLoss(gamma=2.0, from_logits=True)(y_true=ce_label, y_pred=ce_logit)
 
 
     predicted_locations = tf.reshape(tf.boolean_mask(predicted_locations, pos_mask), [-1, 4])
@@ -201,7 +216,7 @@ def total_loss(y_true, y_pred, num_classes=21):
     num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
     # divide num_pos objects
     loc_loss = smooth_l1_loss / num_pos
-    focal_loss = focal_loss / num_pos
+    focal_loss = loss / num_pos
     mbox_loss = loc_loss + focal_loss
     return mbox_loss
 
