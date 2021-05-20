@@ -1,5 +1,5 @@
 import sys
-
+from tensorflow import keras
 import tensorflow as tf
 import numpy as np
 import itertools
@@ -165,7 +165,46 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
 
     return tf.logical_or(pos_mask, neg_mask)
 
-import tensorflow.keras.backend as K
+import tensorflow_addons as tfa
+
+from tensorflow.python.ops import array_ops
+
+
+def focal_loss_on_object_detection(prediction_tensor, target_tensor, weights=None, alpha=0.25, gamma=2):
+    """
+    focal loss = -alpha * (z-p)^gamma * log(p) - (1-alpha) * p^gamma * log(1-p)
+    注（z-p)那一项，因为z是one-hot编码，公式其他部分都正常对应
+
+    Args:
+        prediction_tensor: [batch_size, num_anchors, num_classes]，one-hot表示
+         target_tensor: [batch_size, num_anchors, num_classes] one-hot表示
+        weights: [batch_size, num_anchors]
+        alpha: focal loss超参数
+        gamma: focal loss超参数
+    Returns:
+        loss: 返回loss的tensor常量
+    """
+    sigmoid_p = tf.nn.sigmoid(prediction_tensor)
+    zeros = array_ops.zeros_like(sigmoid_p, dtype=sigmoid_p.dtype)
+
+    # 对于positive prediction，只考虑前景部分的loss，背景loss为0
+    # target_tensor > zeros <==> z=1, 所以positive系数 = z - p
+    pos_p_sub = array_ops.where(target_tensor > zeros, target_tensor - sigmoid_p, zeros)
+
+    # 对于negative prediction，只考虑背景部分的loss，前景的为0
+    # target_tensor > zeros <==> z=1, 所以negative系数 = 0
+    neg_p_sub = array_ops.where(target_tensor > zeros, zeros, sigmoid_p)
+
+    per_entry_cross_ent = - alpha * (pos_p_sub ** gamma) * tf.math.log(tf.clip_by_value(sigmoid_p, 1e-8, 1.0)) \
+                          - (1 - alpha) * (neg_p_sub ** gamma) * tf.math.log(tf.clip_by_value(1.0 - sigmoid_p, 1e-8, 1.0))
+
+    return tf.reduce_sum(per_entry_cross_ent)
+
+def t_focal_loss(logits, labels, alpha=0.25, gamma=1.5):
+    pos_pt = tf.clip_by_value(tf.nn.sigmoid(logits), 1e-10, 0.999)
+    fl = labels * tf.math.log(pos_pt) * tf.pow(1 - pos_pt, gamma) * alpha + (1 - labels) * tf.math.log(1 - pos_pt) * tf.pow(pos_pt, gamma) * (1 - alpha)
+    fl = -tf.reduce_sum(fl, axis=1)
+    return fl
 
 def total_loss(y_true, y_pred, num_classes=21):
     labels = tf.argmax(y_true[:, :, :num_classes], axis=2)  # B, 16368
@@ -178,34 +217,60 @@ def total_loss(y_true, y_pred, num_classes=21):
         y_pred:  (B, N, num_classes).     """
 
 
-
     epsilon = tf.keras.backend.epsilon()
     alpha = 0.25
     gamma = 1.5
     ce_true = y_true[:, :, :num_classes]
-
-
     ce_pred = y_pred[:, :, :num_classes]  # B, N, 21
-    ce_pred = tf.clip_by_value(ce_pred, epsilon, 1.0 - epsilon)
-    cross_entropy = -ce_true * tf.math.log(ce_pred)
-    weight = alpha * ce_true * tf.math.pow((1 - ce_pred), gamma)
-    loss = weight * cross_entropy
-    loss = tf.math.reduce_sum(loss, axis=1)
+    # ce_pred = tf.clip_by_value(ce_pred, epsilon, 1.0 - epsilon)
+    ce_pred = tf.sigmoid(ce_pred)
 
-    #tf.print(loss, output_stream=sys.stdout, summarize=-1)
+    indices = tf.where(keras.backend.not_equal(ce_true, 1))
+    labels = tf.gather_nd(ce_true, indices)
+    classification = tf.gather_nd(ce_pred, indices)
 
-
-    # Add the epsilon to prediction value
-    # y_pred = y_pred + epsilon
-    # Clip the prediction value
-
-
-
-    #ce_logit = tf.reshape(confidence, [-1, num_classes])
-    #ce_label = tf.boolean_mask(labels, mask)
+    alpha_factor = keras.backend.ones_like(labels) * alpha
+    alpha_factor = tf.where(keras.backend.equal(labels, 1), alpha_factor, 1 - alpha_factor)
+    # (1 - 0.99) ** 2 = 1e-4, (1 - 0.9) ** 2 = 1e-2
+    focal_weight = tf.where(keras.backend.equal(labels, 1), 1 - classification, classification)
+    focal_weight = alpha_factor * focal_weight ** gamma
+    cls_loss = focal_weight * keras.backend.binary_crossentropy(labels, classification)
+    cls_loss = tf.reduce_sum(cls_loss)
 
 
-    #focal_loss = SparseCategoricalFocalLoss(gamma=2.0, from_logits=True)(y_true=ce_label, y_pred=ce_logit)
+
+
+
+    #cls_loss = focal_loss_on_object_detection(ce_pred, ce_true, alpha=0.25, gamma=1.5)
+    #cls_loss = t_focal_loss(ce_pred, ce_true)
+    #tf.print(" cls_loss => ", cls_loss, output_stream=sys.stdout, summarize=-1)
+
+
+    """ tfa sigmoid focal loss"""
+    # fl = tfa.losses.SigmoidFocalCrossEntropy()
+    # ce_pred = tf.nn.sigmoid(ce_pred)
+    # fl = tfa.losses.SigmoidFocalCrossEntropy(alpha=alpha, gamma=gamma, reduction=tf.keras.losses.Reduction.SUM)
+    # test_focal_loss = fl(ce_true, ce_pred)
+    # tf.print(" test_focal => ", test_focal_loss, output_stream=sys.stdout, summarize=-1)
+
+    """ efficientdet focal loss"""
+    # ce_pred = tf.clip_by_value(ce_pred, epsilon, 1.0 - epsilon)
+    # alpha_factor = keras.backend.ones_like(ce_true) * alpha
+    # alpha_factor = tf.where(keras.backend.equal(ce_true, 1), alpha_factor, 1 - alpha_factor)
+    # focal_weight = tf.where(keras.backend.equal(ce_true, 1), 1 - ce_pred, ce_pred)
+    # focal_weight = alpha_factor * focal_weight ** gamma
+    # cls_loss = focal_weight * keras.backend.binary_crossentropy(ce_true, ce_pred)
+    # cls_loss = tf.math.reduce_sum(cls_loss, axis=1)
+
+
+    """ 0520 test focal"""
+    #ce_pred = tf.clip_by_value(ce_pred, epsilon, 1.0 - epsilon)
+    # cross_entropy = -ce_true * tf.math.log(ce_pred)
+    # weight = alpha * ce_true * tf.math.pow((1 - ce_pred), gamma)
+    # cls_loss = weight * cross_entropy
+    # cls_loss = tf.math.reduce_sum(loss, axis=1)
+
+    #tf.print(" focal  => ", loss, output_stream=sys.stdout)
 
 
     predicted_locations = tf.reshape(tf.boolean_mask(predicted_locations, pos_mask), [-1, 4])
@@ -216,7 +281,7 @@ def total_loss(y_true, y_pred, num_classes=21):
     num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
     # divide num_pos objects
     loc_loss = smooth_l1_loss / num_pos
-    focal_loss = loss / num_pos
+    focal_loss = cls_loss / num_pos
     mbox_loss = loc_loss + focal_loss
     return mbox_loss
 
