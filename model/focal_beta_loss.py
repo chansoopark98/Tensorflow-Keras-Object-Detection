@@ -165,8 +165,7 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
 
     return tf.logical_or(pos_mask, neg_mask)
 
-import tensorflow_addons as tfa
-
+#import tensorflow_addons as tfa
 from tensorflow.python.ops import array_ops
 
 
@@ -207,43 +206,46 @@ def t_focal_loss(logits, labels, alpha=0.25, gamma=1.5):
     return fl
 
 def total_loss(y_true, y_pred, num_classes=21):
+    """label"""
     labels = tf.argmax(y_true[:, :, :num_classes], axis=2)  # B, 16368
+    confidence = y_pred[:, :, :num_classes]
+    """locations"""
     predicted_locations = y_pred[:, :, num_classes:]  # B, None, 4
     gt_locations = y_true[:, :, num_classes:]  # B, 16368, None
+    """pos mask"""
     pos_mask = labels > 0  # B, 16368
 
-    """
-        y_true: (B, N, num_classes).
-        y_pred:  (B, N, num_classes).     """
-
-
-    epsilon = tf.keras.backend.epsilon()
-    alpha = 0.25
-    gamma = 1.5
-    ce_true = y_true[:, :, :num_classes]
-    ce_pred = y_pred[:, :, :num_classes]  # B, N, 21
-    # ce_pred = tf.clip_by_value(ce_pred, epsilon, 1.0 - epsilon)
-    ce_pred = tf.sigmoid(ce_pred)
-
-    indices = tf.where(keras.backend.not_equal(ce_true, 1))
-    labels = tf.gather_nd(ce_true, indices)
-    classification = tf.gather_nd(ce_pred, indices)
-
-    alpha_factor = keras.backend.ones_like(labels) * alpha
-    alpha_factor = tf.where(keras.backend.equal(labels, 1), alpha_factor, 1 - alpha_factor)
-    # (1 - 0.99) ** 2 = 1e-4, (1 - 0.9) ** 2 = 1e-2
-    focal_weight = tf.where(keras.backend.equal(labels, 1), 1 - classification, classification)
-    focal_weight = alpha_factor * focal_weight ** gamma
-    cls_loss = focal_weight * keras.backend.binary_crossentropy(labels, classification)
-    cls_loss = tf.reduce_sum(cls_loss)
 
 
 
+    loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]
+    loss = tf.stop_gradient(loss)
 
+    mask = hard_negative_mining(loss, labels, 3.0)
+    mask = tf.stop_gradient(mask) # neg sample 마스크
 
-    #cls_loss = focal_loss_on_object_detection(ce_pred, ce_true, alpha=0.25, gamma=1.5)
-    #cls_loss = t_focal_loss(ce_pred, ce_true)
-    #tf.print(" cls_loss => ", cls_loss, output_stream=sys.stdout, summarize=-1)
+    ce_logit = tf.boolean_mask(confidence, mask)
+    ce_label = tf.boolean_mask(labels, mask)
+
+    ce_logit = tf.reshape(ce_logit, [-1, num_classes])
+
+    """ 0521 일단 clip없이 focal test"""
+    ce_logit = tf.clip_by_value(ce_logit, _EPSILON, 1 - _EPSILON)
+
+    y_true_rank = ce_label.shape.rank # 1
+    probs = tf.gather(ce_logit, ce_label, axis=-1, batch_dims=y_true_rank)
+    #tf.print("probs \n",probs, output_stream=sys.stdout, summarize=-1)
+
+    focal_modulation = (1 - probs) ** 1.5
+    #tf.print("focal_modulation \n", focal_modulation, output_stream=sys.stdout, summarize=-1)
+
+    cls_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=ce_logit,
+                                                       labels=ce_label)
+    #tf.print("cls_loss \n", cls_loss, output_stream=sys.stdout, summarize=-1)
+
+    cls_loss = tf.math.reduce_sum(focal_modulation * cls_loss)
+
+    #tf.print("mul_cls \n", cls_loss, output_stream=sys.stdout, summarize=-1)
 
 
     """ tfa sigmoid focal loss"""
