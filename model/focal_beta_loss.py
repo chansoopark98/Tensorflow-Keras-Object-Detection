@@ -221,7 +221,7 @@ def total_loss(y_true, y_pred, num_classes=21):
     loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]
     loss = tf.stop_gradient(loss)
 
-    mask = hard_negative_mining(loss, labels, 3.0)
+    mask = hard_negative_mining(loss, labels, 6.0)
     mask = tf.stop_gradient(mask) # neg sample 마스크
 
     ce_logit = tf.boolean_mask(confidence, mask)
@@ -229,21 +229,29 @@ def total_loss(y_true, y_pred, num_classes=21):
 
     ce_logit = tf.reshape(ce_logit, [-1, num_classes])
 
+    cls_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=ce_logit,
+                                                              labels=ce_label)
+
     """ 0521 일단 clip없이 focal test"""
-    ce_logit = tf.clip_by_value(ce_logit, _EPSILON, 1 - _EPSILON)
-
+    #prob_logit = tf.clip_by_value(ce_logit, _EPSILON, 1 - _EPSILON)
+    logits = tf.nn.softmax(ce_logit, axis=-1)
     y_true_rank = ce_label.shape.rank # 1
-    probs = tf.gather(ce_logit, ce_label, axis=-1, batch_dims=y_true_rank)
-    #tf.print("probs \n",probs, output_stream=sys.stdout, summarize=-1)
+    probs = tf.gather(logits, ce_label, axis=-1, batch_dims=y_true_rank)
+    tf.print("probs \n", probs, output_stream=sys.stdout, summarize=-1)
 
-    focal_modulation = (1 - probs) ** 1.5
+    minus_probs = tf.clip_by_value((1-probs),clip_value_min=_EPSILON, clip_value_max=10000)
+
+
+    focal_modulation = minus_probs ** 1.5
+
     #tf.print("focal_modulation \n", focal_modulation, output_stream=sys.stdout, summarize=-1)
 
-    cls_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=ce_logit,
-                                                       labels=ce_label)
+    focal_loss = tf.math.multiply_no_nan(focal_modulation, cls_loss)
+
+
     #tf.print("cls_loss \n", cls_loss, output_stream=sys.stdout, summarize=-1)
 
-    cls_loss = tf.math.reduce_sum(focal_modulation * cls_loss)
+    cls_loss = tf.math.reduce_sum(focal_loss)
 
     #tf.print("mul_cls \n", cls_loss, output_stream=sys.stdout, summarize=-1)
 
