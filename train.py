@@ -33,6 +33,7 @@ parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--transfer_learning",  type=bool,  help="전이 학습 처음엔 false 두번째 true", default=True)
+parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=False)
 
 
 MODEL_INPUT_SIZE = {
@@ -59,6 +60,7 @@ MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
 TRANSFER_LEARNING = args.transfer_learning
 IMAGE_SIZE = [MODEL_INPUT_SIZE[MODEL_NAME], MODEL_INPUT_SIZE[MODEL_NAME]]
+USE_WEIGHT_DECAY = args.use_weightDecay
 print("입력 이미지 크기 : ", IMAGE_SIZE)
 
 os.makedirs(DATASET_DIR, exist_ok=True)
@@ -80,8 +82,8 @@ priors = create_priors_boxes(specs, IMAGE_SIZE[0])
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
 if TRAIN_MODE == 'voc':
-    # from model.pascal_loss import total_loss
-    from model.focal_loss import total_loss
+    from model.pascal_loss import total_loss
+    # from model.focal_loss import total_loss
     # from model.focal_beta_loss import total_loss
     from preprocessing import pascal_prepare_dataset
     train_pascal_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
@@ -143,7 +145,7 @@ print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
 
 metric = CreateMetrics(num_classes)
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=4, min_lr=1e-5, verbose=1)
 
 
 optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic') # tf2.4.1 이전
@@ -190,15 +192,16 @@ else:
                                                               end_learning_rate=0.0001, power=0.5)
     lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
-    callback = [reduce_lr, checkpoint]
+    callback = [testCallBack, tensorboard, lr_scheduler, reduce_lr, checkpoint]
 
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
 
-    regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
-    for layer in model.layers:
-        for attr in ['kernel_regularizer', 'bias_regularizer']:
-            if hasattr(layer, attr) and layer.trainable:
-                setattr(layer, attr, regularizer)
+    if USE_WEIGHT_DECAY:
+        regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
+        for layer in model.layers:
+            for attr in ['kernel_regularizer', 'bias_regularizer']:
+                if hasattr(layer, attr) and layer.trainable:
+                    setattr(layer, attr, regularizer)
 
     if load_weight:
         weight_name = '0421'
