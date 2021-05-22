@@ -1,7 +1,4 @@
-import sys
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
-#from tensorflow.keras.applications.efficientnet import preprocess_input
-import tensorflow as tf
 from utils.augmentations import *
 
 AUTO = tf.data.experimental.AUTOTUNE

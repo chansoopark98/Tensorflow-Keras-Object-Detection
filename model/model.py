@@ -1,21 +1,11 @@
 import efficientnet.keras as efn
 import tensorflow as tf
-# import tensorflow_addons as tfa
 from tensorflow import keras
-from tensorflow.keras.regularizers import l2
-from tensorflow.keras.layers import GlobalAveragePooling2D,  Reshape, Dense, multiply, Concatenate, \
-    Conv2D, Add, Activation, Dropout ,BatchNormalization, DepthwiseConv2D, Lambda ,  UpSampling2D, SeparableConv2D, MaxPooling2D
-from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Conv2D, Add, Activation, Dropout ,BatchNormalization,  UpSampling2D, SeparableConv2D, MaxPooling2D
 from functools import reduce
-#from tensorflow.keras.applications import efficientnet as efn
-
-
-
-# activation = tf.keras.activations.swish
-# activation = tfa.activations.mish
 
 NUM_CHANNELS = [64, 88, 112, 160, 224, 288, 384]
-FPN_TIMES = [3, 4, 5, 6, 7, 7, 8]
+FPN_TIMES = [3, 3, 3, 3, 3, 3, 3]
 CLS_TIEMS = [3, 3, 3, 4, 4, 4, 5]
 
 MOMENTUM = 0.997
@@ -296,9 +286,7 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], b
 
     layer_names = GET_EFFICIENT_NAME[base_model_name]
 
-
     # get extra layer
-    #efficient_conv75 = base.get_layer('block2b_add').output  # 75 75 24
     p3 = base.get_layer(layer_names[0]).output # 64 64 40
     p5 = base.get_layer(layer_names[1]).output # 32 32 112
     p7 = base.get_layer(layer_names[2]).output # 16 16 320
@@ -315,26 +303,12 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], b
         features = build_BiFPN(features=features, num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]],
                                id=i, resize=feature_resize, bn_trainable=bn_trainable)
 
-    # extra_p8 = SeparableConvBlock(num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]], kernel_size=3, strides=2,
-    #                    name='extra_conv/p8')(features[4])
-    # extra_p9 = SeparableConvBlock(num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]], kernel_size=3, strides=2,
-    #                    name='extra_conv/p9')(extra_p8)
-
-
     # predict features
     source_layers.append(features[0])
     source_layers.append(features[1])
     source_layers.append(features[2])
     source_layers.append(features[3])
     source_layers.append(features[4])
-    # source_layers.append(extra_p8)
-    # source_layers.append(extra_p9)
-    # print(features[0])
-    # print(features[1])
-    # print(features[2])
-    # print(features[3])
-    # print(features[4])
-    # print(extra_p8)
-    # print(extra_p9)
+
 
     return base.input, source_layers, CLS_TIEMS[MODEL_NAME[base_model_name]]

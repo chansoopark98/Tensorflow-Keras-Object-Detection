@@ -192,7 +192,7 @@ else:
                                                               end_learning_rate=0.0001, power=0.5)
     lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
-    callback = [testCallBack, tensorboard, lr_scheduler, reduce_lr, checkpoint]
+    callback = [reduce_lr, checkpoint]
 
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
 
@@ -215,7 +215,7 @@ else:
 
     model.summary()
 
-    history2 = model.fit(training_dataset,
+    history = model.fit(training_dataset,
             validation_data=validation_dataset,
             steps_per_epoch=steps_per_epoch,
             validation_steps=validation_steps,
