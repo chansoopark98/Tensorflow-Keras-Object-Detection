@@ -6,7 +6,7 @@ import tensorflow as tf
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
-parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 
 args = parser.parse_args()
 
@@ -144,14 +144,14 @@ obj_150,
 
 ## 데이터
 ## 시각화
-plt.figure(figsize=(20, 20))  ## Figure 생성 사이즈는 10 by 10
+plt.figure(figsize=(15, 10))  ## Figure 생성 사이즈는 10 by 10
 xtick_label_position = list(range(len(sizes)))  ## x축 눈금 라벨이 표시될 x좌표
 plt.xticks(xtick_label_position, sizes)  ## x축 눈금 라벨 출력
 
 ## 바 차트 출력, 막대기 색깔을 초록색으로 설정
 plt.bar(xtick_label_position, value, color='green')
 
-plt.title('COCO OBJECT SIZE', fontsize=25)  ## 타이틀 출력
+plt.title('PASCAL VOC', fontsize=25)  ## 타이틀 출력
 plt.xlabel('Object scale', fontsize=15)  ## x축 라벨 출력
 plt.ylabel('samples', fontsize=15)  ## y축 라벨 출력
 plt.show()
