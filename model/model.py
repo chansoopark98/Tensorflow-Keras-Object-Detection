@@ -5,8 +5,9 @@ from tensorflow.keras.layers import Conv2D, Add, Activation, Dropout ,BatchNorma
 from functools import reduce
 
 NUM_CHANNELS = [64, 88, 112, 160, 224, 288, 384]
-FPN_TIMES = [3, 3, 3, 3, 3, 3, 3]
+FPN_TIMES = [3, 4, 5, 6, 7, 7, 8]
 CLS_TIEMS = [3, 3, 3, 4, 4, 4, 5]
+
 
 MOMENTUM = 0.997
 EPSILON = 1e-4
@@ -81,12 +82,6 @@ def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512],
 
     base = remove_dropout(base)
     base.trainable = trainable
-
-    # for layer in base.layers:
-    #
-    #     if isinstance(layer, tf.keras.layers.BatchNormalization):
-    #         print("bn 제거")
-    #         layer._per_input_updates = {}
 
 
     return base
