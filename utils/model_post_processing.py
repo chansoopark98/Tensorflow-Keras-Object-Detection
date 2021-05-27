@@ -106,9 +106,7 @@ def post_process(detections, target_transform, confidence_threshold=0.01, top_k=
 
         # confidence  점수가 낮은 predict bbox 제거
         low_scoring_mask = scores > confidence_threshold
-        boxes, scores, labels = tf.boolean_mask(boxes, low_scoring_mask), tf.boolean_mask(scores,
-                                                                                          low_scoring_mask), tf.boolean_mask(
-            labels, low_scoring_mask)
+        boxes, scores, labels = tf.boolean_mask(boxes, low_scoring_mask), tf.boolean_mask(scores, low_scoring_mask), tf.boolean_mask(labels, low_scoring_mask)
 
         keep  = batched_nms(boxes, scores, labels, iou_threshold, top_k)
 
