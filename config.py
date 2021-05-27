@@ -7,8 +7,8 @@ size_variance = 0.2 # 0.2
 
 MODEL_INPUT_SIZE = {
     'B0': 512,
-    'B1': 576,
-    'B2': 640,
+    'B1': 544,
+    'B2': 576,
     'B3': 704,
     'B4': 768,
     'B5': 832,
@@ -41,10 +41,19 @@ MODEL_INPUT_SIZE = {
 # Spec(8, 64, BoxSizes(230, 296), [2]),
 # Spec(4, 128, BoxSizes(307, 389), [2]),
 def set_priorBox(model_name):
+    if model_name == 'B0':
         return [
             Spec(64, 8, BoxSizes(20, 25), [2]), # 0.039
             Spec(32, 16, BoxSizes(41, 51), [2]), # 0.099
             Spec(16, 32, BoxSizes(92, 112), [2]), # 0.238 -> 0.199
+            Spec(8, 64, BoxSizes(194, 224), [2]), # 0.449 -> 0.398
+            Spec(4, 128, BoxSizes(307, 347), [2]), # 0.599
+        ]
+    elif model_name == 'B1':
+        return [
+            Spec(68, 8, BoxSizes(18, 22), [2]), # 0.039
+            Spec(34, 16, BoxSizes(37, 48), [2]), # 0.099
+            Spec(17, 32, BoxSizes(81, 119), [2]), # 0.238 -> 0.199
             Spec(8, 64, BoxSizes(194, 224), [2]), # 0.449 -> 0.398
             Spec(4, 128, BoxSizes(307, 347), [2]), # 0.599
         ]

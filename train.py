@@ -30,16 +30,16 @@ parser.add_argument("--model_name",     type=str,   help="저장될 모델 이�
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
-parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B1')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--transfer_learning",  type=bool,  help="전이 학습 처음엔 false 두번째 true", default=True)
-parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=False)
+parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=True)
 
 
 MODEL_INPUT_SIZE = {
     'B0': 512,
-    'B1': 512,
-    'B2': 512,
+    'B1': 544,
+    'B2': 576,
     'B3': 512,
     'B4': 512,
     'B5': 512,
@@ -100,9 +100,9 @@ if TRAIN_MODE == 'voc':
     print("학습 데이터 개수", number_train)
     number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
     print("테스트 데이터 개수:", number_test)
-    optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
-    # optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
-
+    # optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
+    optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
+    
     training_dataset = pascal_prepare_dataset(train_data, IMAGE_SIZE, BATCH_SIZE,
                                               target_transform, TRAIN_MODE, train=True)
     validation_dataset = pascal_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
