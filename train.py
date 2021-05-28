@@ -1,3 +1,5 @@
+import sys
+
 import tensorflow_datasets as tfds
 import argparse
 import time
@@ -10,6 +12,10 @@ from metrics import CreateMetrics
 from config import *
 
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
+
+import tensorflow_addons as tfa
+
+
 
 #tf.keras.mixed_precision.Policy('mixed_float16') # tf2.4.1 이후
 tf.keras.backend.clear_session()
@@ -30,10 +36,10 @@ parser.add_argument("--model_name",     type=str,   help="저장될 모델 이�
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
-parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B1')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--transfer_learning",  type=bool,  help="전이 학습 처음엔 false 두번째 true", default=True)
-parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=True)
+parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=False)
 
 
 args = parser.parse_args()
@@ -89,8 +95,11 @@ if TRAIN_MODE == 'voc':
     print("학습 데이터 개수", number_train)
     number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
     print("테스트 데이터 개수:", number_test)
-    # optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
-    optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
+
+    optimizer = tfa.optimizers.AdamW(learning_rate=base_lr, weight_decay=0.0005)
+    #optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
+    #optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
+
     
     training_dataset = pascal_prepare_dataset(train_data, IMAGE_SIZE, BATCH_SIZE,
                                               target_transform, TRAIN_MODE, train=True)
@@ -136,6 +145,7 @@ print("검증 배치 개수:", validation_steps)
 metric = CreateMetrics(num_classes)
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=4, min_lr=1e-5, verbose=1)
 
+#optimizer = tfa.optimizers.AdamW(learning_rate=base_lr, w)
 
 optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic') # tf2.4.1 이전
 #optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer, initial_scale=1024) # tf2.4.1 이후
@@ -153,11 +163,12 @@ if TRANSFER_LEARNING is False:
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=False)
     callback = [checkpoint, lr_scheduler]
 
-    regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
-    for layer in model.layers:
-        for attr in ['kernel_regularizer', 'bias_regularizer']:
-            if hasattr(layer, attr) and layer.trainable:
-                setattr(layer, attr, regularizer)
+    if USE_WEIGHT_DECAY:
+        regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
+        for layer in model.layers:
+            for attr in ['kernel_regularizer', 'bias_regularizer']:
+                if hasattr(layer, attr) and layer.trainable:
+                    setattr(layer, attr, regularizer)
 
     model.compile(
         optimizer=optimizer,
@@ -181,7 +192,8 @@ else:
                                                               end_learning_rate=0.0001, power=0.5)
     lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
-    callback = [reduce_lr, checkpoint]
+
+    callback = [checkpoint,lr_scheduler, tensorboard ]
 
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
 
@@ -204,10 +216,16 @@ else:
 
     model.summary()
 
+    # history = model.fit(training_dataset,
+    #         validation_data=validation_dataset,
+    #         steps_per_epoch=steps_per_epoch,
+    #         validation_steps=validation_steps,
+    #         epochs=EPOCHS,
+    #         callbacks=callback)
+
     history = model.fit(training_dataset,
-            validation_data=validation_dataset,
-            steps_per_epoch=steps_per_epoch,
-            validation_steps=validation_steps,
+            steps_per_epoch=1,
             epochs=EPOCHS,
             callbacks=callback)
+
 
