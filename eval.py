@@ -37,16 +37,6 @@ parser.add_argument("--eval_testdev",  type=str,   help="COCO minival(val datase
 parser.add_argument("--calc_flops",  type=str,   help="모델 FLOPS 계산", default=False)
 args = parser.parse_args()
 
-MODEL_INPUT_SIZE = {
-    'B0': 512,
-    'B1': 512,
-    'B2': 512,
-    'B3': 512,
-    'B4': 512,
-    'B5': 512,
-    'B6': 512,
-    'B7': 512
-}
 
 BATCH_SIZE = args.batch_size
 DATASET_DIR = args.dataset_dir

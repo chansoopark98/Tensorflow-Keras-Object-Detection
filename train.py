@@ -36,17 +36,6 @@ parser.add_argument("--transfer_learning",  type=bool,  help="전이 학습 처�
 parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=True)
 
 
-MODEL_INPUT_SIZE = {
-    'B0': 512,
-    'B1': 544,
-    'B2': 576,
-    'B3': 512,
-    'B4': 512,
-    'B5': 512,
-    'B6': 512,
-    'B7': 512
-}
-
 args = parser.parse_args()
 WEIGHT_DECAY = args.weight_decay
 BATCH_SIZE = args.batch_size
