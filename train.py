@@ -96,7 +96,7 @@ if TRAIN_MODE == 'voc':
     number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
     print("테스트 데이터 개수:", number_test)
 
-    optimizer = tfa.optimizers.AdamW(learning_rate=base_lr, weight_decay=0.0005)
+
     #optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
     #optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
 
@@ -147,7 +147,7 @@ reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=4, min_lr
 
 #optimizer = tfa.optimizers.AdamW(learning_rate=base_lr, w)
 
-optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic') # tf2.4.1 이전
+
 #optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer, initial_scale=1024) # tf2.4.1 이후
 checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME + '.h5',
                                  monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
@@ -186,14 +186,15 @@ if TRANSFER_LEARNING is False:
                 callbacks=callback)
 else:
     load_weight = False
-
-    polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=0.001,
-                                                              decay_steps=200,
-                                                              end_learning_rate=0.0001, power=0.5)
+    polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
+                                                              decay_steps=300,
+                                                              end_learning_rate=0.0005, power=0.5)
     lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
+    optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
+    optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
 
-    callback = [checkpoint,lr_scheduler, tensorboard ]
+    callback = [checkpoint, reduce_lr]
 
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
 
@@ -216,16 +217,10 @@ else:
 
     model.summary()
 
-    # history = model.fit(training_dataset,
-    #         validation_data=validation_dataset,
-    #         steps_per_epoch=steps_per_epoch,
-    #         validation_steps=validation_steps,
-    #         epochs=EPOCHS,
-    #         callbacks=callback)
-
     history = model.fit(training_dataset,
-            steps_per_epoch=1,
+            validation_data=validation_dataset,
+            steps_per_epoch=steps_per_epoch,
+            validation_steps=validation_steps,
             epochs=EPOCHS,
             callbacks=callback)
-
 

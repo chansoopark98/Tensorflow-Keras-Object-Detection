@@ -14,6 +14,10 @@ def data_augment(image, boxes, labels):
         image = tf.image.random_contrast(image, lower=0.5, upper=1.5) # 랜덤 대비
     if tf.random.uniform([]) > 0.5:
         image = tf.image.random_hue(image, max_delta=0.2) # 랜덤 휴 트랜스폼
+    if tf.random.uniform([]) > 0.5:
+        image = tfa.image.gaussian_filter2d(image, [3, 3])
+    if tf.random.uniform([]) > 0.5: # 컷 아웃
+        image = cutout(image)
     image = random_lighting_noise(image)
     image, boxes = expand(image, boxes)
     image, boxes, labels = random_crop(image, boxes, labels) # 랜덤 자르기

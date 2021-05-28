@@ -1,5 +1,19 @@
 import tensorflow as tf
-import sys
+import tensorflow_addons as tfa
+import random
+
+@tf.function
+def cutout(image):
+    if tf.random.uniform([]) > 0.5:
+        cut_area = 200
+    else:
+        cut_area = 100
+
+
+    image = tf.expand_dims(image, 0)
+    image = tfa.image.random_cutout(image, cut_area, 0)
+    image = tf.squeeze(image , 0)
+    return image
 
 @tf.function
 def random_lighting_noise(image):
