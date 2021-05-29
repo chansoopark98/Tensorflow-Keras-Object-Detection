@@ -36,7 +36,7 @@ parser.add_argument("--model_name",     type=str,   help="저장될 모델 이�
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
-parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B2')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--transfer_learning",  type=bool,  help="전이 학습 처음엔 false 두번째 true", default=True)
 parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=False)
@@ -188,13 +188,13 @@ else:
     load_weight = False
     polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
                                                               decay_steps=300,
-                                                              end_learning_rate=0.0005, power=0.5)
+                                                              end_learning_rate=0.0001, power=0.5)
     lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
-    optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
+    optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9, nesterov=True)
     optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
 
-    callback = [checkpoint, reduce_lr]
+    callback = [checkpoint, reduce_lr,lr_scheduler]
 
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
 
