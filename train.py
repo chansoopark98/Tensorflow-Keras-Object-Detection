@@ -191,7 +191,7 @@ else:
                                                               end_learning_rate=0.0001, power=0.5)
     lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
-    optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9, nesterov=True)
+    optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
     optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
 
     callback = [checkpoint, reduce_lr,lr_scheduler]

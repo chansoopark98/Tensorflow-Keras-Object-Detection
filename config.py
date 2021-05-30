@@ -60,11 +60,11 @@ def set_priorBox(model_name):
 
     elif model_name == 'B2':
         return [
-            Spec(72, 8, BoxSizes(15, 20), [2]), # 0.039
-            Spec(36, 16, BoxSizes(34, 45), [2]), # 0.099
-            Spec(18, 32, BoxSizes(78, 116), [2]), # 0.238 -> 0.199
-            Spec(8, 64, BoxSizes(190, 220), [2]), # 0.449 -> 0.398
-            Spec(4, 128, BoxSizes(304, 344), [2]), # 0.599
+            Spec(72, 8, BoxSizes(18, 22), [2]),  # 0.039
+            Spec(36, 16, BoxSizes(37, 48), [2]),  # 0.099
+            Spec(18, 32, BoxSizes(81, 119), [2]),  # 0.238 -> 0.199
+            Spec(8, 64, BoxSizes(194, 224), [2]),  # 0.449 -> 0.398
+            Spec(4, 128, BoxSizes(307, 347), [2]),  # 0.599
         ]
 
 
