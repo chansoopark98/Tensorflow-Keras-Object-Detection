@@ -15,6 +15,17 @@ MODEL_INPUT_SIZE = {
     'B6': 896,
     'B7': 960
 }
+
+class TrainHyperParams:
+    def __init__(self):
+        self.optimizer_name = 'sgd'
+        self.weight_decay = 0.0005
+        self.learning_rate = 0.001
+        self.lr_decay_steps = 200
+        self.epochs = 200
+
+
+
 # Spec(32, 16, BoxSizes(51, 122), [2, 3]),
 # Spec(16, 32, BoxSizes(122, 189), [2, 3]),
 # Spec(8, 64, BoxSizes(230, 296), [2, 3]),
@@ -102,5 +113,5 @@ sgd momentum 약 250epoch 학습
  'train': 0.885383040768544,
  'tvmonitor': 0.8387045052330191}
 mAP결과: 0.8246687118906533
-          
+               
 """

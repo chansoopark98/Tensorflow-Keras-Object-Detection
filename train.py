@@ -1,5 +1,3 @@
-import sys
-
 import tensorflow_datasets as tfds
 import argparse
 import time
@@ -7,24 +5,14 @@ import os
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from callbacks import Scalar_LR
 from model.model_builder import model_build
-#from metrics import f1score, precision, recall , cross_entropy, localization
 from metrics import CreateMetrics
 from config import *
-
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 
-import tensorflow_addons as tfa
-
-
-
-#tf.keras.mixed_precision.Policy('mixed_float16') # tf2.4.1 이후
 tf.keras.backend.clear_session()
-
 
 policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
 mixed_precision.set_policy(policy)
-#tf.compat.v1.enable_eager_execution()
-#tf.config.optimizer.set_jit(True)
 
 parser = argparse.ArgumentParser()
 
@@ -61,13 +49,6 @@ print("입력 이미지 크기 : ", IMAGE_SIZE)
 os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
-if TRAIN_MODE == 'voc':
-    num_classes = 21
-
-else:
-    num_classes = 81
-
-# TODO https://www.tensorflow.org/datasets/api_docs/python/tfds/testing/mock_data VOC+COCO 무작위 데이터 생성
 
 # for voc
 specs = set_priorBox(MODEL_NAME)
@@ -76,11 +57,13 @@ print(specs)
 priors = create_priors_boxes(specs, IMAGE_SIZE[0])
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
+
 if TRAIN_MODE == 'voc':
     from model.pascal_loss import total_loss
-    # from model.focal_loss import total_loss
-    # from model.focal_beta_loss import total_loss
     from preprocessing import pascal_prepare_dataset
+
+    num_classes = 21
+
     train_pascal_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
     valid_train_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
 
@@ -100,7 +83,7 @@ if TRAIN_MODE == 'voc':
     #optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
     #optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
 
-    
+
     training_dataset = pascal_prepare_dataset(train_data, IMAGE_SIZE, BATCH_SIZE,
                                               target_transform, TRAIN_MODE, train=True)
     validation_dataset = pascal_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
@@ -108,8 +91,9 @@ if TRAIN_MODE == 'voc':
 
 else :
     from model.coco_loss import total_loss
-    # from model.focal_loss import total_loss
     from preprocessing import coco_prepare_dataset
+
+    num_classes = 81
 
     train_data = tfds.load('coco/2017', data_dir=DATASET_DIR, split='train')
     train_data = train_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
@@ -134,8 +118,8 @@ else :
                                                 target_transform, TRAIN_MODE, train=False)
 
 
-print("백본 EfficientNet{0} .".format(MODEL_NAME))
 
+print("백본 EfficientNet{0} .".format(MODEL_NAME))
 
 steps_per_epoch = number_train // BATCH_SIZE
 validation_steps = number_test // BATCH_SIZE
@@ -145,10 +129,6 @@ print("검증 배치 개수:", validation_steps)
 metric = CreateMetrics(num_classes)
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=4, min_lr=1e-5, verbose=1)
 
-#optimizer = tfa.optimizers.AdamW(learning_rate=base_lr, w)
-
-
-#optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer, initial_scale=1024) # tf2.4.1 이후
 checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME + '.h5',
                                  monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
 testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
