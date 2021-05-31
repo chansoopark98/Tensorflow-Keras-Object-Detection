@@ -139,4 +139,22 @@ def decode_img(img,  image_size=[384, 384]):
     img = tf.image.decode_jpeg(img, channels=3)
     # 이미지 리사이징
     return tf.image.resize(img, image_size)
-    
+
+# 타겟 연결 오리지날
+def join_target_test(image, bbox, labels, image_size, target_transform, classes):
+    locations, labels = target_transform(tf.cast(bbox, tf.float32), labels)
+
+
+    return (tf.image.resize(image, image_size), locations, labels)
+
+def test_priors_datasets(dataset, image_size, target_transform, batch_size=64):
+    classes = 21
+
+    dataset = dataset.map(prepare_input, num_parallel_calls=AUTO)
+    dataset = dataset.map(lambda image, boxes,
+                               labels: join_target_test(image, boxes, labels, image_size, target_transform, classes),
+                        num_parallel_calls=AUTO)
+    dataset = dataset.batch(batch_size)
+    dataset = dataset.prefetch(AUTO)
+
+    return dataset
