@@ -21,8 +21,23 @@ class TrainHyperParams:
         self.optimizer_name = 'sgd'
         self.weight_decay = 0.0005
         self.learning_rate = 0.001
+        self.momentum = 0.9
         self.lr_decay_steps = 200
         self.epochs = 200
+
+    def setOptimizers(self):
+        try:
+            if self.optimizer_name == 'sgd':
+                return tf.keras.optimizers.SGD(learning_rate=self.learning_rate, momentum=self.momentum)
+
+            elif self.optimizer_name == 'adam':
+                return tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+
+            elif self.optimizer_name == 'rmsprop':
+                return tf.keras.optimizers.RMSprop(learning_rate=self.learning_rate)
+        except:
+            print("check optimizers name")
+
 
 
 
@@ -51,14 +66,22 @@ class TrainHyperParams:
 # Spec(16, 32, BoxSizes(122, 189), [2]),
 # Spec(8, 64, BoxSizes(230, 296), [2]),
 # Spec(4, 128, BoxSizes(307, 389), [2]),
+
+""" origin B0 
+Spec(64, 8, BoxSizes(20, 25), [2]),  # 0.039
+Spec(32, 16, BoxSizes(41, 51), [2]),  # 0.099
+Spec(16, 32, BoxSizes(92, 112), [2]),  # 0.238 -> 0.199
+Spec(8, 64, BoxSizes(194, 224), [2]),  # 0.449 -> 0.398
+Spec(4, 128, BoxSizes(307, 347), [2]),  # 0.599
+"""
 def set_priorBox(model_name):
     if model_name == 'B0':
         return [
-            Spec(64, 8, BoxSizes(20, 25), [2]), # 0.039
-            Spec(32, 16, BoxSizes(41, 51), [2]), # 0.099
-            Spec(16, 32, BoxSizes(92, 112), [2]), # 0.238 -> 0.199
-            Spec(8, 64, BoxSizes(194, 224), [2]), # 0.449 -> 0.398
-            Spec(4, 128, BoxSizes(307, 347), [2]), # 0.599
+            Spec(64, 8, BoxSizes(15, 22), [2]), # 0.029
+            Spec(32, 16, BoxSizes(41, 51), [2]), # 0.08
+            Spec(16, 32, BoxSizes(102, 112), [2]), # 0.238 -> 0.199
+            Spec(8, 64, BoxSizes(204, 224), [2]), # 0.4
+            Spec(4, 128, BoxSizes(332, 347), [2]), # 0.65
         ]
     elif model_name == 'B1':
         return [
@@ -71,10 +94,10 @@ def set_priorBox(model_name):
 
     elif model_name == 'B2':
         return [
-            Spec(72, 8, BoxSizes(18, 22), [2]),  # 0.039
+            Spec(72, 8, BoxSizes(15, 22), [2]),  # 0.039
             Spec(36, 16, BoxSizes(37, 48), [2]),  # 0.099
             Spec(18, 32, BoxSizes(81, 119), [2]),  # 0.238 -> 0.199
-            Spec(8, 64, BoxSizes(194, 224), [2]),  # 0.449 -> 0.398
+            Spec(8, 64, BoxSizes(163, 224), [2]),  # 0.449 -> 0.398
             Spec(4, 128, BoxSizes(307, 347), [2]),  # 0.599
         ]
 
@@ -112,6 +135,47 @@ sgd momentum 약 250epoch 학습
  'sofa': 0.7836286951668396,
  'train': 0.885383040768544,
  'tvmonitor': 0.8387045052330191}
-mAP결과: 0.8246687118906533
-               
+mAP결과: 0.8246687118906533      
+"""
+
+
+"""
+0530 B2 input 574 test
+
+            Spec(72, 8, BoxSizes(18, 22), [2]),  # 0.039
+            Spec(36, 16, BoxSizes(37, 48), [2]),  # 0.099
+            Spec(18, 32, BoxSizes(81, 119), [2]),  # 0.238 -> 0.199
+            Spec(8, 64, BoxSizes(194, 224), [2]),  # 0.449 -> 0.398
+            Spec(4, 128, BoxSizes(307, 347), [2]),  # 0.599
+            
+기존 AUGMENTATION 
+SGD MOMENTUM EPOCH 100
+초기 LR 0.0005
+WEIGHT DECAY 사용
+POLIY LEARNING RATE DECAY 사용 초기 0.0001까지 200에폭구간동안 감소 비율
+            
+
+
+AP 결과
+{'aeroplane': 0.8730012138558549,
+ 'bicycle': 0.8735031048919283,
+ 'bird': 0.8806218687894342,
+ 'boat': 0.8047434334772208,
+ 'bottle': 0.6301341786575964,
+ 'bus': 0.867596011662763,
+ 'car': 0.8689365489845348,
+ 'cat': 0.8833248549021493,
+ 'chair': 0.7085935114452341,
+ 'cow': 0.8629199290218322,
+ 'diningtable': 0.7153557953184085,
+ 'dog': 0.8819458603846347,
+ 'horse': 0.870680323818259,
+ 'motorbike': 0.8647709490146268,
+ 'person': 0.8583747005852433,
+ 'pottedplant': 0.6842448677158138,
+ 'sheep': 0.8627006505956938,
+ 'sofa': 0.7536834623476657,
+ 'train': 0.873683782035446,
+ 'tvmonitor': 0.8339486149723939}
+mAP결과: 0.8226381831238367
 """

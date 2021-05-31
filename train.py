@@ -16,18 +16,17 @@ mixed_precision.set_policy(policy)
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=48)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
-parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
+parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.005)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
 parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름", default=str(time.strftime('%m%d', time.localtime(time.time()))))
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
-parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B2')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
-parser.add_argument("--transfer_learning",  type=bool,  help="전이 학습 처음엔 false 두번째 true", default=True)
-parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=False)
+parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=True)
 
 
 args = parser.parse_args()
@@ -41,7 +40,6 @@ CHECKPOINT_DIR = args.checkpoint_dir
 TENSORBOARD_DIR = args.tensorboard_dir
 MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
-TRANSFER_LEARNING = args.transfer_learning
 IMAGE_SIZE = [MODEL_INPUT_SIZE[MODEL_NAME], MODEL_INPUT_SIZE[MODEL_NAME]]
 USE_WEIGHT_DECAY = args.use_weightDecay
 print("입력 이미지 크기 : ", IMAGE_SIZE)
@@ -111,7 +109,7 @@ else :
     number_test = 4952
     print("테스트 데이터 개수:", number_test)
 
-    optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
+
     training_dataset = coco_prepare_dataset(train_data, IMAGE_SIZE, BATCH_SIZE,
                                               target_transform, TRAIN_MODE, train=True)
     validation_dataset = coco_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
@@ -134,73 +132,44 @@ checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME
 testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
 
-if TRANSFER_LEARNING is False:
-    polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=0.01,
-                                                              decay_steps=100,
-                                                              end_learning_rate=0.001, power=0.5)
-    lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
-    model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=False)
-    callback = [checkpoint, lr_scheduler]
+load_weight = False
 
-    if USE_WEIGHT_DECAY:
-        regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
-        for layer in model.layers:
-            for attr in ['kernel_regularizer', 'bias_regularizer']:
-                if hasattr(layer, attr) and layer.trainable:
-                    setattr(layer, attr, regularizer)
+polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
+                                                          decay_steps=200,
+                                                          end_learning_rate=0.0001, power=0.5)
+lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
-    model.compile(
-        optimizer=optimizer,
-        loss=total_loss,
-        metrics=[metric.precision, metric.recall, metric.cross_entropy, metric.localization]
-    )
+optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
+optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
 
-    model.summary()
+callback = [checkpoint, reduce_lr, lr_scheduler]
 
-    history = model.fit(training_dataset,
-                validation_data=validation_dataset,
-                steps_per_epoch=steps_per_epoch,
-                validation_steps=validation_steps,
-                epochs=EPOCHS,
-                callbacks=callback)
-else:
-    load_weight = False
-    polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
-                                                              decay_steps=300,
-                                                              end_learning_rate=0.0001, power=0.5)
-    lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
+model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
 
-    optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
-    optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
+if USE_WEIGHT_DECAY:
+    regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
+    for layer in model.layers:
+        for attr in ['kernel_regularizer', 'bias_regularizer']:
+            if hasattr(layer, attr) and layer.trainable:
+                setattr(layer, attr, regularizer)
 
-    callback = [checkpoint, reduce_lr,lr_scheduler]
+if load_weight:
+    weight_name = '0421'
+    model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
-    model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
+model.compile(
+    optimizer=optimizer,
+    loss=total_loss,
+    metrics=[metric.precision, metric.recall, metric.cross_entropy, metric.localization]
+)
 
-    if USE_WEIGHT_DECAY:
-        regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
-        for layer in model.layers:
-            for attr in ['kernel_regularizer', 'bias_regularizer']:
-                if hasattr(layer, attr) and layer.trainable:
-                    setattr(layer, attr, regularizer)
+model.summary()
 
-    if load_weight:
-        weight_name = '0421'
-        model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
-
-    model.compile(
-        optimizer=optimizer,
-        loss=total_loss,
-        metrics=[metric.precision, metric.recall, metric.cross_entropy, metric.localization]
-    )
-
-    model.summary()
-
-    history = model.fit(training_dataset,
-            validation_data=validation_dataset,
-            steps_per_epoch=steps_per_epoch,
-            validation_steps=validation_steps,
-            epochs=EPOCHS,
-            callbacks=callback)
+history = model.fit(training_dataset,
+        validation_data=validation_dataset,
+        steps_per_epoch=steps_per_epoch,
+        validation_steps=validation_steps,
+        epochs=EPOCHS,
+        callbacks=callback)
 
