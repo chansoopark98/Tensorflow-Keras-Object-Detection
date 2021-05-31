@@ -38,50 +38,55 @@ class TrainHyperParams:
         except:
             print("check optimizers name")
 
+""" anchor test 
+
+            Spec(64, 8, BoxSizes(19, 22), [2]), # 0.029
+            Spec(32, 16, BoxSizes(41, 51), [2]), # 0.08
+            Spec(16, 32, BoxSizes(102, 112), [2]), # 0.238 -> 0.199
+            Spec(8, 64, BoxSizes(204, 224), [2]), # 0.4
+            Spec(4, 128, BoxSizes(332, 347), [2]), # 0.65
+            
+            target:
+               1,602,228 voc
 
 
 
-# Spec(32, 16, BoxSizes(51, 122), [2, 3]),
-# Spec(16, 32, BoxSizes(122, 189), [2, 3]),
-# Spec(8, 64, BoxSizes(230, 296), [2, 3]),
-# Spec(4, 128, BoxSizes(307, 389), [2]),
-# Spec(2, 256, BoxSizes(389, 460), [2]),
+"""
 
-
-# Spec(64, 8, BoxSizes(25, 51), [2]),
-# Spec(32, 16, BoxSizes(51, 122), [2]),
-# Spec(16, 32, BoxSizes(122, 189), [2]),
-# Spec(8, 64, BoxSizes(230, 296), [2]),
-# Spec(4, 128, BoxSizes(307, 389), [2]),
-#
-# Spec(64, 8, BoxSizes(25, 51), [2]),
-# Spec(32, 16, BoxSizes(51, 122), [2, 3]),
-# Spec(16, 32, BoxSizes(122, 189), [2, 3]),
-# Spec(8, 64, BoxSizes(230, 296), [2, 3]),
-# Spec(4, 128, BoxSizes(307, 389), [2]),
-
-# # 0504 voc b0 mAP 81.6%
-# Spec(64, 8, BoxSizes(25, 51), [2]),
-# Spec(32, 16, BoxSizes(51, 122), [2]),
-# Spec(16, 32, BoxSizes(122, 189), [2]),
-# Spec(8, 64, BoxSizes(230, 296), [2]),
-# Spec(4, 128, BoxSizes(307, 389), [2]),
 
 """ origin B0 
-Spec(64, 8, BoxSizes(20, 25), [2]),  # 0.039
-Spec(32, 16, BoxSizes(41, 51), [2]),  # 0.099
-Spec(16, 32, BoxSizes(92, 112), [2]),  # 0.238 -> 0.199
-Spec(8, 64, BoxSizes(194, 224), [2]),  # 0.449 -> 0.398
-Spec(4, 128, BoxSizes(307, 347), [2]),  # 0.599
+            Spec(64, 8, BoxSizes(20, 25), [2]),  # 0.039
+            Spec(32, 16, BoxSizes(41, 51), [2]),  # 0.099
+            Spec(16, 32, BoxSizes(92, 112), [2]),  # 0.238 -> 0.199
+            Spec(8, 64, BoxSizes(194, 224), [2]),  # 0.449 -> 0.398
+            Spec(4, 128, BoxSizes(307, 347), [2]),  # 0.599
+            
+            target:
+                1,468,685 voc
+                54,849,050 coco
+
+
 """
-def set_priorBox(model_name):
-    if model_name == 'B0':
-        return [
+
+""" 0531 test b0 512
             Spec(64, 8, BoxSizes(15, 22), [2]), # 0.029
             Spec(32, 16, BoxSizes(41, 51), [2]), # 0.08
             Spec(16, 32, BoxSizes(102, 112), [2]), # 0.238 -> 0.199
             Spec(8, 64, BoxSizes(204, 224), [2]), # 0.4
             Spec(4, 128, BoxSizes(332, 347), [2]), # 0.65
+            
+            traget:
+                1,585,209
+                54,641,603 coco
+"""
+def set_priorBox(model_name):
+    if model_name == 'B0':
+        return [
+            Spec(64, 8, BoxSizes(18, 22), [2]), # 0.039
+            Spec(32, 16, BoxSizes(37, 48), [2]), # 0.099
+            Spec(16, 32, BoxSizes(81, 119), [2]), # 0.238 -> 0.199
+            Spec(8, 64, BoxSizes(194, 224), [2]), # 0.449 -> 0.398
+            Spec(4, 128, BoxSizes(307, 347), [2]), # 0.599
         ]
     elif model_name == 'B1':
         return [
@@ -178,4 +183,38 @@ AP 결과
  'train': 0.873683782035446,
  'tvmonitor': 0.8339486149723939}
 mAP결과: 0.8226381831238367
+"""
+
+"""
+0531 input 512 b0 test
+
+            Spec(64, 8, BoxSizes(15, 22), [2]), # 0.029
+            Spec(32, 16, BoxSizes(41, 51), [2]), # 0.08
+            Spec(16, 32, BoxSizes(102, 112), [2]), # 0.238 -> 0.199
+            Spec(8, 64, BoxSizes(204, 224), [2]), # 0.4
+            Spec(4, 128, BoxSizes(332, 347), [2]), # 0.65
+            
+            
+AP 결과
+{'aeroplane': 0.8557817018688885,
+ 'bicycle': 0.8751340758878764,
+ 'bird': 0.8605898865670873,
+ 'boat': 0.7999331132871784,
+ 'bottle': 0.6065403943182868,
+ 'bus': 0.8557189909071415,
+ 'car': 0.8603956736978895,
+ 'cat': 0.8878611558014267,
+ 'chair': 0.658413937503987,
+ 'cow': 0.812781170383734,
+ 'diningtable': 0.7590876800899486,
+ 'dog': 0.8814910350119332,
+ 'horse': 0.8688647425212326,
+ 'motorbike': 0.8680983021632257,
+ 'person': 0.8337417588883341,
+ 'pottedplant': 0.622348469763159,
+ 'sheep': 0.8232202568362248,
+ 'sofa': 0.8007975202342302,
+ 'train': 0.8902653968156188,
+ 'tvmonitor': 0.794042865703595}
+mAP결과: 0.8107554064125498
 """

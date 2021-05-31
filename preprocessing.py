@@ -140,19 +140,32 @@ def decode_img(img,  image_size=[384, 384]):
     # 이미지 리사이징
     return tf.image.resize(img, image_size)
 
+
+def test_prepare_input(sample, convert_to_normal=True):
+    # img = img - image_mean 이미지 평균
+    labels = sample['objects']['label']+1
+    bbox = sample['objects']['bbox']
+    if convert_to_normal: # ymin=0.3, xmin=0.8, ymax=0.5, xmax=1.0
+        x_min = tf.where(tf.greater_equal(bbox[:,1], bbox[:,3]), tf.cast(0, dtype=tf.float32), bbox[:,1])
+        y_min = tf.where(tf.greater_equal(bbox[:,0], bbox[:,2]), tf.cast(0, dtype=tf.float32), bbox[:,0])
+        x_max = tf.where(tf.greater_equal(x_min, bbox[:,3]), tf.cast(x_min+0.1, dtype=tf.float32), bbox[:,3])
+        y_max = tf.where(tf.greater_equal(y_min, bbox[:,2]), tf.cast(y_min+0.1, dtype=tf.float32), bbox[:,2])
+        bbox = tf.stack([x_min, y_min, x_max, y_max], axis=1)
+
+    return (bbox, labels)
+
 # 타겟 연결 오리지날
-def join_target_test(image, bbox, labels, image_size, target_transform, classes):
+def join_target_test(bbox, labels, image_size, target_transform, classes):
     locations, labels = target_transform(tf.cast(bbox, tf.float32), labels)
+    labels = tf.one_hot(labels, classes, axis=1, dtype=tf.float32)
 
-
-    return (tf.image.resize(image, image_size), locations, labels)
+    return (locations, labels)
 
 def test_priors_datasets(dataset, image_size, target_transform, batch_size=64):
     classes = 21
 
-    dataset = dataset.map(prepare_input, num_parallel_calls=AUTO)
-    dataset = dataset.map(lambda image, boxes,
-                               labels: join_target_test(image, boxes, labels, image_size, target_transform, classes),
+    dataset = dataset.map(test_prepare_input, num_parallel_calls=AUTO)
+    dataset = dataset.map(lambda boxes, labels: join_target_test(boxes, labels, image_size, target_transform, classes),
                         num_parallel_calls=AUTO)
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(AUTO)

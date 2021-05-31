@@ -86,7 +86,6 @@ def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
     # 2차원 배열이고 각 배열마다 4개씩 존재(x_center, y_center, w, h) * 13792
     priors = np.array(priors, dtype=np.float32)
 
-    print(priors)
     if clamp:
         np.clip(priors, 0.0, 1.0, out=priors)
     return tf.convert_to_tensor(priors)
