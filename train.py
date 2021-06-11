@@ -145,31 +145,39 @@ optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic') 
 
 callback = [checkpoint, reduce_lr, lr_scheduler]
 
-model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
 
-if USE_WEIGHT_DECAY:
-    regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
-    for layer in model.layers:
-        for attr in ['kernel_regularizer', 'bias_regularizer']:
-            if hasattr(layer, attr) and layer.trainable:
-                setattr(layer, attr, regularizer)
 
 if load_weight:
     weight_name = '0421'
     model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
-model.compile(
-    optimizer=optimizer,
-    loss=total_loss,
-    metrics=[metric.precision, metric.recall, metric.cross_entropy, metric.localization]
-)
+mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
+print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
 
-model.summary()
 
-history = model.fit(training_dataset,
-        validation_data=validation_dataset,
-        steps_per_epoch=steps_per_epoch,
-        validation_steps=validation_steps,
-        epochs=EPOCHS,
-        callbacks=callback)
+with mirrored_strategy.scope():
+
+    model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
+
+    if USE_WEIGHT_DECAY:
+        regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
+        for layer in model.layers:
+            for attr in ['kernel_regularizer', 'bias_regularizer']:
+                if hasattr(layer, attr) and layer.trainable:
+                    setattr(layer, attr, regularizer)
+
+    model.compile(
+        optimizer=optimizer,
+        loss=total_loss,
+        metrics=[metric.precision, metric.recall, metric.cross_entropy, metric.localization]
+    )
+
+    model.summary()
+
+    history = model.fit(training_dataset,
+            validation_data=validation_dataset,
+            steps_per_epoch=steps_per_epoch,
+            validation_steps=validation_steps,
+            epochs=EPOCHS,
+            callbacks=callback)
 
