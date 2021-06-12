@@ -91,147 +91,153 @@ else:
     coco_dataset = coco_eval_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
                                      target_transform, TRAIN_MODE, train=False)
 
-print("백본 EfficientNet{0} .".format(MODEL_NAME))
-model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, pretrained=False)
-
-print("모델 가중치 로드...")
-model.load_weights(CHECKPOINT_DIR)
-model.summary()
-
-test_steps = number_test // BATCH_SIZE + 1
-print("테스트 배치 개수 : ", test_steps)
+mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
+print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
 
 
-class NumpyEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        elif isinstance(obj, np.floating):
-            return float(obj)
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return json.JSONEncoder.default(self, obj)
+with mirrored_strategy.scope():
 
-def coco80_to_coco91_class():  # converts 80-index (val2014) to 91-index (paper)
-    # https://tech.amikelive.com/node-718/what-object-categories-labels-are-in-coco-dataset/
-    # a = np.loadtxt('data/coco.names', dtype='str', delimiter='\n')
-    # b = np.loadtxt('data/coco_paper.names', dtype='str', delimiter='\n')
-    # x1 = [list(a[i] == b).index(True) + 1 for i in range(80)]  # darknet to coco
-    # x2 = [list(b[i] == a).index(True) if any(b[i] == a) else None for i in range(91)]  # coco to darknet
-    x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 31, 32, 33, 34,
-         35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
-         64, 65, 67, 70, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 84, 85, 86, 87, 88, 89, 90]
-    return x
+    print("백본 EfficientNet{0} .".format(MODEL_NAME))
+    model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, pretrained=False)
 
-if TRAIN_MODE == 'coco':
-    img_id = []
-    cat_id = []
-    pred_ids = []
-    pred_labels = []
-    pred_boxes = []
-    pred_scores = []
-    pred_list = []
-    img_shapes = []
+    print("모델 가중치 로드...")
+    model.load_weights(CHECKPOINT_DIR)
+    model.summary()
 
-    removed_classes = [12, 26, 29, 30, 45, 66, 68, 69, 71, 83, 91]
-    # (img, img_shape , img_id, cat_id)
-    # for x, img_shape, img_id, cat_id in tqdm(coco_dataset, total=test_steps):
-
-    for sample in test_data:
-        img_shapes.append(sample['image'].shape)
-        img_id.append(np.int(sample['image/id'].numpy().astype('int32').item()))
-
-    for x, pred_id in tqdm(coco_dataset, total=test_steps):
-        pred = model.predict_on_batch(x)
-        # predictions = post_process(pred, target_transform, confidence_threshold=0.001, top_k=200, iou_threshold=0.4, classes=CLASSES_NUM)
-        predictions = post_process(pred, target_transform, confidence_threshold=0.05, classes=CLASSES_NUM)
-        pred_ids.append(pred_id)
-
-        for boxes, scores, labels in predictions:
-            for i in range(len(labels)):
-                stack = 0
-                for j in range(len(removed_classes)):
-                    if labels[i] >= removed_classes[j]:
-                        # stack += 1
-                        labels[i] += 1
-                # labels[i] += stack
+    test_steps = number_test // BATCH_SIZE + 1
+    print("테스트 배치 개수 : ", test_steps)
 
 
-            pred_labels.append(labels)
-            pred_boxes.append(np.round(boxes.tolist(),2).astype('float32'))
-            pred_scores.append(np.round(scores.tolist(),2).astype('float32'))
+    class NumpyEncoder(json.JSONEncoder):
+        def default(self, obj):
+            if isinstance(obj, np.integer):
+                return int(obj)
+            elif isinstance(obj, np.floating):
+                return float(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            return json.JSONEncoder.default(self, obj)
+
+    def coco80_to_coco91_class():  # converts 80-index (val2014) to 91-index (paper)
+        # https://tech.amikelive.com/node-718/what-object-categories-labels-are-in-coco-dataset/
+        # a = np.loadtxt('data/coco.names', dtype='str', delimiter='\n')
+        # b = np.loadtxt('data/coco_paper.names', dtype='str', delimiter='\n')
+        # x1 = [list(a[i] == b).index(True) + 1 for i in range(80)]  # darknet to coco
+        # x2 = [list(b[i] == a).index(True) if any(b[i] == a) else None for i in range(91)]  # coco to darknet
+        x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 31, 32, 33, 34,
+             35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+             64, 65, 67, 70, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 84, 85, 86, 87, 88, 89, 90]
+        return x
+
+    if TRAIN_MODE == 'coco':
+        img_id = []
+        cat_id = []
+        pred_ids = []
+        pred_labels = []
+        pred_boxes = []
+        pred_scores = []
+        pred_list = []
+        img_shapes = []
+
+        removed_classes = [12, 26, 29, 30, 45, 66, 68, 69, 71, 83, 91]
+        # (img, img_shape , img_id, cat_id)
+        # for x, img_shape, img_id, cat_id in tqdm(coco_dataset, total=test_steps):
+
+        for sample in test_data:
+            img_shapes.append(sample['image'].shape)
+            img_id.append(np.int(sample['image/id'].numpy().astype('int32').item()))
+
+        for x, pred_id in tqdm(coco_dataset, total=test_steps):
+            pred = model.predict_on_batch(x)
+            # predictions = post_process(pred, target_transform, confidence_threshold=0.001, top_k=200, iou_threshold=0.4, classes=CLASSES_NUM)
+            predictions = post_process(pred, target_transform, confidence_threshold=0.05, classes=CLASSES_NUM)
+            pred_ids.append(pred_id)
+
+            for boxes, scores, labels in predictions:
+                for i in range(len(labels)):
+                    stack = 0
+                    for j in range(len(removed_classes)):
+                        if labels[i] >= removed_classes[j]:
+                            # stack += 1
+                            labels[i] += 1
+                    # labels[i] += stack
+
+
+                pred_labels.append(labels)
+                pred_boxes.append(np.round(boxes.tolist(),2).astype('float32'))
+                pred_scores.append(np.round(scores.tolist(),2).astype('float32'))
 
 
 
-    for index in range(len(pred_ids)):
-        for i in range(len(pred_labels[index])):
-            bbox = pred_boxes[index][i]
-            xmin, ymin, xmax, ymax = bbox
+        for index in range(len(pred_ids)):
+            for i in range(len(pred_labels[index])):
+                bbox = pred_boxes[index][i]
+                xmin, ymin, xmax, ymax = bbox
 
-            xmin = xmin * img_shapes[index][1]
-            ymin = ymin * img_shapes[index][0]
-            xmax = xmax * img_shapes[index][1]
-            ymax = ymax * img_shapes[index][0]
-            x = round(float(xmin), 2)
-            y = round(float(ymin), 2)
-            w = round(float((xmax - xmin) + 1), 2)
-            h = round(float((ymax - ymin) + 1), 2)
-            total_predictions = {"image_id": int(pred_ids[index]),
-                             "category_id": int(pred_labels[index][i]),
-                             "bbox": [x, y, w, h],
-                             "score": float(pred_scores[index][i])
-                             }
+                xmin = xmin * img_shapes[index][1]
+                ymin = ymin * img_shapes[index][0]
+                xmax = xmax * img_shapes[index][1]
+                ymax = ymax * img_shapes[index][0]
+                x = round(float(xmin), 2)
+                y = round(float(ymin), 2)
+                w = round(float((xmax - xmin) + 1), 2)
+                h = round(float((ymax - ymin) + 1), 2)
+                total_predictions = {"image_id": int(pred_ids[index]),
+                                 "category_id": int(pred_labels[index][i]),
+                                 "bbox": [x, y, w, h],
+                                 "score": float(pred_scores[index][i])
+                                 }
 
-            pred_list.append(total_predictions)
+                pred_list.append(total_predictions)
 
-    with open('datasets/coco_predictions.json', 'w') as f:
-        json.dump(pred_list, f, indent="\t", cls=NumpyEncoder)
+        with open('datasets/coco_predictions.json', 'w') as f:
+            json.dump(pred_list, f, indent="\t", cls=NumpyEncoder)
 
-else:
-    test_difficults = []
-    use_07_metric = True
-    test_bboxes = []
-    test_labels = []
+    else:
+        test_difficults = []
+        use_07_metric = True
+        test_bboxes = []
+        test_labels = []
 
-    for sample in test_data:
-        label = sample['objects']['label'].numpy()
-        bbox = sample['objects']['bbox'].numpy()[:, [1, 0, 3, 2]]
+        for sample in test_data:
+            label = sample['objects']['label'].numpy()
+            bbox = sample['objects']['bbox'].numpy()[:, [1, 0, 3, 2]]
 
-        is_difficult = sample['objects']['is_difficult'].numpy()
-        test_difficults.append(is_difficult)
-        test_bboxes.append(bbox)
-        test_labels.append(label)
+            is_difficult = sample['objects']['is_difficult'].numpy()
+            test_difficults.append(is_difficult)
+            test_bboxes.append(bbox)
+            test_labels.append(label)
 
-    print("Evaluating..")
-    pred_bboxes = []
-    pred_labels = []
-    pred_scores = []
-    for x, y in tqdm(validation_dataset, total=test_steps):
-        pred = model.predict_on_batch(x)
-        predictions = post_process(pred, target_transform, classes=CLASSES_NUM)
-        for prediction in predictions:
-            boxes, scores, labels = prediction
-            pred_bboxes.append(boxes)
-            pred_labels.append(labels.astype(int) - 1)
-            pred_scores.append(scores)
+        print("Evaluating..")
+        pred_bboxes = []
+        pred_labels = []
+        pred_scores = []
+        for x, y in tqdm(validation_dataset, total=test_steps):
+            pred = model.predict_on_batch(x)
+            predictions = post_process(pred, target_transform, classes=CLASSES_NUM)
+            for prediction in predictions:
+                boxes, scores, labels = prediction
+                pred_bboxes.append(boxes)
+                pred_labels.append(labels.astype(int) - 1)
+                pred_scores.append(scores)
 
-    answer = eval_detection_voc(pred_bboxes=pred_bboxes,
-                                pred_labels=pred_labels,
-                                pred_scores=pred_scores,
-                                gt_bboxes=test_bboxes,
-                                gt_labels=test_labels,
-                                gt_difficults=test_difficults,
-                                use_07_metric=use_07_metric)
-    # print("*"*100)
-    print("AP 결과")
-    ap_dict = dict(zip(CLASSES, answer['ap']))
-    pprint(ap_dict)
-    # print("*"*100)
-    print("mAP결과:", answer['map'])
+        answer = eval_detection_voc(pred_bboxes=pred_bboxes,
+                                    pred_labels=pred_labels,
+                                    pred_scores=pred_scores,
+                                    gt_bboxes=test_bboxes,
+                                    gt_labels=test_labels,
+                                    gt_difficults=test_difficults,
+                                    use_07_metric=use_07_metric)
+        # print("*"*100)
+        print("AP 결과")
+        ap_dict = dict(zip(CLASSES, answer['ap']))
+        pprint(ap_dict)
+        # print("*"*100)
+        print("mAP결과:", answer['map'])
 
-    w = csv.writer(open("eval.csv", "w"))
-    w.writerow(["Class", "Average Precision"])
-    for key, val in ap_dict.items():
-        w.writerow([key, val])
+        w = csv.writer(open("eval.csv", "w"))
+        w.writerow(["Class", "Average Precision"])
+        for key, val in ap_dict.items():
+            w.writerow([key, val])
 
 
