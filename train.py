@@ -24,7 +24,7 @@ parser.add_argument("--model_name",     type=str,   help="저장될 모델 이�
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
-parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B4')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B5')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=True)
 
@@ -125,7 +125,7 @@ print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
 
 metric = CreateMetrics(num_classes)
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=4, min_lr=1e-5, verbose=1)
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
 
 checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME + '.h5',
                                  monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
@@ -143,7 +143,7 @@ lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
 optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
 
-callback = [checkpoint, reduce_lr, lr_scheduler]
+callback = [checkpoint, reduce_lr]
 
 
 
