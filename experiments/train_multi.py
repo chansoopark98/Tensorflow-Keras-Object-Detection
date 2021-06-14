@@ -77,7 +77,7 @@ priors = create_priors_boxes(specs, IMAGE_SIZE[0])
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
 if TRAIN_MODE == 'voc':
-    from model.pascal_loss import total_loss
+    from model.loss import total_loss
     from preprocessing import pascal_prepare_dataset
     train_pascal_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
     valid_train_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')

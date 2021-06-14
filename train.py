@@ -1,13 +1,14 @@
+from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
+from tensorflow.keras.mixed_precision import experimental as mixed_precision
+from callbacks import Scalar_LR
+from metrics import CreateMetrics
+from config import *
+from utils.load_datasets import GenerateDatasets
+from model.model_builder import model_build
+from model.loss import Total_loss
 import argparse
 import time
 import os
-from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
-from callbacks import Scalar_LR
-from model.model_builder import model_build
-from metrics import CreateMetrics
-from config import *
-from tensorflow.keras.mixed_precision import experimental as mixed_precision
-from utils.load_datasets import GenerateDatasets
 
 tf.keras.backend.clear_session()
 policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
@@ -49,8 +50,11 @@ specs = set_priorBox(MODEL_NAME)
 priors = create_priors_boxes(specs, IMAGE_SIZE[0])
 TARGET_TRANSFORM = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
+# Create Dataset
 dataset_config = GenerateDatasets(TRAIN_MODE, DATASET_DIR, IMAGE_SIZE, BATCH_SIZE, TARGET_TRANSFORM)
 
+# Set loss function
+loss = Total_loss(dataset_config.num_classes)
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 
@@ -59,7 +63,7 @@ validation_steps = dataset_config.number_test // BATCH_SIZE
 print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
 
-metrics = CreateMetrics(dataset_config.classes)
+metrics = CreateMetrics(dataset_config.num_classes)
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
 
 checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME + '.h5',
@@ -102,7 +106,7 @@ with mirrored_strategy.scope():
 
     model.compile(
         optimizer=optimizer,
-        loss=dataset_config.total_loss,
+        loss=loss.total_loss,
         metrics=[metrics.precision, metrics.recall, metrics.cross_entropy, metrics.localization]
     )
 
