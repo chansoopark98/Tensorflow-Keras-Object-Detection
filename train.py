@@ -1,4 +1,3 @@
-import tensorflow_datasets as tfds
 import argparse
 import time
 import os
@@ -8,26 +7,25 @@ from model.model_builder import model_build
 from metrics import CreateMetrics
 from config import *
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
+from utils.load_datasets import GenerateDatasets
 
 tf.keras.backend.clear_session()
-
 policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
 mixed_precision.set_policy(policy)
 
 parser = argparse.ArgumentParser()
-
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.005)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
-parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름", default=str(time.strftime('%m%d', time.localtime(time.time()))))
+parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름",
+                    default=str(time.strftime('%m%d', time.localtime(time.time()))))
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
-parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B5')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=True)
-
 
 args = parser.parse_args()
 WEIGHT_DECAY = args.weight_decay
@@ -42,89 +40,26 @@ MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
 IMAGE_SIZE = [MODEL_INPUT_SIZE[MODEL_NAME], MODEL_INPUT_SIZE[MODEL_NAME]]
 USE_WEIGHT_DECAY = args.use_weightDecay
-print("입력 이미지 크기 : ", IMAGE_SIZE)
 
 os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
-
-# for voc
 specs = set_priorBox(MODEL_NAME)
-print(specs)
 
 priors = create_priors_boxes(specs, IMAGE_SIZE[0])
-target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
+TARGET_TRANSFORM = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
-
-if TRAIN_MODE == 'voc':
-    from model.pascal_loss import total_loss
-    from preprocessing import pascal_prepare_dataset
-
-    num_classes = 21
-
-    train_pascal_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
-    valid_train_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
-
-    train_pascal_07 = tfds.load("voc", data_dir=DATASET_DIR, split='train')
-    valid_train_07 = tfds.load("voc", data_dir=DATASET_DIR, split='validation')
-
-    train_data = train_pascal_07.concatenate(valid_train_07).concatenate(train_pascal_12).concatenate(valid_train_12)
-
-    test_data = tfds.load('voc', data_dir=DATASET_DIR, split='test')
-
-    number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
-    print("학습 데이터 개수", number_train)
-    number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
-    print("테스트 데이터 개수:", number_test)
-
-
-    #optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
-    #optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
-
-
-    training_dataset = pascal_prepare_dataset(train_data, IMAGE_SIZE, BATCH_SIZE,
-                                              target_transform, TRAIN_MODE, train=True)
-    validation_dataset = pascal_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
-                                                target_transform, TRAIN_MODE, train=False)
-
-else :
-    from model.coco_loss import total_loss
-    from preprocessing import coco_prepare_dataset
-
-    num_classes = 81
-
-    train_data = tfds.load('coco/2017', data_dir=DATASET_DIR, split='train')
-    train_data = train_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
-    train_data = train_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
-
-
-    test_data = tfds.load('coco/2017', data_dir=DATASET_DIR, split='validation')
-    test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
-    test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
-
-    # number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
-    number_train = 117266
-    print("학습 데이터 개수", number_train)
-    # number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
-    number_test = 4952
-    print("테스트 데이터 개수:", number_test)
-
-
-    training_dataset = coco_prepare_dataset(train_data, IMAGE_SIZE, BATCH_SIZE,
-                                              target_transform, TRAIN_MODE, train=True)
-    validation_dataset = coco_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
-                                                target_transform, TRAIN_MODE, train=False)
-
+dataset_config = GenerateDatasets(TRAIN_MODE, DATASET_DIR, IMAGE_SIZE, BATCH_SIZE, TARGET_TRANSFORM)
 
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 
-steps_per_epoch = number_train // BATCH_SIZE
-validation_steps = number_test // BATCH_SIZE
+steps_per_epoch = dataset_config.number_train // BATCH_SIZE
+validation_steps = dataset_config.number_test // BATCH_SIZE
 print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
 
-metric = CreateMetrics(num_classes)
+metrics = CreateMetrics(dataset_config.classes)
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
 
 checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME + '.h5',
@@ -133,7 +68,7 @@ testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
 
 
-load_weight = False
+
 
 polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
                                                           decay_steps=200,
@@ -146,17 +81,16 @@ optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic') 
 callback = [checkpoint, reduce_lr]
 
 
-
-if load_weight:
-    weight_name = '0421'
-    model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
+# load_weight = False
+# if load_weight:
+#     weight_name = '0421'
+#     model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
 mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
 print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
 
 
 with mirrored_strategy.scope():
-
     model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
 
     if USE_WEIGHT_DECAY:
@@ -168,14 +102,14 @@ with mirrored_strategy.scope():
 
     model.compile(
         optimizer=optimizer,
-        loss=total_loss,
-        metrics=[metric.precision, metric.recall, metric.cross_entropy, metric.localization]
+        loss=dataset_config.total_loss,
+        metrics=[metrics.precision, metrics.recall, metrics.cross_entropy, metrics.localization]
     )
 
     model.summary()
 
-    history = model.fit(training_dataset,
-            validation_data=validation_dataset,
+    history = model.fit(dataset_config.training_dataset,
+            validation_data=dataset_config.validation_dataset,
             steps_per_epoch=steps_per_epoch,
             validation_steps=validation_steps,
             epochs=EPOCHS,

@@ -80,7 +80,7 @@ def join_target(image, bbox, labels, image_size, target_transform, classes):
 #   targets = tf.concat([labels, locations], axis=1)
 #   return image, targets
 
-def coco_prepare_dataset(dataset, image_size, batch_size, target_transform, train_mode, train=False):
+def coco_prepare_dataset(dataset, image_size, batch_size, target_transform, train=False):
     classes = 81
 
     dataset = dataset.map(prepare_input, num_parallel_calls=AUTO)
@@ -109,8 +109,7 @@ def coco_eval_dataset(dataset, image_size, batch_size, target_transform, train_m
     return dataset
 
 
-def pascal_prepare_dataset(dataset, image_size, batch_size, target_transform, train_mode, train=False):
-    classes = 21
+def prepare_dataset(dataset, image_size, batch_size, target_transform, classes, train=False):
 
     dataset = dataset.map(prepare_input, num_parallel_calls=AUTO)
     if train:
