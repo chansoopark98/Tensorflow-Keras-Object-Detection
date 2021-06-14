@@ -6,7 +6,7 @@ import tensorflow_datasets as tfds
 from preprocessing import test_priors_datasets
 from config import *
 
-DATASET_DIR = './datasets/'
+DATASET_DIR = '../datasets/'
 DATASET_TARGET = 'voc'
 
 if DATASET_TARGET == 'voc':
