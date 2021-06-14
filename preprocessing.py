@@ -113,7 +113,6 @@ def pascal_prepare_dataset(dataset, image_size, batch_size, target_transform, tr
     classes = 21
 
     dataset = dataset.map(prepare_input, num_parallel_calls=AUTO)
-    #dataset = dataset.cache()
     if train:
         dataset = dataset.shuffle(1000)
         dataset = dataset.repeat()
