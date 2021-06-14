@@ -38,7 +38,8 @@ class GenerateDatasets:
             train_pascal_07 = tfds.load("voc", data_dir=self.data_dir, split='train')
             valid_train_07 = tfds.load("voc", data_dir=self.data_dir, split='validation')
 
-            train_data = train_pascal_07.concatenate(train_pascal_12)
+            train_data = train_pascal_07.concatenate(valid_train_07).\
+                concatenate(train_pascal_12).concatenate(valid_train_12)
             test_data = valid_train_07.concatenate(valid_train_12)
 
         else:

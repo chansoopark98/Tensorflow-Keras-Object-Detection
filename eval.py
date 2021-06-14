@@ -1,7 +1,7 @@
 import tensorflow_datasets as tfds
 from utils.priors import *
 from model.model_builder import model_build
-from preprocessing import pascal_prepare_dataset
+from preprocessing import prepare_dataset
 from preprocessing import coco_eval_dataset
 from utils.model_post_processing import post_process  #
 from utils.model_evaluation import eval_detection_voc
@@ -61,7 +61,7 @@ if TRAIN_MODE == 'voc':
     with open('./pascal_labels.txt') as f:
         CLASSES = f.read().splitlines()
 
-    validation_dataset = pascal_prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
+    validation_dataset = prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
                                                 target_transform, TRAIN_MODE, train=False)
 
 else:

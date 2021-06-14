@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 # im id 379842
 
-img = cv2.imread('test/000000379842.jpg')
+img = cv2.imread('../test/000000379842.jpg')
 img_shape = img.shape[:2]
 print(img_shape)
 # GT
@@ -75,5 +75,5 @@ for i in range(len(pred_array)):
     #             (255, 255, 255), 1, cv2.LINE_AA)
     alpha = 0.8
     cv2.addWeighted(img_box, alpha, img, 1. - alpha, 0, img)
-cv2.imwrite('test/output.jpg', img)
+cv2.imwrite('../test/output.jpg', img)
 
