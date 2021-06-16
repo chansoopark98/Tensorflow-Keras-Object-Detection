@@ -26,6 +26,10 @@ class Normalize(Layer):
     def call(self, x, mask=None):
         return self.gamma * K.l2_normalize(x, axis=-1)
 
+    def get_config(self):
+        config = super().get_config().copy()
+        return config
+
 # CLASSIFIER BUILD!
 def create_classifier(source_layers, num_priors, normalizations, num_classes=21, classifier_times=3):
     mbox_conf = []
