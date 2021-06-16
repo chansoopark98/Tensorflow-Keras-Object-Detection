@@ -476,5 +476,43 @@ AP 결과
  'train': 0.9010553057536863,
  'tvmonitor': 0.8662576663325822}
 mAP결과: 0.854402203469286
+"""
 
+
+"""
+0615 b0 input 512  priors 동일
+
+polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
+                                                          decay_steps=200,
+                                                          end_learning_rate=0.0001, power=0.5)
+lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
+
+optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
+optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
+
+callback = [checkpoint, reduce_lr , lr_scheduler, testCallBack, tensorboard]
+
+AP 결과
+
+{'aeroplane': 0.8646110677691202,
+ 'bicycle': 0.8751551432926854,
+ 'bird': 0.8776209628840232,
+ 'boat': 0.8089655331875512,
+ 'bottle': 0.6225792098020899,
+ 'bus': 0.8540650930474732,
+ 'car': 0.8718347188691102,
+ 'cat': 0.8838951790069872,
+ 'chair': 0.6878156181674223,
+ 'cow': 0.8447975953368952,
+ 'diningtable': 0.6903933621899059,
+ 'dog': 0.8826570048341911,
+ 'horse': 0.8786505080250858,
+ 'motorbike': 0.862115570822286,
+ 'person': 0.8378868612464151,
+ 'pottedplant': 0.6607067161378294,
+ 'sheep': 0.8590544795077495,
+ 'sofa': 0.782103344259429,
+ 'train': 0.8953315477697475,
+ 'tvmonitor': 0.838361651598434}
+mAP결과: 0.8189300583877216
 """
