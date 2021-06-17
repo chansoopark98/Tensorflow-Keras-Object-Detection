@@ -7,8 +7,8 @@ from utils.model_post_processing import post_process  #
 from utils.model_evaluation import eval_detection_voc
 from tensorflow.keras.utils import plot_model
 from calc_flops import get_flops
-from pycocotools.coco import COCO
-from pycocotools.cocoeval import COCOeval
+# from pycocotools.coco import COCO
+# from pycocotools.cocoeval import COCOeval
 from config import *
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from tqdm import tqdm
@@ -28,11 +28,11 @@ parser = argparse.ArgumentParser()
 
 
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=4)
 # parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0410_81.9%_b1_/0410.h5')
-parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/coco_0501.h5')
-parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
-parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='coco')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/voc_0617.h5')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B2')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--eval_testdev",  type=str,   help="COCO minival(val dataset) 평가", default=True)
 parser.add_argument("--calc_flops",  type=str,   help="모델 FLOPS 계산", default=False)
 args = parser.parse_args()
@@ -62,7 +62,7 @@ if TRAIN_MODE == 'voc':
         CLASSES = f.read().splitlines()
 
     validation_dataset = prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
-                                                target_transform, TRAIN_MODE, train=False)
+                                                target_transform, CLASSES_NUM, train=False)
 
 else:
     if EVAL_TESTDEV:
