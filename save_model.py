@@ -116,4 +116,12 @@ with mirrored_strategy.scope():
 
     model.save('./checkpoints/save_model.h5',True, True,'h5')
 
+    # tensorflowjs_converter - -input_format
+    # keras - -output_format = tfjs_graph_model
+    # my_sample_model.h5
+    # model /
+
+    # tensorflowjs_converter - -input_format = keras. / checkpoints / save_model.h5. / checkpoints / tfjs_model
+
+
 
