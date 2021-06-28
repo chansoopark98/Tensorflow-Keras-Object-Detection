@@ -127,7 +127,7 @@ def prepare_dataset(dataset, image_size, batch_size, target_transform, classes, 
 # predict 할 때
 def prepare_for_prediction(file_path):
     img = tf.io.read_file(file_path)
-    img = decode_img(img, [512, 512])
+    img = decode_img(img, [672, 672])
     img = preprocess_input(img, mode='torch')
 
     return img
