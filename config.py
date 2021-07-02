@@ -13,7 +13,7 @@ MODEL_INPUT_SIZE = {
     'B4': 640,
     'B5': 672,
     'B6': 704,
-    'B7': 960
+    'B7': 736
 }
 
 class TrainHyperParams:
@@ -137,6 +137,14 @@ def set_priorBox(model_name):
             Spec(22, 32, BoxSizes(126, 253), [2]), # 0.179 | 0.359      + 0.101
             Spec(10, 64, BoxSizes(266, 313), [2]), # 0.378 | 0.445      + 0.199
             Spec(5, 128, BoxSizes(426, 530), [2]), # 0.605 | 0.753     + 0.227
+        ]
+    elif model_name == 'B7': # 736
+        return [
+            Spec(92, 8, BoxSizes(21, 30), [2]), # 0.029 | 0.041
+            Spec(46, 16, BoxSizes(57, 82), [2]), # 0.078 | 0.111       + 0.049
+            Spec(23, 32, BoxSizes(131, 263), [2]), # 0.179 | 0.359      + 0.101
+            Spec(11, 64, BoxSizes(277, 326), [2]), # 0.378 | 0.445      + 0.199
+            Spec(5, 128, BoxSizes(443, 551), [2]), # 0.605 | 0.753     + 0.227
         ]
 
 

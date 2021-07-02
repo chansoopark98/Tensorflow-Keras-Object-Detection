@@ -4,9 +4,9 @@ from tensorflow import keras
 from tensorflow.keras.layers import Conv2D, Add, Activation, Dropout ,BatchNormalization,  UpSampling2D, SeparableConv2D, MaxPooling2D
 from functools import reduce
 
-NUM_CHANNELS = [64, 88, 112, 160, 224, 288, 384]
-FPN_TIMES = [3, 4, 5, 6, 7, 7, 8]
-CLS_TIEMS = [3, 3, 3, 4, 4, 4, 5]
+NUM_CHANNELS = [64, 88, 112, 160, 224, 288, 384, 480]
+FPN_TIMES = [3, 4, 5, 6, 7, 7, 8, 8]
+CLS_TIEMS = [3, 3, 3, 4, 4, 4, 5, 5]
 
 
 MOMENTUM = 0.997
