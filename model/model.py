@@ -5,6 +5,7 @@ from tensorflow.keras.layers import Conv2D, Add, Activation, Dropout ,BatchNorma
 from functools import reduce
 
 NUM_CHANNELS = [64, 88, 112, 160, 224, 288, 288, 288]
+#NUM_CHANNELS = [48, 64, 88, 112, 160, 244, 288, 288]
 FPN_TIMES = [3, 4, 5, 6, 7, 7, 7, 7]
 CLS_TIEMS = [3, 3, 3, 4, 4, 4, 4, 4]
 

@@ -113,6 +113,16 @@ def eval_detection_voc(
 
     ap = calc_detection_voc_ap(prec, rec, use_07_metric=use_07_metric)
 
+    from matplotlib import pyplot
+
+    pyplot.plot(rec[0], prec[0], linestyle='--', label='class_0')
+    pyplot.xlabel('Recall')
+    pyplot.ylabel('Precision')
+    pyplot.legend()
+    pyplot.show()
+
+
+
     return {'ap': ap, 'map': np.nanmean(ap)}
 
 
