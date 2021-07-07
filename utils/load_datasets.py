@@ -53,9 +53,10 @@ class GenerateDatasets:
             test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
             test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
 
-        self.number_train = 117266
+
+        self.number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
         print("학습 데이터 개수", self.number_train)
-        self.number_test = 4952
+        self.number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
         print("테스트 데이터 개수:", self.number_test)
 
         self.training_dataset = prepare_dataset(train_data, self.image_size, self.batch_size,

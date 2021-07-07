@@ -4,16 +4,17 @@ from tensorflow import keras
 from tensorflow.keras.layers import Conv2D, Add, Activation, Dropout ,BatchNormalization,  UpSampling2D, SeparableConv2D, MaxPooling2D
 from functools import reduce
 
-NUM_CHANNELS = [64, 88, 112, 160, 224, 288, 288, 288]
+NUM_CHANNELS = [64, 64, 88, 112, 160, 224, 288, 288, 288]
 #NUM_CHANNELS = [48, 64, 88, 112, 160, 244, 288, 288]
-FPN_TIMES = [3, 4, 5, 6, 7, 7, 7, 7]
-CLS_TIEMS = [3, 3, 3, 4, 4, 4, 4, 4]
+FPN_TIMES = [1, 3, 4, 5, 6, 7, 7, 7, 7]
+CLS_TIEMS = [1, 3, 3, 3, 4, 4, 4, 4, 4]
 
 
 MOMENTUM = 0.997
 EPSILON = 1e-4
 
 GET_EFFICIENT_NAME = {
+    'B0-tiny': ['block3b_add', 'block5c_add', 'block7a_project_bn'],
     'B0': ['block3b_add', 'block5c_add', 'block7a_project_bn'],
     'B1': ['block3c_add', 'block5d_add', 'block7b_add'],
     'B2': ['block3c_add', 'block5d_add', 'block7b_add'],
@@ -25,14 +26,15 @@ GET_EFFICIENT_NAME = {
 }
 
 MODEL_NAME = {
-    'B0': 0,
-    'B1': 1,
-    'B2': 2,
-    'B3': 3,
-    'B4': 4,
-    'B5': 5,
-    'B6': 6,
-    'B7': 7
+    'B0-tiny': 0,
+    'B0': 1,
+    'B1': 2,
+    'B2': 3,
+    'B3': 4,
+    'B4': 5,
+    'B5': 6,
+    'B6': 7,
+    'B7': 7,
 }
 
 
@@ -57,7 +59,7 @@ def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512],
     else:
         weights = "imagenet"
 
-    if base_model_name == 'B0':
+    if base_model_name == 'B0' or 'B0-tiny':
         base = efn.EfficientNetB0(weights=weights, include_top=False, input_shape=[*IMAGE_SIZE, 3])
 
     elif base_model_name == 'B1':
@@ -267,6 +269,109 @@ def build_BiFPN(features, num_channels=64 , id=0, resize=False, bn_trainable=Tru
 
         return [P3_out, P4_td, P5_td, P6_td, P7_out]
 
+def build_tiny_BiFPN(features, num_channels=64 , id=0, resize=True, bn_trainable=True):
+    if resize:
+        padding = 'valid'
+    else:
+        padding = 'same'
+
+
+    C3, C4, C5 = features
+    P3_in = C3 # 36x36
+    P4_in = C4 # 18x18
+    P5_in = C5 # 9x9
+
+    P6_in = Conv2D(num_channels, kernel_size=1, padding='same', name='resample_p6/conv2d')(C5)
+    P6_in = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON,  trainable=bn_trainable, name='resample_p6/bn')(P6_in)
+
+    # padding
+    P6_in = MaxPooling2D(pool_size=3, strides=2, padding='same', name='resample_p6/maxpool')(P6_in) # 5x5
+
+    P7_in = MaxPooling2D(pool_size=3, strides=2, padding='same', name='resample_p7/maxpool')(P6_in) # 3x3
+
+
+    if resize:
+        P7_U = tf.image.resize(P7_in, (P6_in.shape[1:3])) # 5x5
+    else:
+        P7_U = UpSampling2D()(P7_in) # 2x2 to 4x4
+
+    P6_td = Add(name='fpn_cells/cell_/fnode0/add')([P6_in, P7_U]) # 5x5
+    P6_td = Activation(lambda x: tf.nn.swish(x))(P6_td)
+    P6_td = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
+                               name='fpn_cells/cell_/fnode0/op_after_combine5')(P6_td)
+    P5_in_1 = Conv2D(num_channels, kernel_size=1, padding='same', # 10x10
+                            name='fpn_cells/cell_/fnode1/resample_0_2_6/conv2d')(P5_in)
+    P5_in_1 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=bn_trainable,
+                                        name='fpn_cells/cell_/fnode1/resample_0_2_6/bn')(P5_in_1)
+
+    if resize:
+        P6_U = tf.image.resize(P6_td, (P5_in_1.shape[1:3])) # 10x10
+    else:
+        P6_U = UpSampling2D()(P6_td)
+
+    P5_td = Add(name='fpn_cells/cell_/fnode1/add')([P5_in_1, P6_U]) # 9x9
+    P5_td = Activation(lambda x: tf.nn.swish(x))(P5_td)
+    P5_td = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
+                               name='fpn_cells/cell_/fnode1/op_after_combine6')(P5_td)
+    P4_in_1 = Conv2D(num_channels, kernel_size=1, padding='same',
+                            name='fpn_cells/cell_/fnode2/resample_0_1_7/conv2d')(P4_in) # 18x18
+    P4_in_1 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=bn_trainable,
+                                        name='fpn_cells/cell_/fnode2/resample_0_1_7/bn')(P4_in_1)
+
+    #P5_U = UpSampling2D()(P5_td) # 20x20
+    P5_U = tf.image.resize(P5_td, (P4_in_1.shape[1:3]))  # 5x5
+    P4_td = Add(name='fpn_cells/cell_/fnode2/add')([P4_in_1, P5_U]) # 18x18
+    P4_td = Activation(lambda x: tf.nn.swish(x))(P4_td)
+    P4_td = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
+                               name='fpn_cells/cell_/fnode2/op_after_combine7')(P4_td)
+    P3_in = Conv2D(num_channels, kernel_size=1, padding='same',
+                          name='fpn_cells/cell_/fnode3/resample_0_0_8/conv2d')(P3_in) # 36x36
+    P3_in = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=bn_trainable,
+                                      name=f'fpn_cells/cell_/fnode3/resample_0_0_8/bn')(P3_in)
+
+    P4_U = UpSampling2D()(P4_td) # 18x18 to 36x36
+    P3_out = Add(name='fpn_cells/cell_/fnode3/add')([P3_in, P4_U])
+    P3_out = Activation(lambda x: tf.nn.swish(x))(P3_out)
+    P3_out = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
+                                name='fpn_cells/cell_/fnode3/op_after_combine8')(P3_out)
+    P4_in_2 = Conv2D(num_channels, kernel_size=1, padding='same',
+                            name='fpn_cells/cell_/fnode4/resample_0_1_9/conv2d')(P4_in)
+    P4_in_2 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=bn_trainable,
+                                        name='fpn_cells/cell_/fnode4/resample_0_1_9/bn')(P4_in_2)
+
+    P3_D = MaxPooling2D(pool_size=3, strides=2, padding='same')(P3_out)
+    P4_out = Add(name='fpn_cells/cell_/fnode4/add')([P4_in_2, P4_td, P3_D])
+    P4_out = Activation(lambda x: tf.nn.swish(x))(P4_out)
+    P4_out = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
+                                name='fpn_cells/cell_/fnode4/op_after_combine9')(P4_out)
+
+    P5_in_2 = Conv2D(num_channels, kernel_size=1, padding='same',
+                            name='fpn_cells/cell_/fnode5/resample_0_2_10/conv2d')(P5_in)
+    P5_in_2 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=bn_trainable,
+                                        name='fpn_cells/cell_/fnode5/resample_0_2_10/bn')(P5_in_2)
+
+    P4_D = MaxPooling2D(pool_size=3, strides=2, padding='same')(P4_out)
+    P5_out = Add(name='fpn_cells/cell_/fnode5/add')([P5_in_2, P5_td, P4_D]) # 9x9
+    P5_out = Activation(lambda x: tf.nn.swish(x))(P5_out)
+    P5_out = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
+                                name='fpn_cells/cell_/fnode5/op_after_combine10')(P5_out)
+
+    # padding
+    P5_D = MaxPooling2D(pool_size=3, strides=2, padding='same')(P5_out) # 9x9 to 4x4
+
+    P6_out = Add(name='fpn_cells/cell_/fnode6/add')([P6_in, P6_td, P5_D])
+    P6_out = Activation(lambda x: tf.nn.swish(x))(P6_out)
+    P6_out = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
+                                name='fpn_cells/cell_/fnode6/op_after_combine11')(P6_out)
+
+    P6_D = MaxPooling2D(pool_size=3, strides=2, padding='same')(P6_out)
+    P7_out = Add(name='fpn_cells/cell_/fnode7/add')([P7_in, P6_D])
+    P7_out = Activation(lambda x: tf.nn.swish(x))(P7_out)
+    P7_out = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
+                                name='fpn_cells/cell_/fnode7/op_after_combine12')(P7_out)
+
+
+    return [P3_out, P4_td, P5_td, P6_td, P7_out]
 
 def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], backbone_trainable=True):
 
@@ -288,16 +393,21 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], b
     p7 = base.get_layer(layer_names[2]).output # 16 16 320
 
     features = [p3, p5, p7]
-
+    print(features)
     if base_model_name == 'B0':
         feature_resize = False
     else:
         feature_resize = True
 
-    for i in range(FPN_TIMES[MODEL_NAME[base_model_name]]):
-        print("times", i)
-        features = build_BiFPN(features=features, num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]],
-                               id=i, resize=feature_resize, bn_trainable=bn_trainable)
+
+    if base_model_name == 'B0-tiny':
+            features = build_tiny_BiFPN(features=features, num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]],
+                                   id=0, resize=feature_resize, bn_trainable=bn_trainable)
+    else:
+        for i in range(FPN_TIMES[MODEL_NAME[base_model_name]]):
+            print("times", i)
+            features = build_BiFPN(features=features, num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]],
+                                   id=i, resize=feature_resize, bn_trainable=bn_trainable)
 
     # predict features
     source_layers.append(features[0])
