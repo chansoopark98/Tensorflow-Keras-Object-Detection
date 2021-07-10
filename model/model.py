@@ -456,51 +456,58 @@ def tiny_stem_block(x):
     x = Activation(lambda x: tf.nn.swish(x))(x)
     return x
 
+def  tiny_conv_block(x, init_channel, name=''):
+    x = SeparableConvBlock(num_channels=init_channel, kernel_size=3, strides=1, name=name)(x)
+    x = Conv2D(init_channel/2, kernel_size=1, padding='same')(x)
+    x = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=True)(x)
+    x = Activation(lambda x: tf.nn.swish(x))(x)
+
+    return x
+
 def tiny_csnet(base_model_name, IMAGE_SIZE=[300, 300]):
     # CSNet-tiny inputs
     input = tf.keras.Input(shape=(IMAGE_SIZE[0], IMAGE_SIZE[1], 3))
 
-
+    # 16, 24, 40, 80, 112, 192, 320
 
     # STEM block
     stem = tiny_stem_block(input)
 
-    # Conv1 : output shape : 75x75@32
-    conv1_dw = SeparableConvBlock(num_channels=16, kernel_size=3, strides=1, name='conv1_dw')(stem)
-    conv1_pw = Conv2D(32, kernel_size=1, padding='same')(conv1_dw)
-    conv1_bn = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=True)(conv1_pw)
-    conv1_mp = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv1_bn)
+    # conv1
+    conv1 = tiny_conv_block(stem, 16, name='conv1_1')
+    conv1 = tiny_conv_block(stem, 48, name='conv1_1')
+    conv1 = tiny_conv_block(conv1, 24, name='conv1_2')
+    conv1 = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv1)
 
-    # Conv2 : output shape : 38x38@64
-    conv2_dw = SeparableConvBlock(num_channels=32, kernel_size=3, strides=1, name='conv2_dw')(conv1_mp)
-    conv2_pw = Conv2D(64, kernel_size=1, padding='same')(conv2_dw)
-    conv2_bn = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=True)(conv2_pw)
-    conv2_mp = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv2_bn)
+    # conv2
+    conv2 = tiny_conv_block(conv1, 40, name='conv2_1')
+    conv2 = tiny_conv_block(conv2, 120, name='conv2_2')
+    conv2 = tiny_conv_block(conv2, 40, name='conv2_3')
+    conv2 = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv2)
 
-    # Conv3 : output shape : 19x19@112
-    conv3_dw = SeparableConvBlock(num_channels=64, kernel_size=3, strides=1, name='conv3_dw')(conv2_mp)
-    conv3_pw = Conv2D(112, kernel_size=1, padding='same')(conv3_dw)
-    conv3_bn = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=True)(conv3_pw)
-    conv3_mp = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv3_bn)
+    # conv3
+    conv3 = tiny_conv_block(conv2, 80, name='conv3_1')
+    conv3 = tiny_conv_block(conv3, 240, name='conv3_2')
+    conv3 = tiny_conv_block(conv3, 80, name='conv3_3')
+    conv3 = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv3)
 
-    # Conv4 : output shape : 10x10@192
-    conv4_dw = SeparableConvBlock(num_channels=112, kernel_size=3, strides=1, name='conv4_dw')(conv3_mp)
-    conv4_pw = Conv2D(192, kernel_size=1, padding='same')(conv4_dw)
-    conv4_bn = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=True)(conv4_pw)
-    conv4_mp = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv4_bn)
+    # conv4
+    conv4 = tiny_conv_block(conv3, 112, name='conv4_1')
+    conv4 = tiny_conv_block(conv4, 336, name='conv4_2')
+    conv4 = tiny_conv_block(conv4, 112, name='conv4_3')
+    conv4 = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv4)
 
+    # conv5
+    conv5 = tiny_conv_block(conv4, 192, name='conv5_1')
+    conv5 = tiny_conv_block(conv5, 576, name='conv5_2')
+    conv5 = tiny_conv_block(conv5, 192, name='conv5_3')
+    conv5 = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv5)
 
-    # Conv5 : output shape : 5x5@320
-    conv5_dw = SeparableConvBlock(num_channels=192, kernel_size=3, strides=1, name='conv5_dw')(conv4_mp)
-    conv5_pw = Conv2D(320, kernel_size=1, padding='same')(conv5_dw)
-    conv5_bn = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=True)(conv5_pw)
-    conv5_mp = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv5_bn)
+    # conv5
+    conv6 = tiny_conv_block(conv5, 320, name='conv6_1')
+    conv6 = tiny_conv_block(conv6, 960, name='conv6_2')
+    conv6 = tiny_conv_block(conv6, 320, name='conv6_3')
+    conv6 = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv6)
 
-    # Conv5 : output shape : 3x3@320
-    conv6_dw = SeparableConvBlock(num_channels=192, kernel_size=3, strides=1, name='conv6_dw')(conv5_mp)
-    conv6_pw = Conv2D(320, kernel_size=1, padding='same')(conv6_dw)
-    conv6_bn = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=True)(conv6_pw)
-    conv6_mp = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv6_bn)
-
-    outputs = [conv2_mp, conv3_mp, conv4_mp, conv5_mp, conv6_mp]
+    outputs = [conv2, conv3, conv4, conv5, conv6]
     return input, outputs
