@@ -416,5 +416,91 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], b
     source_layers.append(features[3])
     source_layers.append(features[4])
 
-
     return base.input, source_layers, CLS_TIEMS[MODEL_NAME[base_model_name]]
+
+"""CSNet-tiny hyper parameters"""
+
+width_coefficient = 1.0
+depth_divisor = 1.0
+CONV_KERNEL_INITIALIZER = {
+    'class_name': 'VarianceScaling',
+    'config': {
+        'scale': 2.0,
+        'mode': 'fan_out',
+        'distribution': 'normal'
+    }
+}
+bn_axis = 3 if tf.keras.backend.image_data_format() == 'channels_last' else 1
+
+
+def round_filters(filters, width_coefficient, depth_divisor):
+    """너비 승수를 기준으로 한 필터 수를 반올림"""
+    filters *= width_coefficient
+    new_filters = int(filters + depth_divisor / 2) // depth_divisor * depth_divisor
+    new_filters = max(depth_divisor, new_filters)
+    # 내림이 10% 이상 내려가지 않도록 함
+    if new_filters < 0.9 * filters:
+        new_filters += depth_divisor
+    return int(new_filters)
+
+
+
+def tiny_stem_block(x):
+    x = Conv2D(round_filters(32, width_coefficient, depth_divisor), 3,
+                      strides=(2, 2),
+                      padding='same',
+                      use_bias=False,
+                      kernel_initializer=CONV_KERNEL_INITIALIZER,
+                      name='stem_conv')(x)
+    x = BatchNormalization(axis=bn_axis, name='stem_bn')(x)
+    x = Activation(lambda x: tf.nn.swish(x))(x)
+    return x
+
+def tiny_csnet(base_model_name, IMAGE_SIZE=[300, 300]):
+    # CSNet-tiny inputs
+    input = tf.keras.Input(shape=(IMAGE_SIZE[0], IMAGE_SIZE[1], 3))
+
+
+
+    # STEM block
+    stem = tiny_stem_block(input)
+
+    # Conv1 : output shape : 75x75@32
+    conv1_dw = SeparableConvBlock(num_channels=16, kernel_size=3, strides=1, name='conv1_dw')(stem)
+    conv1_pw = Conv2D(32, kernel_size=1, padding='same')(conv1_dw)
+    conv1_bn = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=True)(conv1_pw)
+    conv1_mp = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv1_bn)
+
+    # Conv2 : output shape : 38x38@64
+    conv2_dw = SeparableConvBlock(num_channels=32, kernel_size=3, strides=1, name='conv2_dw')(conv1_mp)
+    conv2_pw = Conv2D(64, kernel_size=1, padding='same')(conv2_dw)
+    conv2_bn = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=True)(conv2_pw)
+    conv2_mp = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv2_bn)
+
+    # Conv3 : output shape : 19x19@112
+    conv3_dw = SeparableConvBlock(num_channels=64, kernel_size=3, strides=1, name='conv3_dw')(conv2_mp)
+    conv3_pw = Conv2D(112, kernel_size=1, padding='same')(conv3_dw)
+    conv3_bn = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=True)(conv3_pw)
+    conv3_mp = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv3_bn)
+
+    # Conv4 : output shape : 10x10@192
+    conv4_dw = SeparableConvBlock(num_channels=112, kernel_size=3, strides=1, name='conv4_dw')(conv3_mp)
+    conv4_pw = Conv2D(192, kernel_size=1, padding='same')(conv4_dw)
+    conv4_bn = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=True)(conv4_pw)
+    conv4_mp = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv4_bn)
+
+
+    # Conv5 : output shape : 5x5@320
+    conv5_dw = SeparableConvBlock(num_channels=192, kernel_size=3, strides=1, name='conv5_dw')(conv4_mp)
+    conv5_pw = Conv2D(320, kernel_size=1, padding='same')(conv5_dw)
+    conv5_bn = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=True)(conv5_pw)
+    conv5_mp = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv5_bn)
+
+    # Conv5 : output shape : 3x3@320
+    conv6_dw = SeparableConvBlock(num_channels=192, kernel_size=3, strides=1, name='conv6_dw')(conv5_mp)
+    conv6_pw = Conv2D(320, kernel_size=1, padding='same')(conv6_dw)
+    conv6_bn = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=True)(conv6_pw)
+    conv6_mp = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv6_bn)
+
+    outputs = [conv2_mp, conv3_mp, conv4_mp, conv5_mp, conv6_mp]
+    return input, outputs

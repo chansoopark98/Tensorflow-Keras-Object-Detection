@@ -6,6 +6,7 @@ size_variance = 0.2 # 0.2
 
 
 MODEL_INPUT_SIZE = {
+    'CSNet-tiny': 300,
     'B0-tiny': 300,
     'B0': 512,
     'B1': 544,
@@ -90,7 +91,15 @@ spec = [
     Spec(1, 300, BoxSizes(264, 315), [2])
 ]
 def set_priorBox(model_name):
-    if model_name == 'B0-tiny':
+    if model_name == 'CSNet-tiny':
+        return [
+            Spec(38, 8, BoxSizes(10, 20), [2]),
+            Spec(19, 16, BoxSizes(23, 33), [2]),
+            Spec(10, 32, BoxSizes(53, 108), [2]),
+            Spec(5, 64, BoxSizes(113, 134), [2]),
+            Spec(3, 100, BoxSizes(182, 226), [2])
+        ]
+    elif model_name == 'B0-tiny':
         return [
             Spec(38, 8, BoxSizes(10, 20), [2]),
             Spec(19, 16, BoxSizes(23, 33), [2]),
