@@ -456,12 +456,21 @@ def tiny_stem_block(x):
     x = Activation(lambda x: tf.nn.swish(x))(x)
     return x
 
-def  tiny_conv_block(x, init_channel, name=''):
-    x = SeparableConvBlock(num_channels=init_channel, kernel_size=3, strides=1, name=name)(x)
-    x = Conv2D(init_channel/2, kernel_size=1, padding='same')(x)
+def  tiny_conv_block(x, init_channel):
+    x = SeparableConv2D(filters=init_channel, kernel_size=3, strides=1,  padding='same', use_bias=True)(x)
     x = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=True)(x)
     x = Activation(lambda x: tf.nn.swish(x))(x)
+    return x
 
+def tiny_residual_block(input, init_channel):
+    x = SeparableConv2D(filters=init_channel, kernel_size=3, strides=1,  padding='same', use_bias=True)(input)
+    x = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=True)(x)
+    x = Activation(lambda x: tf.nn.swish(x))(x)
+    x = SeparableConv2D(filters=init_channel*3, kernel_size=3, strides=1,  padding='same', use_bias=True)(x)
+    x = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=True)(x)
+    x = Conv2D(init_channel, kernel_size=1, padding='same')(x)
+    x = x + input
+    x = Activation(lambda x: tf.nn.swish(x))(x)
     return x
 
 def tiny_csnet(base_model_name, IMAGE_SIZE=[300, 300]):
@@ -471,42 +480,45 @@ def tiny_csnet(base_model_name, IMAGE_SIZE=[300, 300]):
     # 16, 24, 40, 80, 112, 192, 320
 
     # STEM block
-    stem = tiny_stem_block(input)
+    stem = tiny_stem_block(input) # 150x150
+
 
     # conv1
-    conv1 = tiny_conv_block(stem, 16, name='conv1_1')
-    conv1 = tiny_conv_block(stem, 48, name='conv1_1')
-    conv1 = tiny_conv_block(conv1, 24, name='conv1_2')
+    conv1 = tiny_conv_block(stem, 16)
+    conv1 = tiny_residual_block(conv1, 16)
     conv1 = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv1)
 
     # conv2
-    conv2 = tiny_conv_block(conv1, 40, name='conv2_1')
-    conv2 = tiny_conv_block(conv2, 120, name='conv2_2')
-    conv2 = tiny_conv_block(conv2, 40, name='conv2_3')
+    conv2 = tiny_conv_block(conv1, 24)
+    conv2 = tiny_residual_block(conv2, 24)
+    conv2 = tiny_residual_block(conv2, 24)
     conv2 = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv2)
 
     # conv3
-    conv3 = tiny_conv_block(conv2, 80, name='conv3_1')
-    conv3 = tiny_conv_block(conv3, 240, name='conv3_2')
-    conv3 = tiny_conv_block(conv3, 80, name='conv3_3')
+    conv3 = tiny_conv_block(conv2, 40)
+    conv3 = tiny_residual_block(conv3, 40)
+    conv3 = tiny_residual_block(conv3, 40)
     conv3 = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv3)
 
     # conv4
-    conv4 = tiny_conv_block(conv3, 112, name='conv4_1')
-    conv4 = tiny_conv_block(conv4, 336, name='conv4_2')
-    conv4 = tiny_conv_block(conv4, 112, name='conv4_3')
+    conv4 = tiny_conv_block(conv3, 80)
+    conv4 = tiny_residual_block(conv4, 80)
+    conv4 = tiny_residual_block(conv4, 80)
+    conv4 = tiny_residual_block(conv4, 80)
     conv4 = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv4)
 
     # conv5
-    conv5 = tiny_conv_block(conv4, 192, name='conv5_1')
-    conv5 = tiny_conv_block(conv5, 576, name='conv5_2')
-    conv5 = tiny_conv_block(conv5, 192, name='conv5_3')
+    conv5 = tiny_conv_block(conv4, 112)
+    conv5 = tiny_residual_block(conv5, 112)
+    conv5 = tiny_residual_block(conv5, 112)
+    conv5 = tiny_residual_block(conv5, 112)
     conv5 = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv5)
 
     # conv5
-    conv6 = tiny_conv_block(conv5, 320, name='conv6_1')
-    conv6 = tiny_conv_block(conv6, 960, name='conv6_2')
-    conv6 = tiny_conv_block(conv6, 320, name='conv6_3')
+    conv6 = tiny_conv_block(conv5, 192)
+    conv6 = tiny_residual_block(conv6, 192)
+    conv6 = tiny_residual_block(conv6, 192)
+    conv6 = tiny_residual_block(conv6, 192)
     conv6 = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv6)
 
     outputs = [conv2, conv3, conv4, conv5, conv6]
