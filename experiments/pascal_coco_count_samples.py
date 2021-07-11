@@ -5,7 +5,7 @@ import tensorflow as tf
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
+parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='../datasets/')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 
 args = parser.parse_args()
@@ -18,7 +18,7 @@ if TRAIN_MODE == 'voc':
     valid_train_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='validation')
     train_pascal_07 = tfds.load("voc", data_dir=DATASET_DIR, split='train')
     valid_train_07 = tfds.load("voc", data_dir=DATASET_DIR, split='validation')
-    train_data = train_pascal_07.concatenate(valid_train_07).concatenate(train_pascal_12).concatenate(valid_train_12)
+    train_data = train_pascal_07.concatenate(train_pascal_12)
 
 else:
     train_data = tfds.load('coco/2017', data_dir=DATASET_DIR, split='train')
@@ -43,9 +43,10 @@ for sample in train_data:
     for i in label:
         total_labels.append(i)
 
-
-for i in range(20):
-    print(total_labels.count(i))
+with open('../pascal_labels.txt') as f:
+    CLASSES = f.read().splitlines()
+    for i in range(20):
+        print(str(CLASSES[i]) + ' : ' + str(total_labels.count(i)))
 
 
 """
