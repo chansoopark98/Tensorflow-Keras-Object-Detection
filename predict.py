@@ -7,6 +7,7 @@ import cv2
 import argparse
 from config import *
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
+import datetime
 tf.keras.backend.clear_session()
 
 policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
@@ -14,13 +15,13 @@ mixed_precision.set_policy(policy)
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=2)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
-parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0624_B5_Map86.0%_voc.h5')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0615_b0_mAP81.9%_voc.h5')
 # parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./datasets/test/VOCdevkit/VOC2007/JPEGImages/')
 parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./inputs/')
 parser.add_argument("--output_dir", type=str,   help="테스트 결과 이미지 디렉토리 설정", default='./outputs/')
-parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B5')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 
 
@@ -41,7 +42,6 @@ if TRAIN_MODE == 'voc':
 else:
     CLASSES_NUM = 81
     CLASSES_LABEL = COCO_CLASSES
-
 
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -70,6 +70,7 @@ test_steps = 4952 // BATCH_SIZE + 1
 
 
 
+
 def draw_bounding(img , bboxes, labels, img_size):
     # resizing 작업
     if np.max(bboxes) < 10:
@@ -92,11 +93,17 @@ def draw_bounding(img , bboxes, labels, img_size):
         alpha = 0.8
         cv2.addWeighted(img_box, alpha, img, 1. - alpha, 0, img)
 
+total_time=0
 
 for batch in tqdm(dataset, total=test_steps):
 
+    start_time = datetime.datetime.now()
     pred = model.predict_on_batch(batch)
+    end_time = (datetime.datetime.now()-start_time).microseconds / 1000
+    print("속도 측정 :", end_time , " 단위(ms)")
+    total_time += end_time
     predictions = post_process(pred, target_transform, classes=CLASSES_NUM, confidence_threshold=0.2)
+
 
     for i, path in enumerate(filenames[x:y]):
 
@@ -110,3 +117,5 @@ for batch in tqdm(dataset, total=test_steps):
 
     x = y
     y += BATCH_SIZE
+
+print("속도 측정 :", total_time/4952 , " 단위(ms)")
