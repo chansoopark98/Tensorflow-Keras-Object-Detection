@@ -27,6 +27,7 @@ parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='CSNet-tiny')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=True)
+parser.add_argument("--distribution_mode",  type=bool,  help="분산 학습 모드 설정 mirror or multi", default='mirror')
 
 args = parser.parse_args()
 WEIGHT_DECAY = args.weight_decay
@@ -41,6 +42,7 @@ MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
 IMAGE_SIZE = [MODEL_INPUT_SIZE[MODEL_NAME], MODEL_INPUT_SIZE[MODEL_NAME]]
 USE_WEIGHT_DECAY = args.use_weightDecay
+DISTRIBUTION_MODE = args.distribution_mode
 
 os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
@@ -75,14 +77,14 @@ tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_grap
 
 
 polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
-                                                          decay_steps=200,
+                                                          decay_steps=EPOCHS,
                                                           end_learning_rate=0.0001, power=0.5)
 lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
 optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
 optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
 
-callback = [checkpoint, reduce_lr , lr_scheduler, testCallBack, tensorboard]
+callback = [checkpoint, lr_scheduler, testCallBack, tensorboard]
 
 
 
@@ -91,7 +93,12 @@ callback = [checkpoint, reduce_lr , lr_scheduler, testCallBack, tensorboard]
 #     weight_name = '0421'
 #     model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
-mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
+if DISTRIBUTION_MODE == 'multi':
+    mirrored_strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(
+        tf.distribute.experimental.CollectiveCommunication.NCCL)
+
+else:
+    mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
 print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
 
 
