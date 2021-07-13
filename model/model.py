@@ -2,7 +2,7 @@ import efficientnet.keras as efn
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.layers import Conv2D, Add, Activation, Dropout ,BatchNormalization,  UpSampling2D,\
-    SeparableConv2D, MaxPooling2D, Concatenate
+    SeparableConv2D, MaxPooling2D, Concatenate, DepthwiseConv2D, GlobalAveragePooling2D, Reshape, multiply, add
 from functools import reduce
 
 NUM_CHANNELS = [64, 64, 88, 112, 160, 224, 288, 288, 288]
@@ -431,6 +431,16 @@ CONV_KERNEL_INITIALIZER = {
         'distribution': 'normal'
     }
 }
+_KERAS_BACKEND = None
+_KERAS_LAYERS = None
+_KERAS_MODELS = None
+_KERAS_UTILS = None
+
+backend = None
+layers = None
+models = None
+keras_utils = None
+
 bn_axis = 3 if tf.keras.backend.image_data_format() == 'channels_last' else 1
 
 
@@ -446,6 +456,7 @@ def round_filters(filters, width_coefficient, depth_divisor):
 
 
 activation = lambda x: tf.nn.swish(x)
+# activation = lambda x: tf.nn.relu(x)
 
 def tiny_stem_block(input):
     x = Conv2D(32, 3,
@@ -456,17 +467,7 @@ def tiny_stem_block(input):
                       name='stem_conv')(input)
     x = BatchNormalization(axis=bn_axis, name='stem_bn')(x)
 
-    mp_x = SeparableConv2D(32, 1,
-                      strides=(1, 1),
-                      dilation_rate=(2, 2),
-                      padding='same',
-                      use_bias=False,
-                      kernel_initializer=CONV_KERNEL_INITIALIZER,
-                      name='1x1_stem_conv')(input)
-    mp_x = MaxPooling2D(pool_size=3, strides=2, padding='same')(mp_x)
-
-    x = Concatenate()([x, mp_x])
-    x = Activation(lambda x: tf.nn.swish(x))(x)
+    x = Activation(activation)(x)
     return x
 
 
@@ -478,7 +479,70 @@ def tiny_expand_conv_block(input, init_channel):
 
     x = Conv2D(filters=init_channel, kernel_size=1, strides=1,  padding='same', use_bias=True)(x)
     #x = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=True)(x)
-    x = Activation(lambda x: tf.nn.swish(x))(x)
+    x = Activation(activation)(x)
+    return x
+
+
+def csnet_tiny_block(inputs, input_filters, output_filters,
+                     expand_ratio, kernel_size, strides, has_se, drop_rate=0.2):
+    bn_axis = 3 if tf.keras.backend.image_data_format() == 'channels_last' else 1
+
+
+    # Expansion phase
+    filters = input_filters * expand_ratio
+    x = Conv2D(filters, 1,
+                      padding='same',
+                      use_bias=False,
+                      kernel_initializer=CONV_KERNEL_INITIALIZER,
+                      )(inputs)
+    x = BatchNormalization(axis=bn_axis)(x)
+    x = Activation(activation)(x)
+
+    # Depthwise Convolution
+    x = DepthwiseConv2D(kernel_size,
+                               strides=strides,
+                               padding='same',
+                               use_bias=False,
+                               depthwise_initializer=CONV_KERNEL_INITIALIZER,
+                               )(x)
+    x = BatchNormalization(axis=bn_axis)(x)
+    x = Activation(activation)(x)
+
+    # Squeeze and Excitation phase
+    if has_se:
+        num_reduced_filters = max(1, int(input_filters * 0.25))
+        se_tensor = GlobalAveragePooling2D()(x)
+
+        target_shape = (1, 1, filters) if tf.keras.backend.image_data_format() == 'channels_last' else (filters, 1, 1)
+        se_tensor = Reshape(target_shape)(se_tensor)
+        se_tensor = Conv2D(num_reduced_filters, 1,
+                                  activation=activation,
+                                  padding='same',
+                                  use_bias=True,
+                                  kernel_initializer=CONV_KERNEL_INITIALIZER,
+                                  )(se_tensor)
+        se_tensor = Conv2D(filters, 1,
+                                  activation='sigmoid',
+                                  padding='same',
+                                  use_bias=True,
+                                  kernel_initializer=CONV_KERNEL_INITIALIZER,
+                                  )(se_tensor)
+        x = multiply([x, se_tensor])
+
+    # Output phase
+    x = Conv2D(output_filters, 1,
+                      padding='same',
+                      use_bias=False,
+                      kernel_initializer=CONV_KERNEL_INITIALIZER,
+                      )(x)
+    x = BatchNormalization(axis=bn_axis)(x)
+    if strides != 2:
+        if drop_rate and (drop_rate > 0):
+            x = Dropout(drop_rate,
+                        noise_shape=(None, 1, 1, 1),
+                        )(x)
+        x = Concatenate()([x, inputs])
+
     return x
 
 def tiny_csnet(base_model_name, IMAGE_SIZE=[300, 300]):
@@ -492,45 +556,55 @@ def tiny_csnet(base_model_name, IMAGE_SIZE=[300, 300]):
 
 
     # conv1
-    conv1 = tiny_expand_conv_block(stem, 24) # 150x150
-    conv1 = Concatenate()([conv1, stem])
-    conv1 = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv1) # 75x75
+    conv1 = csnet_tiny_block(inputs=stem, input_filters=32, output_filters=16, expand_ratio=1,
+                             kernel_size=3, strides=1, has_se=True, drop_rate=0.2)
+
 
     # conv2
-    conv2 = tiny_expand_conv_block(conv1, 32)
-    conv2 = tiny_expand_conv_block(conv2, 40)
-    conv2_d = Concatenate()([conv2, conv1]) # 75x75
-    conv2_m = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv2_d) # 38x38
+    conv2 = csnet_tiny_block(inputs=conv1, input_filters=16, output_filters=24, expand_ratio=1,
+                             kernel_size=3, strides=2, has_se=True, drop_rate=0.2)
+    conv2 = csnet_tiny_block(inputs=conv2, input_filters=24, output_filters=24, expand_ratio=1,
+                             kernel_size=3, strides=1, has_se=True, drop_rate=0.2)
 
     # conv3
-    conv3 = tiny_expand_conv_block(conv2_m, 40)
-    conv3 = tiny_expand_conv_block(conv3, 56)
-    conv3_d = Concatenate()([conv3, conv2_m])
-    conv3_m = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv3_d)
+    conv3 = csnet_tiny_block(inputs=conv2, input_filters=24, output_filters=40, expand_ratio=1,
+                             kernel_size=3, strides=2, has_se=True, drop_rate=0.2)
+    conv3 = csnet_tiny_block(inputs=conv3, input_filters=40, output_filters=40, expand_ratio=1,
+                             kernel_size=5, strides=1, has_se=True, drop_rate=0.2)
+
 
     # conv4
-    conv4 = tiny_expand_conv_block(conv3_m, 56)
-    conv4 = tiny_expand_conv_block(conv4, 72)
-    conv4_d = Concatenate()([conv4, conv3_m])
-    conv4_m = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv4_d)
+    conv4 = csnet_tiny_block(inputs=conv3, input_filters=40, output_filters=80, expand_ratio=1,
+                             kernel_size=3, strides=2, has_se=True, drop_rate=0.2)
+    conv4 = csnet_tiny_block(inputs=conv4, input_filters=80, output_filters=80, expand_ratio=6,
+                             kernel_size=5, strides=1, has_se=True, drop_rate=0.2)
+    conv4 = csnet_tiny_block(inputs=conv4, input_filters=80, output_filters=80, expand_ratio=6,
+                             kernel_size=3, strides=1, has_se=True, drop_rate=0.2)
+
 
     # conv5
-    conv5 = tiny_expand_conv_block(conv4_m, 72)
-    conv5 = tiny_expand_conv_block(conv5, 88)
-    conv5_d = Concatenate()([conv5, conv4_m])
-    conv5_m = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv5_d)
+    conv5 = csnet_tiny_block(inputs=conv4, input_filters=40, output_filters=80, expand_ratio=1,
+                             kernel_size=3, strides=2, has_se=True, drop_rate=0.2)
+    conv5 = csnet_tiny_block(inputs=conv5, input_filters=80, output_filters=80, expand_ratio=6,
+                             kernel_size=5, strides=1, has_se=True, drop_rate=0.2)
+    conv5 = csnet_tiny_block(inputs=conv5, input_filters=80, output_filters=80, expand_ratio=6,
+                             kernel_size=3, strides=1, has_se=True, drop_rate=0.2)
+
 
     # conv6
-    conv6 = tiny_expand_conv_block(conv5_m, 88)
-    conv6 = tiny_expand_conv_block(conv6, 104)
-    conv6_d = Concatenate()([conv6, conv5_m])
-    conv6_m = MaxPooling2D(pool_size=3, strides=2, padding='same')(conv6_d)
+    conv6 = csnet_tiny_block(inputs=conv5, input_filters=40, output_filters=80, expand_ratio=1,
+                             kernel_size=3, strides=2, has_se=True, drop_rate=0.2)
+    conv6 = csnet_tiny_block(inputs=conv6, input_filters=80, output_filters=80, expand_ratio=6,
+                             kernel_size=5, strides=1, has_se=True, drop_rate=0.2)
+    conv6 = csnet_tiny_block(inputs=conv6, input_filters=80, output_filters=80, expand_ratio=6,
+                             kernel_size=3, strides=1, has_se=True, drop_rate=0.2)
 
     # conv7
-    conv7 = tiny_expand_conv_block(conv6_m, 104)
-    conv7 = tiny_expand_conv_block(conv7, 112)
-    conv7_d = Concatenate()([conv7, conv6_m])
+    conv7 = csnet_tiny_block(inputs=conv6, input_filters=80, output_filters=112, expand_ratio=1,
+                             kernel_size=3, strides=2, has_se=True, drop_rate=0.2)
+    conv7 = csnet_tiny_block(inputs=conv7, input_filters=112, output_filters=112, expand_ratio=6,
+                             kernel_size=3, strides=1, has_se=True, drop_rate=0.2)
 
 
-    outputs = [conv3_d, conv4_d, conv5_d, conv6_d, conv7_d]
+    outputs = [conv3, conv4, conv5, conv6, conv7]
     return input, outputs

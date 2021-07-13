@@ -9,6 +9,8 @@ from model.loss import Total_loss
 import argparse
 import time
 import os
+import tensorflow_addons as tfa
+
 
 tf.keras.backend.clear_session()
 policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
@@ -82,6 +84,12 @@ polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=
 lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
 optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
+
+# step = tf.Variable(0, trainable=False)
+# lr = base_lr * polyDecay(step)
+# wd = lambda: 1e-4 * polyDecay(step)
+# optimizer = tfa.optimizers.AdamW(learning_rate=lr, weight_decay=wd)
+
 optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
 
 callback = [checkpoint, lr_scheduler, testCallBack, tensorboard]
