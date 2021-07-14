@@ -454,9 +454,13 @@ def round_filters(filters, width_coefficient, depth_divisor):
         new_filters += depth_divisor
     return int(new_filters)
 
+def hard_swish(x) -> tf.Tensor:
+    return x * (tf.nn.relu6(x + 3) / 6)
 
-#activation = lambda x: tf.nn.swish(x)
-activation = 'relu'
+
+# activation = 'relu'
+activation = lambda x: hard_swish(x)
+
 
 def tiny_stem_block(input):
     x = Conv2D(32, 3,
