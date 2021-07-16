@@ -12,6 +12,8 @@ cocoGt=COCO(annFile)
 cocoDt=cocoGt.loadRes('datasets/coco_predictions.json')
 
 imgIds=sorted(cocoGt.getImgIds())
+img_list = cocoGt.getImgIds()
+
 #imgIds = imgIds[0:100]
 # imgIds = imgIds[0:4952]
 

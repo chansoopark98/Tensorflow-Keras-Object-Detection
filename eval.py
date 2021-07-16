@@ -90,6 +90,8 @@ else:
     CLASSES_NUM = 81
     coco_dataset = coco_eval_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
                                      target_transform, TRAIN_MODE, train=False)
+    validation_dataset = prepare_dataset(test_data, IMAGE_SIZE, BATCH_SIZE,
+                                                target_transform, CLASSES_NUM, train=False)
 
 mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
 print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
