@@ -11,13 +11,12 @@ import time
 import os
 
 tf.keras.backend.clear_session()
-policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
-mixed_precision.set_policy(policy)
+
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=2)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=300)
-parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.01)
+parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.00001)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
 parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름",
                     default=str(time.strftime('%m%d', time.localtime(time.time()))))
@@ -28,7 +27,9 @@ parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 �
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=True)
 parser.add_argument("--load_weight",  type=bool,  help="가중치 로드", default=False)
+parser.add_argument("--mixed_precision",  type=bool,  help="분산 학습 모드 설정 mirror or multi", default=True)
 parser.add_argument("--distribution_mode",  type=bool,  help="분산 학습 모드 설정 mirror or multi", default='mirror')
+
 
 args = parser.parse_args()
 WEIGHT_DECAY = args.weight_decay
@@ -44,7 +45,12 @@ TRAIN_MODE = args.train_dataset
 IMAGE_SIZE = [MODEL_INPUT_SIZE[MODEL_NAME], MODEL_INPUT_SIZE[MODEL_NAME]]
 USE_WEIGHT_DECAY = args.use_weightDecay
 LOAD_WEIGHT = args.load_weight
+MIXED_PRECISION = args.mixed_precision
 DISTRIBUTION_MODE = args.distribution_mode
+
+if MIXED_PRECISION:
+    policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
+    mixed_precision.set_policy(policy)
 
 os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
@@ -83,8 +89,8 @@ lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
 # optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
 optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
-
-optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
+if MIXED_PRECISION:
+    optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
 callback = [checkpoint, tensorboard, testCallBack, lr_scheduler]
 
 # load_weight = False
@@ -118,7 +124,7 @@ with mirrored_strategy.scope():
     )
 
     if LOAD_WEIGHT:
-        weight_name = '70.4%_tiny_voc_0714'
+        weight_name = 'voc_0710'
         model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
     model.summary()
