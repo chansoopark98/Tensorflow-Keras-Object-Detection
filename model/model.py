@@ -458,8 +458,8 @@ def hard_swish(x) -> tf.Tensor:
     return x * (tf.nn.relu6(x + 3) / 6)
 
 
-# activation = 'relu'
-activation = lambda x: hard_swish(x)
+activation = 'relu'
+#activation = hard_swish
 
 
 def tiny_stem_block(input):

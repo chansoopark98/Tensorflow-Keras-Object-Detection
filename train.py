@@ -118,15 +118,17 @@ with mirrored_strategy.scope():
     )
 
     if LOAD_WEIGHT:
-        weight_name = 'voc_0713'
+        weight_name = '70.4%_tiny_voc_0714'
         model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
     model.summary()
 
     history = model.fit(dataset_config.training_dataset,
             validation_data=dataset_config.validation_dataset,
-            steps_per_epoch=steps_per_epoch,
-            validation_steps=validation_steps,
-            epochs=EPOCHS,
+            steps_per_epoch=1,
+            validation_steps=1,
+            epochs=1,
             callbacks=callback)
+
+    model.save('./checkpoints/save_model.h5', True, True, 'h5')
 
