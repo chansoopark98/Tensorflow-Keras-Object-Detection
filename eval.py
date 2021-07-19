@@ -96,11 +96,17 @@ else:
 mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
 print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
 
+if MODEL_NAME == 'CSNet-tiny':
+    normalize = [-1, -1, -1, -1, -1, -1]
+    num_priors = [3, 3, 3, 3, 3, 3]
+else :
+    normalize = [20, 20, 20, -1, -1]
+    num_priors = [3, 3, 3, 3, 3]
 
 with mirrored_strategy.scope():
-
     print("백본 EfficientNet{0} .".format(MODEL_NAME))
-    model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, pretrained=False)
+    model = model_build(TRAIN_MODE, MODEL_NAME, normalizations=normalize, num_priors=num_priors,
+                        image_size=IMAGE_SIZE, backbone_trainable=False)
 
     print("모델 가중치 로드...")
     model.load_weights(CHECKPOINT_DIR)

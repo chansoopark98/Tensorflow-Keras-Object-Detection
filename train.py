@@ -12,7 +12,6 @@ import os
 
 tf.keras.backend.clear_session()
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=128)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=500)
@@ -29,7 +28,6 @@ parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 �
 parser.add_argument("--load_weight",  type=bool,  help="가중치 로드", default=False)
 parser.add_argument("--mixed_precision",  type=bool,  help="분산 학습 모드 설정 mirror or multi", default=False)
 parser.add_argument("--distribution_mode",  type=bool,  help="분산 학습 모드 설정 mirror or multi", default='mirror')
-
 
 args = parser.parse_args()
 WEIGHT_DECAY = args.weight_decay
@@ -80,8 +78,6 @@ checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME
                                  monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
 testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
-
-
 polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
                                                           decay_steps=EPOCHS,
                                                           end_learning_rate=0.0001, power=0.5)
@@ -89,14 +85,11 @@ lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
 # optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
 optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
+
 if MIXED_PRECISION:
     optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
-callback = [checkpoint, tensorboard, testCallBack, lr_scheduler]
 
-# load_weight = False
-# if load_weight:
-#     weight_name = '0421'
-#     model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
+callback = [checkpoint, tensorboard, testCallBack, lr_scheduler]
 
 if DISTRIBUTION_MODE == 'multi':
     mirrored_strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(

@@ -53,8 +53,16 @@ specs = set_priorBox(MODEL_NAME)
 priors = create_priors_boxes(specs, IMAGE_SIZE[0])
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
+if MODEL_NAME == 'CSNet-tiny':
+    normalize = [-1, -1, -1, -1, -1, -1]
+    num_priors = [3, 3, 3, 3, 3, 3]
+else :
+    normalize = [20, 20, 20, -1, -1]
+    num_priors = [3, 3, 3, 3, 3]
+
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
-model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, pretrained=False)
+model = model_build(TRAIN_MODE, MODEL_NAME, normalizations=normalize, num_priors=num_priors,
+                    image_size=IMAGE_SIZE, backbone_trainable=False)
 model.summary()
 print("모델로드")
 model.load_weights(checkpoint_filepath)
@@ -67,8 +75,6 @@ dataset = dataset.batch(BATCH_SIZE)
 
 x, y = 0, BATCH_SIZE
 test_steps = 4952 // BATCH_SIZE + 1
-
-
 
 
 def draw_bounding(img , bboxes, labels, img_size):
