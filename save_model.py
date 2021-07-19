@@ -1,6 +1,6 @@
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
-from callbacks import Scalar_LR, DecayHistory
+from callbacks import Scalar_LR
 from metrics import CreateMetrics
 from config import *
 from utils.load_datasets import GenerateDatasets
@@ -9,10 +9,6 @@ from model.loss import Total_loss
 import argparse
 import time
 import os
-
-tf.keras.backend.clear_session()
-policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
-mixed_precision.set_policy(policy)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
@@ -84,24 +80,29 @@ lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 # optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
 optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
 
-optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
 callback = [checkpoint, tensorboard, testCallBack, lr_scheduler]
 
+if MODEL_NAME == 'CSNet-tiny':
+    normalize = [-1, -1, -1, -1, -1, -1]
+    num_priors = [3, 3, 3, 3, 3, 3]
+else :
+    normalize = [20, 20, 20, -1, -1]
+    num_priors = [3, 3, 3, 3, 3]
 
-model = model_build(TRAIN_MODE, MODEL_NAME, image_size=IMAGE_SIZE, backbone_trainable=True)
+model = model_build(TRAIN_MODE, MODEL_NAME, normalizations=normalize, num_priors=num_priors,
+                    image_size=IMAGE_SIZE, backbone_trainable=True)
+
 model.compile(
     optimizer=optimizer,
     loss=loss.total_loss,
     metrics=[metrics.precision, metrics.recall, metrics.cross_entropy, metrics.localization]
 )
 
-weight_name = 'voc_0717'
+weight_name = 'voc_0719'
 model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
 converter = tf.lite.TFLiteConverter.from_keras_model(model)
-#converter.target_ops = [tf.lite.OpsSet.TFLITE_BUILTINS, tf.lite.OpsSet.SELECT_TF_OPS]
-#converter.allow_custom_ops=True
-#converter.experimental_new_converter =True
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
 tflite_model = converter.convert()
 
 # Save the model.
