@@ -6,7 +6,7 @@ from collections import namedtuple
 from typing import List
 import itertools
 import collections
-
+#import tflite_runtime.interpreter as tflite
 CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog',
            'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
 
@@ -431,7 +431,7 @@ priors = create_priors_boxes(specs, 224)
 
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
-TFLITE_FILE_PATH = 'new_tflite_model.tflite'
+TFLITE_FILE_PATH = 'ssd.tflite'
 
 
 interpreter = tf.lite.Interpreter(model_path=TFLITE_FILE_PATH)
@@ -447,21 +447,13 @@ capture = cv2.VideoCapture(0)
 capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-ret, frame = capture.read()
-input = tf.convert_to_tensor(frame, dtype=tf.float32)
-
-# 이미지 리사이징
-input = tf.image.resize(input, [224, 224])
-input = preprocess_input(input, mode='torch')
-input = tf.expand_dims(input, axis=0)
-interpreter.set_tensor(input_details[0]['index'], input)
 
 import time
 while True:
     ret, frame = capture.read()
     #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     start = time.perf_counter_ns()
-    input = tf.convert_to_tensor(frame, dtype=tf.float32)
+    input = tf.convert_to_tensor(frame)
 
     # 이미지 리사이징
     input = tf.image.resize(input, [224, 224])
@@ -479,16 +471,16 @@ while True:
 
     start = time.perf_counter_ns()
 
-
+    interpreter.set_tensor(input_details[0]['index'], input)
 
     interpreter.invoke()
-
+    duration = (time.perf_counter_ns() - start)
+    print(f"추론 과정 : {duration // 1000000}ms.")
     # The function `get_tensor()` returns a copy of the tensor data.
     # Use `tensor()` in order to get a pointer to the tensor.
     output_data = interpreter.get_tensor(output_details[0]['index'])
 
-    duration = (time.perf_counter_ns() - start)
-    print(f"추론 과정 : {duration // 1000000}ms.")
+
 
 
     start = time.perf_counter_ns()

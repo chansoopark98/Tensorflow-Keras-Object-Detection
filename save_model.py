@@ -101,12 +101,21 @@ model.compile(
 weight_name = 'voc_0719'
 model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
-converter = tf.lite.TFLiteConverter.from_keras_model(model)
-converter.optimizations = [tf.lite.Optimize.DEFAULT]
-tflite_model = converter.convert()
-
-# Save the model.
-with open('new_tflite_model.tflite', 'wb') as f:
-    f.write(tflite_model)
+model.save('./checkpoints/save_model', True, False, 'tf')
+# def representative_data_gen():
+#     dataset = tf.data.Dataset.list_files('./inputs/' + '*', shuffle=False)
+#     for input_value in dataset.batch(1).take(100):
+#         # Model has only one input so each data point has one element.
+#         yield [tf.expand_dims(input_value, axis=0)]
+#
+# converter = tf.lite.TFLiteConverter.from_keras_model(model)
+# #converter.optimizations = [tf.lite.Optimize.DEFAULT]
+# #converter.representative_dataset = representative_data_gen
+# #converter.experimental_new_converter = True
+# tflite_model_quant = converter.convert()
+#
+# # Save the model.
+# with open('new_tflite_model.tflite', 'wb') as f:
+#     f.write(tflite_model_quant)
 
 

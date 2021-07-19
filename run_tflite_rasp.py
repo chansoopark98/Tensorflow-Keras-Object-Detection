@@ -6,8 +6,7 @@ from collections import namedtuple
 from typing import List
 import itertools
 import collections
-from tflite_runtime.interpreter as tflite
-
+import tflite_runtime.interpreter as tflite
 CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog',
            'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
 
@@ -420,14 +419,14 @@ def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
     return tf.convert_to_tensor(priors)
 
 specs = [
-            Spec(38, 8, BoxSizes(10, 20), [2]),
-            Spec(19, 16, BoxSizes(23, 33), [2]),
-            Spec(10, 32, BoxSizes(53, 108), [2]),
-            Spec(5, 64, BoxSizes(113, 134), [2]),
-            Spec(3, 100, BoxSizes(182, 226), [2])
+            Spec(28, 8, BoxSizes(11, 22), [2]), # 0.05 / 0.1
+            Spec(14, 16, BoxSizes(23, 45), [2]), # 0.1 / 0.2
+            Spec(7, 32, BoxSizes(56, 90), [2]), # 0.25 / 0.4
+            Spec(4, 64, BoxSizes(90, 134), [2]), # 0.4 / 0.6
+            Spec(2, 112, BoxSizes(134, 168), [2]), # 0.6 / 0.75
+            Spec(1, 224, BoxSizes(179, 235), [2]) # 0.8 / 1.05
         ]
-
-priors = create_priors_boxes(specs, 300)
+priors = create_priors_boxes(specs, 224)
 
 
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
@@ -448,36 +447,48 @@ capture = cv2.VideoCapture(0)
 capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
+ret, frame = capture.read()
+input = tf.convert_to_tensor(frame, dtype=tf.float32)
+
+# 이미지 리사이징
+input = tf.image.resize(input, [224, 224])
+input = preprocess_input(input, mode='torch')
+input = tf.expand_dims(input, axis=0)
+interpreter.set_tensor(input_details[0]['index'], input)
+
+import time
 while True:
     ret, frame = capture.read()
-    #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    # 텐서 변환
+    start = time.perf_counter_ns()
     input = tf.convert_to_tensor(frame, dtype=tf.float32)
 
     # 이미지 리사이징
-    input = tf.image.resize(input, [300, 300])
+    input = tf.image.resize(input, [224, 224])
     input = preprocess_input(input, mode='torch')
     input = tf.expand_dims(input, axis=0)
 
+    duration = (time.perf_counter_ns() - start)
+    print(f"전처리 과정 : {duration // 1000000}ms.")
 
-    # Test the model on random input data.
-    input_shape = input_details[0]['shape']
-    input_data = input
-    interpreter.set_tensor(input_details[0]['index'], input_data)
 
+    start = time.perf_counter_ns()
+    """ !- 추론 과정 """
     interpreter.invoke()
-
-    # The function `get_tensor()` returns a copy of the tensor data.
-    # Use `tensor()` in order to get a pointer to the tensor.
     output_data = interpreter.get_tensor(output_details[0]['index'])
+    duration = (time.perf_counter_ns() - start)
+    print(f"추론 과정 : {duration // 1000000}ms.")
 
 
+    start = time.perf_counter_ns()
     predictions = post_process(output_data, target_transform, classes=21, confidence_threshold=0.4)
 
     pred_boxes, pred_scores, pred_labels = predictions[0]
     if pred_boxes.size > 0:
         draw_bounding(frame, pred_boxes, labels=pred_labels, img_size=frame.shape[:2])
+    duration = (time.perf_counter_ns() - start)
+    print(f"포스트 프로세싱 과정 : {duration // 1000000}ms.")
+
     cv2.imshow("VideoFrame", frame)
     if cv2.waitKey(1) > 0:
         break

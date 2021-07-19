@@ -15,9 +15,9 @@ mixed_precision.set_policy(policy)
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=128)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
-parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/voc_0714.h5')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/voc_0719.h5')
 # parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./datasets/test/VOCdevkit/VOC2007/JPEGImages/')
 parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./inputs/')
 parser.add_argument("--output_dir", type=str,   help="테스트 결과 이미지 디렉토리 설정", default='./outputs/')
