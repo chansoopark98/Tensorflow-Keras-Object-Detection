@@ -6,7 +6,7 @@ size_variance = 0.2 # 0.2
 
 
 MODEL_INPUT_SIZE = {
-    'CSNet-tiny': 300,
+    'CSNet-tiny': 224,
     'B0-tiny': 300,
     'B0': 512,
     'B1': 544,
@@ -82,22 +82,32 @@ class TrainHyperParams:
                 54,641,603 coco
 """
 
-spec = [
-    Spec(38, 8, BoxSizes(30, 60), [2]),
-    Spec(19, 16, BoxSizes(60, 111), [2]),
-    Spec(10, 32, BoxSizes(111, 162), [2]),
-    Spec(5, 64, BoxSizes(162, 213), [2]),
-    Spec(3, 100, BoxSizes(213, 264), [2]),
-    Spec(1, 300, BoxSizes(264, 315), [2])
-]
+# spec = [
+#     Spec(38, 8, BoxSizes(30, 60), [2]),
+#     Spec(19, 16, BoxSizes(60, 111), [2]),
+#     Spec(10, 32, BoxSizes(111, 162), [2]),
+#     Spec(5, 64, BoxSizes(162, 213), [2]),
+#     Spec(3, 100, BoxSizes(213, 264), [2]),
+#     Spec(1, 300, BoxSizes(264, 315), [2])
+# ]
+# 300x300 tiny
+# if model_name == 'CSNet-tiny':
+#     return [
+#         Spec(38, 8, BoxSizes(10, 20), [2]),
+#         Spec(19, 16, BoxSizes(23, 33), [2]),
+#         Spec(10, 32, BoxSizes(53, 108), [2]),
+#         Spec(5, 64, BoxSizes(113, 134), [2]),
+#         Spec(3, 100, BoxSizes(182, 226), [2])
+#     ]
 def set_priorBox(model_name):
     if model_name == 'CSNet-tiny':
         return [
-            Spec(38, 8, BoxSizes(10, 20), [2]),
-            Spec(19, 16, BoxSizes(23, 33), [2]),
-            Spec(10, 32, BoxSizes(53, 108), [2]),
-            Spec(5, 64, BoxSizes(113, 134), [2]),
-            Spec(3, 100, BoxSizes(182, 226), [2])
+            Spec(28, 8, BoxSizes(11, 22), [2]), # 0.05 / 0.1
+            Spec(14, 16, BoxSizes(23, 45), [2]), # 0.1 / 0.2
+            Spec(7, 32, BoxSizes(56, 90), [2]), # 0.25 / 0.4
+            Spec(4, 64, BoxSizes(90, 134), [2]), # 0.4 / 0.6
+            Spec(2, 112, BoxSizes(134, 168), [2]), # 0.6 / 0.75
+            Spec(1, 224, BoxSizes(179, 235), [2]) # 0.8 / 1.05
         ]
     elif model_name == 'B0-tiny':
         return [

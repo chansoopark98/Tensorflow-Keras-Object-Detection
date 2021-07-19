@@ -587,13 +587,11 @@ def tiny_csnet(base_model_name, IMAGE_SIZE=[300, 300]):
                              kernel_size=5, strides=1, has_se=True, drop_rate=0)
 
 
-
     # conv5
     conv5 = csnet_tiny_block(inputs=conv4, input_filters=88, output_filters=112, expand_ratio=3,
                              kernel_size=3, strides=2, has_se=True, drop_rate=0)
     conv5 = csnet_tiny_block(inputs=conv5, input_filters=88, output_filters=112, expand_ratio=3,
                              kernel_size=5, strides=1, has_se=True, drop_rate=0)
-
 
 
     # conv6
@@ -608,6 +606,11 @@ def tiny_csnet(base_model_name, IMAGE_SIZE=[300, 300]):
     conv7 = csnet_tiny_block(inputs=conv7, input_filters=128, output_filters=144, expand_ratio=3,
                              kernel_size=3, strides=1, has_se=True, drop_rate=0)
 
+    # conv8
+    conv8 = csnet_tiny_block(inputs=conv7, input_filters=144, output_filters=160, expand_ratio=1,
+                             kernel_size=3, strides=2, has_se=True, drop_rate=0)
+    conv8 = csnet_tiny_block(inputs=conv8, input_filters=144, output_filters=160, expand_ratio=1,
+                             kernel_size=3, strides=1, has_se=True, drop_rate=0)
 
-    outputs = [conv3, conv4, conv5, conv6, conv7]
+    outputs = [conv3, conv4, conv5, conv6, conv7, conv8]
     return input, outputs
