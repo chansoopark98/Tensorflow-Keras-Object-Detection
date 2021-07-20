@@ -2,7 +2,7 @@ import efficientnet.keras as efn
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.layers import Conv2D, Add, Activation, Dropout ,BatchNormalization,  UpSampling2D,\
-    SeparableConv2D, MaxPooling2D, Concatenate, DepthwiseConv2D, GlobalAveragePooling2D, Reshape, multiply, add
+    SeparableConv2D, MaxPooling2D, Concatenate, DepthwiseConv2D, GlobalAveragePooling2D, Reshape, multiply, add, ReLU
 from functools import reduce
 
 NUM_CHANNELS = [64, 64, 88, 112, 160, 224, 288, 288, 288]
@@ -455,11 +455,8 @@ def tiny_stem_block(input):
                       name='stem_conv')(input)
     x = BatchNormalization(axis=3, name='stem_bn')(x)
 
-    x = Activation(activation)(x)
+    x = ReLU(6.)(x)
     return x
-
-
-
 
 
 def csnet_tiny_block(inputs, input_filters, output_filters,
@@ -473,7 +470,7 @@ def csnet_tiny_block(inputs, input_filters, output_filters,
                       kernel_initializer=CONV_KERNEL_INITIALIZER,
                       )(inputs)
     x = BatchNormalization(axis=3)(x)
-    x = Activation(activation)(x)
+    x = ReLU(6.)(x)
 
     # Depthwise Convolution
     x = DepthwiseConv2D(kernel_size,
@@ -483,7 +480,7 @@ def csnet_tiny_block(inputs, input_filters, output_filters,
                                depthwise_initializer=CONV_KERNEL_INITIALIZER,
                                )(x)
     x = BatchNormalization(axis=3)(x)
-    x = Activation(activation)(x)
+    x = ReLU(6.)(x)
 
     # Squeeze and Excitation phase
     if has_se:
@@ -513,12 +510,6 @@ def csnet_tiny_block(inputs, input_filters, output_filters,
                       kernel_initializer=CONV_KERNEL_INITIALIZER,
                       )(x)
     x = BatchNormalization(axis=3)(x)
-    if strides != 2:
-        if drop_rate and (drop_rate > 0):
-            x = Dropout(drop_rate,
-                        noise_shape=(None, 1, 1, 1),
-                        )(x)
-        x = Concatenate()([x, inputs])
 
     return x
 
@@ -534,56 +525,56 @@ def tiny_csnet(IMAGE_SIZE=[224, 224]):
 
     # conv1
     conv1 = csnet_tiny_block(inputs=stem, input_filters=32, output_filters=48, expand_ratio=1,
-                             kernel_size=3, strides=1, has_se=True, drop_rate=0)
+                             kernel_size=3, strides=1, has_se=False, drop_rate=0)
     conv1 = csnet_tiny_block(inputs=conv1, input_filters=32, output_filters=48, expand_ratio=3,
-                             kernel_size=3, strides=1, has_se=True, drop_rate=0)
+                             kernel_size=3, strides=1, has_se=False, drop_rate=0)
 
 
     # conv2
     conv2 = csnet_tiny_block(inputs=conv1, input_filters=48, output_filters=56, expand_ratio=3,
-                             kernel_size=3, strides=2, has_se=True, drop_rate=0)
+                             kernel_size=3, strides=2, has_se=False, drop_rate=0)
     conv2 = csnet_tiny_block(inputs=conv2, input_filters=48, output_filters=56, expand_ratio=3,
-                             kernel_size=3, strides=1, has_se=True, drop_rate=0)
+                             kernel_size=3, strides=1, has_se=False, drop_rate=0)
 
 
     # conv3
     conv3 = csnet_tiny_block(inputs=conv2, input_filters=56, output_filters=72, expand_ratio=3,
-                             kernel_size=3, strides=2, has_se=True, drop_rate=0)
-    # conv3 = csnet_tiny_block(inputs=conv3, input_filters=56, output_filters=72, expand_ratio=3,
-    #                          kernel_size=5, strides=1, has_se=True, drop_rate=0)
+                             kernel_size=3, strides=2, has_se=False, drop_rate=0)
+    conv3 = csnet_tiny_block(inputs=conv3, input_filters=56, output_filters=72, expand_ratio=3,
+                             kernel_size=5, strides=1, has_se=False, drop_rate=0)
 
 
     # conv4
     conv4 = csnet_tiny_block(inputs=conv3, input_filters=72, output_filters=88, expand_ratio=3,
-                             kernel_size=3, strides=2, has_se=True, drop_rate=0)
-    # conv4 = csnet_tiny_block(inputs=conv4, input_filters=72, output_filters=88, expand_ratio=3,
-    #                          kernel_size=5, strides=1, has_se=True, drop_rate=0)
+                             kernel_size=3, strides=2, has_se=False, drop_rate=0)
+    conv4 = csnet_tiny_block(inputs=conv4, input_filters=72, output_filters=88, expand_ratio=3,
+                             kernel_size=5, strides=1, has_se=False, drop_rate=0)
 
 
     # conv5
     conv5 = csnet_tiny_block(inputs=conv4, input_filters=88, output_filters=112, expand_ratio=3,
-                             kernel_size=3, strides=2, has_se=True, drop_rate=0)
-    # conv5 = csnet_tiny_block(inputs=conv5, input_filters=88, output_filters=112, expand_ratio=3,
-    #                          kernel_size=5, strides=1, has_se=True, drop_rate=0)
+                             kernel_size=3, strides=2, has_se=False, drop_rate=0)
+    conv5 = csnet_tiny_block(inputs=conv5, input_filters=88, output_filters=112, expand_ratio=3,
+                             kernel_size=5, strides=1, has_se=False, drop_rate=0)
 
 
     # conv6
     conv6 = csnet_tiny_block(inputs=conv5, input_filters=112, output_filters=128, expand_ratio=3,
-                             kernel_size=3, strides=2, has_se=True, drop_rate=0)
-    # conv6 = csnet_tiny_block(inputs=conv6, input_filters=112, output_filters=128, expand_ratio=3,
-    #                          kernel_size=5, strides=1, has_se=True, drop_rate=0)
+                             kernel_size=3, strides=2, has_se=False, drop_rate=0)
+    conv6 = csnet_tiny_block(inputs=conv6, input_filters=112, output_filters=128, expand_ratio=3,
+                             kernel_size=5, strides=1, has_se=False, drop_rate=0)
 
     # conv7
     conv7 = csnet_tiny_block(inputs=conv6, input_filters=128, output_filters=144, expand_ratio=3,
-                             kernel_size=3, strides=2, has_se=True, drop_rate=0)
-    # conv7 = csnet_tiny_block(inputs=conv7, input_filters=128, output_filters=144, expand_ratio=3,
-    #                          kernel_size=3, strides=1, has_se=True, drop_rate=0)
+                             kernel_size=3, strides=2, has_se=False, drop_rate=0)
+    conv7 = csnet_tiny_block(inputs=conv7, input_filters=128, output_filters=144, expand_ratio=3,
+                             kernel_size=3, strides=1, has_se=False, drop_rate=0)
 
     # conv8
     conv8 = csnet_tiny_block(inputs=conv7, input_filters=144, output_filters=160, expand_ratio=1,
-                             kernel_size=3, strides=2, has_se=True, drop_rate=0)
-    # conv8 = csnet_tiny_block(inputs=conv8, input_filters=144, output_filters=160, expand_ratio=1,
-    #                          kernel_size=3, strides=1, has_se=True, drop_rate=0)
+                             kernel_size=3, strides=2, has_se=False, drop_rate=0)
+    conv8 = csnet_tiny_block(inputs=conv8, input_filters=144, output_filters=160, expand_ratio=1,
+                             kernel_size=3, strides=1, has_se=False, drop_rate=0)
 
     outputs = [conv3, conv4, conv5, conv6, conv7, conv8]
     return input, outputs
