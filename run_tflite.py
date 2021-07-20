@@ -542,12 +542,16 @@ def playCam():
 
         start = time.perf_counter_ns()
         predictions = post_process(output_data, target_transform, top_k=25, classes=21, confidence_threshold=0.4)
+        duration = (time.perf_counter_ns() - start)
+        print(f"포스트 프로세싱 과정 : {duration // 1000000}ms.")
 
+
+        start = time.perf_counter_ns()
         pred_boxes, pred_scores, pred_labels = predictions[0]
         if pred_boxes.size > 0:
             draw_bounding(frame, pred_boxes, labels=pred_labels, img_size=frame.shape[:2])
         duration = (time.perf_counter_ns() - start)
-        print(f"포스트 프로세싱 과정 : {duration // 1000000}ms.")
+        print(f"박스 그리는 과정 : {duration // 1000000}ms.")
         cv2.imshow("tflite_inference", frame)
         if cv2.waitKey(1) > 0:
             break
