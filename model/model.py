@@ -441,24 +441,8 @@ layers = None
 models = None
 keras_utils = None
 
-bn_axis = 3 if tf.keras.backend.image_data_format() == 'channels_last' else 1
 
-
-def round_filters(filters, width_coefficient, depth_divisor):
-    """너비 승수를 기준으로 한 필터 수를 반올림"""
-    filters *= width_coefficient
-    new_filters = int(filters + depth_divisor / 2) // depth_divisor * depth_divisor
-    new_filters = max(depth_divisor, new_filters)
-    # 내림이 10% 이상 내려가지 않도록 함
-    if new_filters < 0.9 * filters:
-        new_filters += depth_divisor
-    return int(new_filters)
-
-def hard_swish(x) -> tf.Tensor:
-    return x * (tf.nn.relu6(x + 3) / 6)
-
-
-activation = 'relu'
+activation = tf.nn.relu6
 #activation = hard_swish
 
 
@@ -469,7 +453,7 @@ def tiny_stem_block(input):
                       use_bias=False,
                       kernel_initializer=CONV_KERNEL_INITIALIZER,
                       name='stem_conv')(input)
-    x = BatchNormalization(axis=bn_axis, name='stem_bn')(x)
+    x = BatchNormalization(axis=3, name='stem_bn')(x)
 
     x = Activation(activation)(x)
     return x
@@ -489,8 +473,6 @@ def tiny_expand_conv_block(input, init_channel):
 
 def csnet_tiny_block(inputs, input_filters, output_filters,
                      expand_ratio, kernel_size, strides, has_se, drop_rate=0.2):
-    bn_axis = 3 if tf.keras.backend.image_data_format() == 'channels_last' else 1
-
 
     # Expansion phase
     filters = input_filters * expand_ratio
@@ -499,7 +481,7 @@ def csnet_tiny_block(inputs, input_filters, output_filters,
                       use_bias=False,
                       kernel_initializer=CONV_KERNEL_INITIALIZER,
                       )(inputs)
-    x = BatchNormalization(axis=bn_axis)(x)
+    x = BatchNormalization(axis=3)(x)
     x = Activation(activation)(x)
 
     # Depthwise Convolution
@@ -509,7 +491,7 @@ def csnet_tiny_block(inputs, input_filters, output_filters,
                                use_bias=False,
                                depthwise_initializer=CONV_KERNEL_INITIALIZER,
                                )(x)
-    x = BatchNormalization(axis=bn_axis)(x)
+    x = BatchNormalization(axis=3)(x)
     x = Activation(activation)(x)
 
     # Squeeze and Excitation phase
@@ -539,7 +521,7 @@ def csnet_tiny_block(inputs, input_filters, output_filters,
                       use_bias=False,
                       kernel_initializer=CONV_KERNEL_INITIALIZER,
                       )(x)
-    x = BatchNormalization(axis=bn_axis)(x)
+    x = BatchNormalization(axis=3)(x)
     if strides != 2:
         if drop_rate and (drop_rate > 0):
             x = Dropout(drop_rate,

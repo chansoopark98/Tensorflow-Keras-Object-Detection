@@ -9,11 +9,11 @@ from model.loss import Total_loss
 import argparse
 import time
 import os
-
+from calc_flops import get_flops
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=128)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=500)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.01)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
@@ -109,6 +109,7 @@ else :
 with mirrored_strategy.scope():
     model = model_build(TRAIN_MODE, MODEL_NAME, normalizations=normalize, num_priors=num_priors,
                         image_size=IMAGE_SIZE, backbone_trainable=True)
+
 
     if USE_WEIGHT_DECAY:
         regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
