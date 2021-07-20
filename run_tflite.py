@@ -492,7 +492,7 @@ while True:
     duration = (time.perf_counter_ns() - start)
     print(f"포스트 프로세싱 과정 : {duration // 1000000}ms.")
 
-    cv2.imshow("VideoFrame", frame)
+    #cv2.imshow("VideoFrame", frame)
     if cv2.waitKey(1) > 0:
         break
 

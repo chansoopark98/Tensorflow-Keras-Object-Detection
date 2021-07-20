@@ -110,3 +110,40 @@ def create_classifier(source_layers, num_priors, normalizations, num_classes=21,
     predictions = Concatenate(axis=2, name='predictions', dtype=tf.float32)([mbox_loc, mbox_conf])
 
     return predictions
+
+# CLASSIFIER BUILD!
+def tiny_classifier(source_layers, num_priors, num_classes=21):
+    mbox_conf = []
+    mbox_loc = []
+    for i, x in enumerate(source_layers):
+        # source_layers
+
+        # name = x.name.split('/')[0] # name만 추출 (ex: block3b_add)
+        name = x.name.split(':')[0] # name만 추출 (ex: block3b_add)
+
+
+        x1 = Conv2D(num_priors[i] * num_classes, 3, padding='same',
+                             kernel_initializer=initializers.VarianceScaling(),
+                             name= name + '_mbox_conf_1')(x)
+
+
+        x1 = Flatten(name=name + '_mbox_conf_flat')(x1)
+        mbox_conf.append(x1)
+
+        x2 = Conv2D(num_priors[i] * 4, 3, padding='same',
+                             kernel_initializer=initializers.VarianceScaling(),
+                             name= name + '_mbox_loc_1')(x)
+
+
+        x2 = Flatten(name=name + '_mbox_loc_flat')(x2)
+        mbox_loc.append(x2)
+
+    mbox_loc = Concatenate(axis=1, name='mbox_loc')(mbox_loc)
+    mbox_loc = Reshape((-1, 4), name='mbox_loc_final')(mbox_loc)
+
+    mbox_conf = Concatenate(axis=1, name='mbox_conf')(mbox_conf)
+    mbox_conf = Reshape((-1, num_classes), name='mbox_conf_logits')(mbox_conf)
+
+    predictions = Concatenate(axis=2, name='predictions', dtype=tf.float32)([mbox_loc, mbox_conf])
+
+    return predictions

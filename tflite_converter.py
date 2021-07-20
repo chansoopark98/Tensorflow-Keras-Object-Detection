@@ -35,7 +35,7 @@ import time
 # Convert the model.
 #converter = tf.lite.TFLiteConverter.from_keras_model(model)
 converter = tf.lite.TFLiteConverter.from_saved_model('./checkpoints/save_model')
-converter.optimizations = [tf.lite.Optimize.DEFAULT]
+#converter.optimizations = [tf.lite.Optimize.DEFAULT]
 tflite_model = converter.convert()
 
 # Save the model.
