@@ -496,6 +496,7 @@ while True:
         draw_bounding(frame, pred_boxes, labels=pred_labels, img_size=frame.shape[:2])
     duration = (time.perf_counter_ns() - start)
     print(f"포스트 프로세싱 과정 : {duration // 1000000}ms.")
+    cv2.imshow("tflite_inference", frame)
     if cv2.waitKey(1) > 0:
         break
 
