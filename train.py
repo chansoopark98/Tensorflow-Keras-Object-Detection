@@ -13,8 +13,8 @@ from calc_flops import get_flops
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
-parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=384)
+parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=1000)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.01)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
 parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름",
@@ -80,7 +80,7 @@ testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
 polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
                                                           decay_steps=EPOCHS,
-                                                          end_learning_rate=0.0001, power=0.5)
+                                                          end_learning_rate=0.0001, power=1.0)
 lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
 # optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
