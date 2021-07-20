@@ -6,6 +6,7 @@ from collections import namedtuple
 from typing import List
 import itertools
 import collections
+from multiprocessing import Process
 #import tflite_runtime.interpreter as tflite
 CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog',
            'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
@@ -441,64 +442,89 @@ interpreter.allocate_tensors()
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 
+def preprocessing(capture):
+    ret, frame = capture.read()
+    img = cv2.resize(frame, (224, 224))
+    img = cv2.normalize(img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
 
+    return np.expand_dims(img, axis=0)
 
-capture = cv2.VideoCapture(0)
-capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 
 import time
-while True:
-    ret, frame = capture.read()
-    #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    start = time.perf_counter_ns()
 
-    """tf code"""
-    #input = tf.convert_to_tensor(frame)
-    #input = tf.image.resize(input, [224, 224])
-    #input = preprocess_input(input, mode='torch')
-    #input = tf.expand_dims(input, axis=0)
+def playCam():
+    capture = cv2.VideoCapture(0)
+    capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    while True:
+        ret, frame = capture.read()
+        #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        start = time.perf_counter_ns()
 
-    img = cv2.resize(frame, (224, 224))
-    img = cv2.normalize(img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
-    img = np.expand_dims(img, axis=0)
+        """tf code"""
+        #input = tf.convert_to_tensor(frame)
+        #input = tf.image.resize(input, [224, 224])
+        #input = preprocess_input(input, mode='torch')
+        #input = tf.expand_dims(input, axis=0)
 
+        img = cv2.resize(frame, (224, 224))
+        img = cv2.normalize(img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+        img = np.expand_dims(img, axis=0)
 
-    duration = (time.perf_counter_ns() - start)
-    print(f"전처리 과정 : {duration // 1000000}ms.")
-    # 텐서 변환
-
-
-
-    # Test the model on random input data.
-    #input_shape = input_details[0]['shape']
-
-    start = time.perf_counter_ns()
-
-    interpreter.set_tensor(input_details[0]['index'], img)
-
-    interpreter.invoke()
-    duration = (time.perf_counter_ns() - start)
-    print(f"추론 과정 : {duration // 1000000}ms.")
-    # The function `get_tensor()` returns a copy of the tensor data.
-    # Use `tensor()` in order to get a pointer to the tensor.
-    output_data = interpreter.get_tensor(output_details[0]['index'])
+        duration = (time.perf_counter_ns() - start)
+        print(f"전처리 과정 : {duration // 1000000}ms.")
+        # 텐서 변환
 
 
 
+        # Test the model on random input data.
+        #input_shape = input_details[0]['shape']
 
-    start = time.perf_counter_ns()
-    predictions = post_process(output_data, target_transform, top_k=25, classes=21, confidence_threshold=0.4)
+        start = time.perf_counter_ns()
 
-    pred_boxes, pred_scores, pred_labels = predictions[0]
-    if pred_boxes.size > 0:
-        draw_bounding(frame, pred_boxes, labels=pred_labels, img_size=frame.shape[:2])
-    duration = (time.perf_counter_ns() - start)
-    print(f"포스트 프로세싱 과정 : {duration // 1000000}ms.")
-    cv2.imshow("tflite_inference", frame)
-    if cv2.waitKey(1) > 0:
-        break
+        interpreter.set_tensor(input_details[0]['index'], img)
 
-capture.release()
-cv2.destroyAllWindows()
+        interpreter.invoke()
+        duration = (time.perf_counter_ns() - start)
+        print(f"추론 과정 : {duration // 1000000}ms.")
+        # The function `get_tensor()` returns a copy of the tensor data.
+        # Use `tensor()` in order to get a pointer to the tensor.
+        output_data = interpreter.get_tensor(output_details[0]['index'])
+
+
+
+
+        start = time.perf_counter_ns()
+        predictions = post_process(output_data, target_transform, top_k=25, classes=21, confidence_threshold=0.4)
+
+        pred_boxes, pred_scores, pred_labels = predictions[0]
+        if pred_boxes.size > 0:
+            draw_bounding(frame, pred_boxes, labels=pred_labels, img_size=frame.shape[:2])
+        duration = (time.perf_counter_ns() - start)
+        print(f"포스트 프로세싱 과정 : {duration // 1000000}ms.")
+        cv2.imshow("tflite_inference", frame)
+        if cv2.waitKey(1) > 0:
+            break
+
+    capture.release()
+    cv2.destroyAllWindows()
+
+if __name__ == '__main__':
+    print("start!")
+
+
+    p1 = Process(target=playCam)
+    #p2 = Process(target=func_serial)
+    p1.start()
+    #p2.start()
+    p1.join()
+    #p2.join()
+
+# without multiprocessing
+# 추론 과정 : 4025ms.
+# 포스트 프로세싱 과정 : 9ms.
+# 전처리 과정 : 0ms.
+# 추론 과정 : 4233ms.
+# 포스트 프로세싱 과정 : 10ms.
+# 전처리 과정 : 0ms.
