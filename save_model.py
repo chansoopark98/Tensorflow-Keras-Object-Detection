@@ -12,6 +12,7 @@ import os
 import tensorflow.keras.backend as K
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 import cv2
+import time
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
@@ -105,42 +106,39 @@ weight_name = 'voc_0720'
 model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 model.summary()
 
-capture = cv2.VideoCapture(0)
-capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-
-
-import time
-
-ret, frame = capture.read()
-#frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-x = tf.convert_to_tensor(frame)
-
-# 이미지 리사이징
-x = tf.image.resize(x, [224, 224])
-x = preprocess_input(x, mode='torch')
-x = tf.expand_dims(x, axis=0)
-
-start = time.perf_counter_ns()
-
-
-
-duration = (time.perf_counter_ns() - start)
-print(f"추론 과정 : {duration // 1000000}ms.")
-
-
-# """ convert to tflite """
-# model.save('./checkpoints/save_model', True, False, 'tf')
+# capture = cv2.VideoCapture(0)
+# capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+# capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 #
-# converter = tf.lite.TFLiteConverter.from_keras_model(model)
-# # #converter.optimizations = [tf.lite.Optimize.DEFAULT]
-# # #converter.representative_dataset = representative_data_gen
-# converter.experimental_new_converter = True
 #
-# tflite_model = converter.convert()
 #
-# # Save the model.
-# with open('new_tflite_model.tflite', 'wb') as f:
-#     f.write(tflite_model)
+#
+# ret, frame = capture.read()
+# #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+#
+# x = tf.convert_to_tensor(frame)
+#
+# # 이미지 리사이징
+# x = tf.image.resize(x, [224, 224])
+# x = preprocess_input(x, mode='torch')
+# x = tf.expand_dims(x, axis=0)
+#
+# start = time.perf_counter_ns()
+# duration = (time.perf_counter_ns() - start)
+# print(f"추론 과정 : {duration // 1000000}ms.")
+
+
+""" convert to tflite """
+model.save('./checkpoints/save_model', True, False, 'tf')
+
+converter = tf.lite.TFLiteConverter.from_keras_model(model)
+# #converter.optimizations = [tf.lite.Optimize.DEFAULT]
+# #converter.representative_dataset = representative_data_gen
+converter.experimental_new_converter = True
+
+tflite_model = converter.convert()
+
+# Save the model.
+with open('new_tflite_model.tflite', 'wb') as f:
+    f.write(tflite_model)
 

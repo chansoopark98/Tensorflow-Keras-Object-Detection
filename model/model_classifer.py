@@ -122,16 +122,18 @@ def tiny_classifier(source_layers, num_priors, num_classes=21):
         name = x.name.split(':')[0] # name만 추출 (ex: block3b_add)
 
 
-        x1 = Conv2D(num_priors[i] * num_classes, 3, padding='same',
-                             kernel_initializer=initializers.VarianceScaling(),
+        x1 = SeparableConv2D(num_priors[i] * num_classes, 3, padding='same',
+                             depthwise_initializer=initializers.VarianceScaling(),
+                             pointwise_initializer=initializers.VarianceScaling(),
                              name= name + '_mbox_conf_1')(x)
 
 
         x1 = Flatten(name=name + '_mbox_conf_flat')(x1)
         mbox_conf.append(x1)
 
-        x2 = Conv2D(num_priors[i] * 4, 3, padding='same',
-                             kernel_initializer=initializers.VarianceScaling(),
+        x2 = SeparableConv2D(num_priors[i] * 4, 3, padding='same',
+                             depthwise_initializer=initializers.VarianceScaling(),
+                             pointwise_initializer=initializers.VarianceScaling(),
                              name= name + '_mbox_loc_1')(x)
 
 
