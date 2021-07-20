@@ -25,7 +25,7 @@ parser.add_argument("--backbone_model", type=str,   help="Model 설정", default
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 
 """ TFLite convert options"""
-parser.add_argument("--use_quantization", type=bool ,   help="uint8 양자화 사용 여부", default=False)
+parser.add_argument("--use_quantization", type=bool ,   help="uint8 양자화 사용 여부", default=True)
 
 args = parser.parse_args()
 WEIGHT_DECAY = args.weight_decay
@@ -102,16 +102,37 @@ model.compile(
 )
 
 
-model.load_weights(WEIGHT_FILENAME + '.h5')
+# model.load_weights(WEIGHT_FILENAME + '.h5')
+model.load_weights('./tiny' + '.h5')
 model.summary()
 
 """ convert to tflite """
 model.save('./checkpoints/save_model', True, False, 'tf')
 
 converter = tf.lite.TFLiteConverter.from_keras_model(model)
+
+
+# predict 할 때
+def prepare_for_prediction(file_path):
+    img = tf.io.read_file(file_path)
+    img = tf.image.decode_jpeg(img, channels=3)
+    img = tf.image.resize(img, [224, 224])
+    img = tf.keras.applications.imagenet_utils.preprocess_input(img, mode='torch')
+    return img
+
+
+dataset = tf.data.Dataset.list_files('./inputs/' + '*', shuffle=False)
+dataset = dataset.map(prepare_for_prediction)
+
+def representative_data_gen():
+  for input_value in dataset.batch(1).take(100):
+    # Model has only one input so each data point has one element.
+    yield [input_value]
+
 if USE_QUANTIZATION:
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
     # #converter.representative_dataset = representative_data_gen
+    converter.representative_dataset = representative_data_gen
 converter.experimental_new_converter = True
 
 converted_model = converter.convert()
