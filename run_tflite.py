@@ -1,13 +1,18 @@
 import tensorflow as tf
 import cv2
-from tensorflow.keras.applications.imagenet_utils import preprocess_input
 import numpy as np
 from collections import namedtuple
 from typing import List
 import itertools
 import collections
-import multiprocessing as mp
-#import tflite_runtime.interpreter as tflite
+
+mode = None
+try:
+    import tflite_runtime.interpreter as tflite
+    rasp_mode = True
+except:
+    rasp_mode = False
+
 CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog',
            'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
 
@@ -420,149 +425,87 @@ def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
     return tf.convert_to_tensor(priors)
 
 
-
-
-
-class Preprocessing:
-    def __init__(self):
-        self.parent_conn, child_conn = mp.Pipe()
-        # load process
-        self.p = mp.Process(target=self.update, args=(child_conn,))
-        # start process
-        self.p.daemon = True
-        self.p.start()
-        #self.capture = cv2.VideoCapture(0)
-        #self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        #self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-
-
-    def end(self):
-        # 프로세스 종료 요청
-        self.parent_conn.send(2)
-
-    def update(self, conn,):
-        # load cam into separate process
-        cap = cv2.VideoCapture(0)
-
-        run = True
-        while run:
-            # 버퍼에서 카메라 데이터 수신
-            cap.grab()
-
-            # 입력 데이터 수신
-            rec_dat = conn.recv()
-
-            if rec_dat == 1:
-                # 프레임 수신 완료했을 경우
-                ret, frame = cap.read()
-                conn.send(frame)
-
-            elif rec_dat == 2:
-                # 요청이 없는 경우
-                cap.release()
-                run = False
-                time.sleep(1)
-        conn.close()
-
-    def get_frame(self):
-        # 카메라 연결 프로세스에서 프레임 수신하는데 사용
-        # send request
-        self.parent_conn.send(1)
-        frame = self.parent_conn.recv()
-
-        # reset request
-        self.parent_conn.send(0)
-
-        return frame
-
-
 import time
-def playCam():
-    cam = Preprocessing()
-    specs = [
-        Spec(28, 8, BoxSizes(11, 22), [2]),  # 0.05 / 0.1
-        Spec(14, 16, BoxSizes(23, 45), [2]),  # 0.1 / 0.2
-        Spec(7, 32, BoxSizes(56, 90), [2]),  # 0.25 / 0.4
-        Spec(4, 64, BoxSizes(90, 134), [2]),  # 0.4 / 0.6
-        Spec(2, 112, BoxSizes(134, 168), [2]),  # 0.6 / 0.75
-        Spec(1, 224, BoxSizes(179, 235), [2])  # 0.8 / 1.05
-    ]
-    priors = create_priors_boxes(specs, 224)
 
-    target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
+specs = [
+    Spec(28, 8, BoxSizes(11, 22), [2]),  # 0.05 / 0.1
+    Spec(14, 16, BoxSizes(23, 45), [2]),  # 0.1 / 0.2
+    Spec(7, 32, BoxSizes(56, 90), [2]),  # 0.25 / 0.4
+    Spec(4, 64, BoxSizes(90, 134), [2]),  # 0.4 / 0.6
+    Spec(2, 112, BoxSizes(134, 168), [2]),  # 0.6 / 0.75
+    Spec(1, 224, BoxSizes(179, 235), [2])  # 0.8 / 1.05
+]
+priors = create_priors_boxes(specs, 224)
 
-    TFLITE_FILE_PATH = 'converted_model.tflite'
+target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
-    interpreter = tf.lite.Interpreter(model_path=TFLITE_FILE_PATH)
-    interpreter.allocate_tensors()
+TFLITE_FILE_PATH = 'converted_model.tflite'
 
-    # Get input and output tensors.
-    input_details = interpreter.get_input_details()
-    output_details = interpreter.get_output_details()
+if rasp_mode:
+    interpreter = tflite.Interpreter(model_path=TFLITE_FILE_PATH)
+else:
+    import os
+    interpreter = tf.lite.Interpreter(model_path=TFLITE_FILE_PATH, num_threads=os.cpu_count())
 
+interpreter.allocate_tensors()
 
-    while True:
-        frame = cam.get_frame()
-        #ret, frame = capture.read()
-        #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        start = time.perf_counter_ns()
+# Get input and output tensors.
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
 
-        """tf code"""
-        #input = tf.convert_to_tensor(frame)
-        #input = tf.image.resize(input, [224, 224])
-        #input = preprocess_input(input, mode='torch')
-        #input = tf.expand_dims(input, axis=0)
+capture = cv2.VideoCapture(0)
+capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-        img = cv2.resize(frame, (224, 224))
-        img = cv2.normalize(img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
-        img = np.expand_dims(img, axis=0)
+while True:
+    start = time.perf_counter_ns()
+    ret, frame = capture.read()
+    duration = (time.perf_counter_ns() - start)
+    print(f"카메라 캡쳐 과정 : {duration // 1000000}ms.")
 
-        duration = (time.perf_counter_ns() - start)
-        print(f"전처리 과정 : {duration // 1000000}ms.")
-        # 텐서 변환
+    #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    start = time.perf_counter_ns()
 
+    """tf code"""
+    #input = tf.convert_to_tensor(frame)
+    #input = tf.image.resize(input, [224, 224])
+    #input = preprocess_input(input, mode='torch')
+    #input = tf.expand_dims(input, axis=0)
 
+    img = cv2.resize(frame, (224, 224))
+    img = cv2.normalize(img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+    img = np.expand_dims(img, axis=0)
 
-        # Test the model on random input data.
-        #input_shape = input_details[0]['shape']
-
-        start = time.perf_counter_ns()
-
-        interpreter.set_tensor(input_details[0]['index'], img)
-
-        interpreter.invoke()
-        duration = (time.perf_counter_ns() - start)
-        print(f"추론 과정 : {duration // 1000000}ms.")
-        # The function `get_tensor()` returns a copy of the tensor data.
-        # Use `tensor()` in order to get a pointer to the tensor.
-        output_data = interpreter.get_tensor(output_details[0]['index'])
+    duration = (time.perf_counter_ns() - start)
+    print(f"전처리 과정 : {duration // 1000000}ms.")
+    # 텐서 변환
 
 
+    start = time.perf_counter_ns()
+
+    interpreter.set_tensor(input_details[0]['index'], img)
+
+    interpreter.invoke()
+    duration = (time.perf_counter_ns() - start)
+    print(f"추론 과정 : {duration // 1000000}ms.")
+    # The function `get_tensor()` returns a copy of the tensor data.
+    # Use `tensor()` in order to get a pointer to the tensor.
+    output_data = interpreter.get_tensor(output_details[0]['index'])
 
 
-        start = time.perf_counter_ns()
-        predictions = post_process(output_data, target_transform, top_k=25, classes=21, confidence_threshold=0.4)
-
-        pred_boxes, pred_scores, pred_labels = predictions[0]
-        if pred_boxes.size > 0:
-            draw_bounding(frame, pred_boxes, labels=pred_labels, img_size=frame.shape[:2])
-        duration = (time.perf_counter_ns() - start)
-        print(f"포스트 프로세싱 과정 : {duration // 1000000}ms.")
-        cv2.imshow("tflite_inference", frame)
-        if cv2.waitKey(1) > 0:
-            break
 
 
-    cv2.destroyAllWindows()
+    start = time.perf_counter_ns()
+    predictions = post_process(output_data, target_transform, top_k=25, classes=21, confidence_threshold=0.4)
 
-if __name__ == '__main__':
-    print("start!")
-    playCam()
+    pred_boxes, pred_scores, pred_labels = predictions[0]
+    if pred_boxes.size > 0:
+        draw_bounding(frame, pred_boxes, labels=pred_labels, img_size=frame.shape[:2])
+    duration = (time.perf_counter_ns() - start)
+    print(f"포스트 프로세싱 과정 : {duration // 1000000}ms.")
+    cv2.imshow("tflite_inference", frame)
+    if cv2.waitKey(1) > 0:
+        break
 
-# without multiprocessing
-# 추론 과정 : 4025ms.
-# 포스트 프로세싱 과정 : 9ms.
-# 전처리 과정 : 0ms.
-# 추론 과정 : 4233ms.
-# 포스트 프로세싱 과정 : 10ms.
-# 전처리 과정 : 0ms.
+capture.release()
+cv2.destroyAllWindows()
