@@ -431,7 +431,7 @@ priors = create_priors_boxes(specs, 224)
 
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
-TFLITE_FILE_PATH = 'new_tflite_model.tflite'
+TFLITE_FILE_PATH = 'converted_model.tflite'
 
 
 interpreter = tf.lite.Interpreter(model_path=TFLITE_FILE_PATH)
