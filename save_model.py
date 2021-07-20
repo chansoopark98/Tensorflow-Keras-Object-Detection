@@ -132,7 +132,7 @@ model.summary()
 model.save('./checkpoints/save_model', True, False, 'tf')
 
 converter = tf.lite.TFLiteConverter.from_keras_model(model)
-# #converter.optimizations = [tf.lite.Optimize.DEFAULT]
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
 # #converter.representative_dataset = representative_data_gen
 converter.experimental_new_converter = True
 
