@@ -453,12 +453,17 @@ while True:
     ret, frame = capture.read()
     #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     start = time.perf_counter_ns()
-    input = tf.convert_to_tensor(frame)
 
-    # 이미지 리사이징
-    input = tf.image.resize(input, [224, 224])
-    input = preprocess_input(input, mode='torch')
-    input = tf.expand_dims(input, axis=0)
+    """tf code"""
+    #input = tf.convert_to_tensor(frame)
+    #input = tf.image.resize(input, [224, 224])
+    #input = preprocess_input(input, mode='torch')
+    #input = tf.expand_dims(input, axis=0)
+
+    img = cv2.resize(frame, (224, 224))
+    img = cv2.normalize(img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+    img = np.expand_dims(img, axis=0)
+
 
     duration = (time.perf_counter_ns() - start)
     print(f"전처리 과정 : {duration // 1000000}ms.")
@@ -471,7 +476,7 @@ while True:
 
     start = time.perf_counter_ns()
 
-    interpreter.set_tensor(input_details[0]['index'], input)
+    interpreter.set_tensor(input_details[0]['index'], img)
 
     interpreter.invoke()
     duration = (time.perf_counter_ns() - start)

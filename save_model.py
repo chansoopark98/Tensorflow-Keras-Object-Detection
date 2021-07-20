@@ -131,9 +131,11 @@ def representative_data_gen():
 
 if USE_QUANTIZATION:
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
-    # #converter.representative_dataset = representative_data_gen
     converter.representative_dataset = representative_data_gen
-converter.experimental_new_converter = True
+    converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
+    converter.inference_input_type = tf.uint8
+    converter.inference_output_type = tf.uint8
+    converter.experimental_new_converter = True
 
 converted_model = converter.convert()
 
