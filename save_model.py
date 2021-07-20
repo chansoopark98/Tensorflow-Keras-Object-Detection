@@ -98,7 +98,7 @@ model.compile(
     metrics=[metrics.precision, metrics.recall, metrics.cross_entropy, metrics.localization]
 )
 
-weight_name = 'voc_0719'
+weight_name = 'voc_0720'
 model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
 model.save('./checkpoints/save_model', True, False, 'tf')

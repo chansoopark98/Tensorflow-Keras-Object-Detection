@@ -431,7 +431,7 @@ priors = create_priors_boxes(specs, 224)
 
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
-TFLITE_FILE_PATH = 'ssd.tflite'
+TFLITE_FILE_PATH = 'new_tflite_model.tflite'
 
 
 interpreter = tf.lite.Interpreter(model_path=TFLITE_FILE_PATH)
@@ -484,7 +484,7 @@ while True:
 
 
     start = time.perf_counter_ns()
-    predictions = post_process(output_data, target_transform, classes=21, confidence_threshold=0.4)
+    predictions = post_process(output_data, target_transform, top_k=25, classes=21, confidence_threshold=0.4)
 
     pred_boxes, pred_scores, pred_labels = predictions[0]
     if pred_boxes.size > 0:
