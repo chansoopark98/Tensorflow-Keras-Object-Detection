@@ -103,7 +103,7 @@ model.compile(
 )
 
 weight_name = 'voc_0720'
-model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
+model.load_weights(weight_name + '.h5')
 model.summary()
 
 # capture = cv2.VideoCapture(0)
