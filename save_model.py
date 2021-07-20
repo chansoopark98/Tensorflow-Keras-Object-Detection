@@ -102,7 +102,7 @@ model.compile(
     metrics=[metrics.precision, metrics.recall, metrics.cross_entropy, metrics.localization]
 )
 
-weight_name = 'voc_0720'
+weight_name = 'tiny'
 model.load_weights(weight_name + '.h5')
 model.summary()
 
