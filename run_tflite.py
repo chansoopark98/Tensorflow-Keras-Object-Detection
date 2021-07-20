@@ -6,7 +6,7 @@ from collections import namedtuple
 from typing import List
 import itertools
 import collections
-from multiprocessing import Process
+import multiprocessing as mp
 #import tflite_runtime.interpreter as tflite
 CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog',
            'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
@@ -419,46 +419,91 @@ def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
         np.clip(priors, 0.0, 1.0, out=priors)
     return tf.convert_to_tensor(priors)
 
-specs = [
-            Spec(28, 8, BoxSizes(11, 22), [2]), # 0.05 / 0.1
-            Spec(14, 16, BoxSizes(23, 45), [2]), # 0.1 / 0.2
-            Spec(7, 32, BoxSizes(56, 90), [2]), # 0.25 / 0.4
-            Spec(4, 64, BoxSizes(90, 134), [2]), # 0.4 / 0.6
-            Spec(2, 112, BoxSizes(134, 168), [2]), # 0.6 / 0.75
-            Spec(1, 224, BoxSizes(179, 235), [2]) # 0.8 / 1.05
-        ]
-priors = create_priors_boxes(specs, 224)
 
 
-target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
-
-TFLITE_FILE_PATH = 'converted_model.tflite'
 
 
-interpreter = tf.lite.Interpreter(model_path=TFLITE_FILE_PATH)
-interpreter.allocate_tensors()
+class Preprocessing:
+    def __init__(self):
+        self.parent_conn, child_conn = mp.Pipe()
+        # load process
+        self.p = mp.Process(target=self.update, args=(child_conn,))
+        # start process
+        self.p.daemon = True
+        self.p.start()
+        #self.capture = cv2.VideoCapture(0)
+        #self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        #self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-# Get input and output tensors.
-input_details = interpreter.get_input_details()
-output_details = interpreter.get_output_details()
 
-def preprocessing(capture):
-    ret, frame = capture.read()
-    img = cv2.resize(frame, (224, 224))
-    img = cv2.normalize(img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+    def end(self):
+        # 프로세스 종료 요청
+        self.parent_conn.send(2)
 
-    return np.expand_dims(img, axis=0)
+    def update(self, conn,):
+        # load cam into separate process
+        cap = cv2.VideoCapture(0)
 
+        run = True
+        while run:
+            # 버퍼에서 카메라 데이터 수신
+            cap.grab()
+
+            # 입력 데이터 수신
+            rec_dat = conn.recv()
+
+            if rec_dat == 1:
+                # 프레임 수신 완료했을 경우
+                ret, frame = cap.read()
+                conn.send(frame)
+
+            elif rec_dat == 2:
+                # 요청이 없는 경우
+                cap.release()
+                run = False
+                time.sleep(1)
+        conn.close()
+
+    def get_frame(self):
+        # 카메라 연결 프로세스에서 프레임 수신하는데 사용
+        # send request
+        self.parent_conn.send(1)
+        frame = self.parent_conn.recv()
+
+        # reset request
+        self.parent_conn.send(0)
+
+        return frame
 
 
 import time
-
 def playCam():
-    capture = cv2.VideoCapture(0)
-    capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-    capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    cam = Preprocessing()
+    specs = [
+        Spec(28, 8, BoxSizes(11, 22), [2]),  # 0.05 / 0.1
+        Spec(14, 16, BoxSizes(23, 45), [2]),  # 0.1 / 0.2
+        Spec(7, 32, BoxSizes(56, 90), [2]),  # 0.25 / 0.4
+        Spec(4, 64, BoxSizes(90, 134), [2]),  # 0.4 / 0.6
+        Spec(2, 112, BoxSizes(134, 168), [2]),  # 0.6 / 0.75
+        Spec(1, 224, BoxSizes(179, 235), [2])  # 0.8 / 1.05
+    ]
+    priors = create_priors_boxes(specs, 224)
+
+    target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
+
+    TFLITE_FILE_PATH = 'converted_model.tflite'
+
+    interpreter = tf.lite.Interpreter(model_path=TFLITE_FILE_PATH)
+    interpreter.allocate_tensors()
+
+    # Get input and output tensors.
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+
+
     while True:
-        ret, frame = capture.read()
+        frame = cam.get_frame()
+        #ret, frame = capture.read()
         #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         start = time.perf_counter_ns()
 
@@ -507,19 +552,12 @@ def playCam():
         if cv2.waitKey(1) > 0:
             break
 
-    capture.release()
+
     cv2.destroyAllWindows()
 
 if __name__ == '__main__':
     print("start!")
-
-
-    p1 = Process(target=playCam)
-    #p2 = Process(target=func_serial)
-    p1.start()
-    #p2.start()
-    p1.join()
-    #p2.join()
+    playCam()
 
 # without multiprocessing
 # 추론 과정 : 4025ms.
