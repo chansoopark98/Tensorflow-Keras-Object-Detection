@@ -97,7 +97,7 @@ model = model_build(TRAIN_MODE, MODEL_NAME, normalizations=normalize, num_priors
 
 model.compile(
     optimizer=optimizer,
-    loss=loss.total_loss,d
+    loss=loss.total_loss,
     metrics=[metrics.precision, metrics.recall, metrics.cross_entropy, metrics.localization]
 )
 
