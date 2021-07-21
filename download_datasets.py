@@ -4,7 +4,7 @@ import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
-parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='cityscapes')
 
 args = parser.parse_args()
 DATASET_DIR = args.dataset_dir
@@ -34,7 +34,7 @@ if TRAIN_MODE == 'voc':
     print("테스트 데이터 개수:", number_test)
 
 
-else :
+elif TRAIN_MODE == 'coco' :
     train_data = tfds.load('coco/2017', data_dir=DATASET_DIR, split='train')
     valid_data = tfds.load('coco/2017', data_dir=DATASET_DIR, split='validation')
     test_data = tfds.load('coco/2017', data_dir=DATASET_DIR, split='test')
@@ -47,4 +47,22 @@ else :
 
     number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
     print("테스트 데이터 개수:", number_test)
+
+elif TRAIN_MODE == 'cityscapes':
+    download_config = tfds.download.DownloadConfig(
+        manual_dir=DATASET_DIR + '/downloads', extract_dir=DATASET_DIR + '/cityscapes')
+
+    # train_ds = tfds.load('cityscapes/semantic_segmentation', data_dir=DATASET_DIR, split='train',
+    #                      download_and_prepare_kwargs={"download_config": download_config})
+    # valid_ds = tfds.load('cityscapes/semantic_segmentation', data_dir=DATASET_DIR, split='validation',
+    #                      download_and_prepare_kwargs={"download_config": download_config})
+    # test_ds = tfds.load('cityscapes/semantic_segmentation', data_dir=DATASET_DIR, split='test',
+    #                     download_and_prepare_kwargs={"download_config": download_config})
+
+    train_ds = tfds.load('cityscapes/semantic_segmentation', data_dir=DATASET_DIR, split='train'
+                         )
+    valid_ds = tfds.load('cityscapes/semantic_segmentation', data_dir=DATASET_DIR, split='validation'
+                         )
+    test_ds = tfds.load('cityscapes/semantic_segmentation', data_dir=DATASET_DIR, split='test'
+                        )
 

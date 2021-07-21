@@ -9,7 +9,7 @@ from model.loss import Total_loss
 import argparse
 import time
 import os
-from calc_flops import get_flops
+
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
