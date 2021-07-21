@@ -97,13 +97,13 @@ model = model_build(TRAIN_MODE, MODEL_NAME, normalizations=normalize, num_priors
 
 model.compile(
     optimizer=optimizer,
-    loss=loss.total_loss,
+    loss=loss.total_loss,d
     metrics=[metrics.precision, metrics.recall, metrics.cross_entropy, metrics.localization]
 )
 
 
 # model.load_weights(WEIGHT_FILENAME + '.h5')
-model.load_weights('./tiny' + '.h5')
+model.load_weights('voc_0720' + '.h5')
 model.summary()
 
 """ convert to tflite """
