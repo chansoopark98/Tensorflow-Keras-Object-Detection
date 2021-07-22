@@ -81,11 +81,13 @@ class BilinearUpsampling(Layer):
 
     def call(self, inputs):
         if self.upsampling:
-            return K.tf.image.resize_bilinear(inputs, (inputs.shape[1] * self.upsampling[0],
+
+
+            return tf.compat.v1.image.resize_bilinear(inputs, (inputs.shape[1] * self.upsampling[0],
                                                        inputs.shape[2] * self.upsampling[1]),
                                               align_corners=True)
         else:
-            return K.tf.image.resize_bilinear(inputs, (self.upsample_size[0],
+            return tf.compat.v1.image.resize_bilinear(inputs, (self.upsample_size[0],
                                                        self.upsample_size[1]),
                                               align_corners=True)
 
@@ -314,6 +316,7 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 5
                 use_bias=False, name='image_pooling')(b4)
     b4 = BatchNormalization(name='image_pooling_BN', epsilon=1e-5)(b4)
     b4 = Activation('relu')(b4)
+
     b4 = BilinearUpsampling((out_shape, out_shape))(b4)
 
     # concatenate ASPP branches & project
