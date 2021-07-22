@@ -40,9 +40,7 @@ from keras.engine import Layer
 from keras.engine import InputSpec
 from keras.engine.topology import get_source_inputs
 from tensorflow.keras import backend as K
-from keras.utils import conv_utils
-
-
+from tensorflow.python.keras.utils import conv_utils
 import tensorflow as tf
 TF_WEIGHTS_PATH = "https://github.com/bonlime/keras-deeplab-v3-plus/releases/download/1.0/deeplabv3_weights_tf_dim_ordering_tf_kernels.h5"
 
@@ -209,7 +207,7 @@ def xception_block(inputs, depth_list, prefix, skip_connection_type, stride,
         return outputs
 
 
-def Deeplabv3(weights='pascal_voc', input_tensor=None, input_shape=(512, 512, 3), classes=21, OS=16):
+def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 512, 3), classes=21, OS=16):
     """ Instantiates the Deeplabv3+ architecture
     Optionally loads weights pre-trained
     on PASCAL VOC. This model is available for TensorFlow only,
