@@ -89,7 +89,7 @@ class CityScapes:
         self.load_datasets()
 
     def load_datasets(self):
-        self.num_classes = 21
+        self.num_classes = 19
 
         train_data = tfds.load('cityscapes/semantic_segmentation', data_dir=self.data_dir, split='train'
                              )

@@ -3,7 +3,7 @@ from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from callbacks import Scalar_LR
 from utils.load_datasets import CityScapes
 from model.model_builder import seg_model_build
-from model.seg_loss import seg_loss
+from model.seg_loss import Seg_loss
 import argparse
 import time
 import os
@@ -14,7 +14,7 @@ tf.keras.backend.clear_session()
 parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=1)
-parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.01)
+parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
 parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름",
                     default=str(time.strftime('%m%d', time.localtime(time.time()))))
@@ -57,7 +57,7 @@ os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 dataset_config = CityScapes(DATASET_DIR, IMAGE_SIZE, BATCH_SIZE)
 
 # Set loss function
-loss = seg_loss
+loss = Seg_loss(BATCH_SIZE)
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 
@@ -65,26 +65,6 @@ steps_per_epoch = dataset_config.number_train // BATCH_SIZE
 validation_steps = dataset_config.number_test // BATCH_SIZE
 print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
-
-
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
-
-checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME + '.h5',
-                                 monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
-testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
-tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
-polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
-                                                          decay_steps=EPOCHS,
-                                                          end_learning_rate=0.0001, power=1.0)
-lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
-
-# optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
-optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
-
-if MIXED_PRECISION:
-    optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
-
-callback = [checkpoint, tensorboard, testCallBack, lr_scheduler]
 
 if DISTRIBUTION_MODE == 'multi':
     mirrored_strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(
@@ -94,9 +74,28 @@ else:
     mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
 print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
 
-
-
 with mirrored_strategy.scope():
+
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
+
+    checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME + '.h5',
+                                     monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
+    testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
+    tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
+    polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
+                                                              decay_steps=EPOCHS,
+                                                              end_learning_rate=base_lr * 0.1, power=1.0)
+    lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
+
+    # optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
+
+    if MIXED_PRECISION:
+        optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
+
+    callback = [checkpoint, tensorboard, testCallBack, lr_scheduler]
+
+
     model = seg_model_build(MODEL_NAME, pretrained=True, image_size=IMAGE_SIZE)
 
     if USE_WEIGHT_DECAY:
@@ -108,7 +107,8 @@ with mirrored_strategy.scope():
 
     model.compile(
         optimizer=optimizer,
-        loss=loss
+        loss='sparse_categorical_crossentropy',
+        metrics=['mse', 'accuracy', ]
     )
 
     if LOAD_WEIGHT:

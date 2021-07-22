@@ -7,8 +7,8 @@ from functools import reduce
 
 NUM_CHANNELS = [64, 64, 88, 112, 160, 224, 288, 288, 288]
 #NUM_CHANNELS = [48, 64, 88, 112, 160, 244, 288, 288]
-FPN_TIMES = [1, 3, 4, 5, 6, 7, 7, 7, 7]
-CLS_TIEMS = [1, 3, 3, 3, 4, 4, 4, 4, 4]
+FPN_TIMES = [3, 4, 5, 6, 7, 7, 7, 7]
+CLS_TIEMS = [3, 3, 3, 4, 4, 4, 4, 4]
 
 
 MOMENTUM = 0.997
@@ -88,6 +88,14 @@ def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[1024, 2048
 
     return base
 
+def SeparableConvBlock(x, num_channels, kernel_size, strides, name, freeze_bn=False):
+    f1 = SeparableConv2D(num_channels, kernel_size=kernel_size, strides=strides, padding='same',
+                                use_bias=True, name=name+'/conv')(x)
+    f2 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, name=name+'/bn')(f1)
+    f3 = Activation(lambda x: tf.nn.swish(x))(f2)
+    return f3
+
+
 
 
 def csnet_seg_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], backbone_trainable=True):
@@ -96,21 +104,32 @@ def csnet_seg_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], bac
     layer_names = GET_EFFICIENT_NAME[base_model_name]
 
     # get extra layer
-    # p3 = base.get_layer(layer_names[0]).output #
-    # p5 = base.get_layer(layer_names[1]).output #
-    p7 = base.get_layer(layer_names[2]).output # 32, 64, 320
-    print(p7)
-    p7 = SeparableConv2D(19, 3, padding='same',
-                         depthwise_initializer=tf.keras.initializers.VarianceScaling(),
-                         pointwise_initializer=tf.keras.initializers.VarianceScaling())(p7)
+    p5 = base.get_layer(layer_names[1]).output # 32, 64, 112
+    p7 = base.get_layer(layer_names[2]).output # input 512x1024 : 16, 32, 320 / input 1024x2048 : 32, 64, 320
+
+    output = UpSampling2D(interpolation='bilinear')(p7)
+    output = UpSampling2D(interpolation='bilinear')(output)
+    output = UpSampling2D(interpolation='bilinear')(output)
+    output = UpSampling2D(interpolation='bilinear')(output)
+    output = UpSampling2D(interpolation='bilinear')(output)
+
+    output = Conv2D(19, 3, padding='same')(output)
+
+    # p7_up = UpSampling2D(interpolation='bilinear')(p7) # 320
+    # p7_fusion = Concatenate()([p5, p7_up]) #
+    # p7_fusion = SeparableConvBlock(x=p7_fusion, num_channels=320, kernel_size=3, strides=1, name='scale_up_s3') # 32 64
+    #
+    #
+    # p_4x = UpSampling2D(interpolation='bilinear')(p7_fusion)
+    # p_8x = UpSampling2D(interpolation='bilinear')(p_4x)
+    #
+    # cls_p_8x = Conv2D(19, 3, padding='same')(p_8x)
+    #
+    # cls_p_16x = UpSampling2D(interpolation='bilinear')(cls_p_8x)
+    #
+    # cls_p_32x = UpSampling2D(interpolation='bilinear')(cls_p_16x)
+    #
 
 
-    up_2x = UpSampling2D()(p7)
-    up_4x = UpSampling2D()(up_2x)
-    up_8x = UpSampling2D()(up_4x)
-    up_16x = UpSampling2D()(up_8x)
-    up_32x = UpSampling2D()(up_16x)
 
-
-
-    return base.input, up_32x
+    return base.input, output

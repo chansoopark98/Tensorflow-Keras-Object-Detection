@@ -53,7 +53,6 @@ def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512],
         weights = None
 
 
-
     else:
         weights = "imagenet"
 
@@ -102,8 +101,6 @@ def build_fpn(features, num_channels=64, id=0, resize=False, bn_trainable=True):
         padding = 'same'
 
     if id == 0:
-
-
         C3, C4, C5 = features
         P3_in = C3 # 36x36
         P4_in = C4 # 18x18
