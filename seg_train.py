@@ -39,7 +39,7 @@ CHECKPOINT_DIR = args.checkpoint_dir
 TENSORBOARD_DIR = args.tensorboard_dir
 MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
-IMAGE_SIZE = [512, 1024]
+IMAGE_SIZE = [1024, 2048]
 USE_WEIGHT_DECAY = args.use_weightDecay
 LOAD_WEIGHT = args.load_weight
 MIXED_PRECISION = args.mixed_precision
@@ -66,6 +66,27 @@ validation_steps = dataset_config.number_test // BATCH_SIZE
 print("학습 배치 개수:", steps_per_epoch)
 print("검증 배치 개수:", validation_steps)
 
+
+
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
+
+checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME + '.h5',
+                                 monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
+testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
+tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
+polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
+                                                          decay_steps=EPOCHS,
+                                                          end_learning_rate=base_lr * 0.1, power=1.0)
+lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
+
+# optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
+optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
+
+if MIXED_PRECISION:
+    optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
+
+callback = [checkpoint, tensorboard, testCallBack, lr_scheduler]
+
 if DISTRIBUTION_MODE == 'multi':
     mirrored_strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(
         tf.distribute.experimental.CollectiveCommunication.NCCL)
@@ -75,27 +96,6 @@ else:
 print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
 
 with mirrored_strategy.scope():
-
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
-
-    checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME + '.h5',
-                                     monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
-    testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
-    tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
-    polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
-                                                              decay_steps=EPOCHS,
-                                                              end_learning_rate=base_lr * 0.1, power=1.0)
-    lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
-
-    # optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
-    optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
-
-    if MIXED_PRECISION:
-        optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
-
-    callback = [checkpoint, tensorboard, testCallBack, lr_scheduler]
-
-
     model = seg_model_build(MODEL_NAME, pretrained=True, image_size=IMAGE_SIZE)
 
     if USE_WEIGHT_DECAY:

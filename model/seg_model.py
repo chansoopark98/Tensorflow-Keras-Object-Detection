@@ -104,7 +104,6 @@ def csnet_seg_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], bac
     layer_names = GET_EFFICIENT_NAME[base_model_name]
 
     # get extra layer
-    p5 = base.get_layer(layer_names[1]).output # 32, 64, 112
     p7 = base.get_layer(layer_names[2]).output # input 512x1024 : 16, 32, 320 / input 1024x2048 : 32, 64, 320
 
     output = UpSampling2D(interpolation='bilinear')(p7)
