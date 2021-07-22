@@ -171,13 +171,16 @@ def test_priors_datasets(dataset, image_size, target_transform, batch_size=64):
     return dataset
 
 def prepare_cityScapes(sample):
-    img = tf.cast(sample['image_left'], dtype=tf.float32)
+    img = sample['image_left']
     labels = sample['segmentation_label']
-    #img = tf.image.resize(img, [512, 1024])
-    #labels = tf.image.resize(labels, [512, 1024])
+
+    img = tf.image.random_crop(img, (512, 1024, 3))
+    labels = tf.image.random_crop(labels, (512, 1024, 1))
+
+    labels = tf.cast(labels, dtype=tf.int64)
 
 
-    img = preprocess_input(img, mode='tf')
+    img = preprocess_input(img)
 
     return (img, labels)
 

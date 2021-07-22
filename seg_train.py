@@ -25,7 +25,7 @@ parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 �
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=True)
 parser.add_argument("--load_weight",  type=bool,  help="가중치 로드", default=False)
-parser.add_argument("--mixed_precision",  type=bool,  help="분산 학습 모드 설정 mirror or multi", default=False)
+parser.add_argument("--mixed_precision",  type=bool,  help="mixed_precision 사용", default=False)
 parser.add_argument("--distribution_mode",  type=bool,  help="분산 학습 모드 설정 mirror or multi", default='mirror')
 
 args = parser.parse_args()
@@ -39,7 +39,7 @@ CHECKPOINT_DIR = args.checkpoint_dir
 TENSORBOARD_DIR = args.tensorboard_dir
 MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
-IMAGE_SIZE = [1024, 2048]
+IMAGE_SIZE = [512, 1024]
 USE_WEIGHT_DECAY = args.use_weightDecay
 LOAD_WEIGHT = args.load_weight
 MIXED_PRECISION = args.mixed_precision
@@ -57,7 +57,7 @@ os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 dataset_config = CityScapes(DATASET_DIR, IMAGE_SIZE, BATCH_SIZE)
 
 # Set loss function
-loss = Seg_loss(BATCH_SIZE)
+
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 
@@ -87,42 +87,44 @@ if MIXED_PRECISION:
 
 callback = [checkpoint, tensorboard, testCallBack, lr_scheduler]
 
-if DISTRIBUTION_MODE == 'multi':
-    mirrored_strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(
-        tf.distribute.experimental.CollectiveCommunication.NCCL)
+# if DISTRIBUTION_MODE == 'multi':
+#     mirrored_strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(
+#         tf.distribute.experimental.CollectiveCommunication.NCCL)
+#
+# else:
+#     mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
+# print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
+#
+# with mirrored_strategy.scope():
 
-else:
-    mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
-print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
+loss = Seg_loss(BATCH_SIZE)
+model = seg_model_build(MODEL_NAME, pretrained=True, image_size=IMAGE_SIZE)
 
-with mirrored_strategy.scope():
-    model = seg_model_build(MODEL_NAME, pretrained=True, image_size=IMAGE_SIZE)
+if USE_WEIGHT_DECAY:
+    regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
+    for layer in model.layers:
+        for attr in ['kernel_regularizer', 'bias_regularizer']:
+            if hasattr(layer, attr) and layer.trainable:
+                setattr(layer, attr, regularizer)
 
-    if USE_WEIGHT_DECAY:
-        regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
-        for layer in model.layers:
-            for attr in ['kernel_regularizer', 'bias_regularizer']:
-                if hasattr(layer, attr) and layer.trainable:
-                    setattr(layer, attr, regularizer)
+model.compile(
+    optimizer=optimizer,
+    loss=loss.total_loss,
+    metrics=['mse', 'accuracy']
+)
 
-    model.compile(
-        optimizer=optimizer,
-        loss='sparse_categorical_crossentropy',
-        metrics=['mse', 'accuracy', ]
-    )
+if LOAD_WEIGHT:
+    weight_name = 'voc_0710'
+    model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
-    if LOAD_WEIGHT:
-        weight_name = 'voc_0710'
-        model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
+model.summary()
 
-    model.summary()
+history = model.fit(dataset_config.training_dataset,
+        validation_data=dataset_config.validation_dataset,
+        steps_per_epoch=steps_per_epoch,
+        validation_steps=validation_steps,
+        epochs=EPOCHS,
+        callbacks=callback)
 
-    history = model.fit(dataset_config.training_dataset,
-            validation_data=dataset_config.validation_dataset,
-            steps_per_epoch=steps_per_epoch,
-            validation_steps=validation_steps,
-            epochs=EPOCHS,
-            callbacks=callback)
-
-    model.save('./checkpoints/save_model.h5', True, True, 'h5')
+model.save('./checkpoints/save_model.h5', True, True, 'h5')
 
