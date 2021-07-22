@@ -177,10 +177,10 @@ def prepare_cityScapes(sample):
     img = tf.image.random_crop(img, (512, 1024, 3))
     labels = tf.image.random_crop(labels, (512, 1024, 1))
 
+    img = tf.cast(img, dtype=tf.float32)
     labels = tf.cast(labels, dtype=tf.int64)
 
-
-    img = preprocess_input(img)
+    img = preprocess_input(img, mode='tf')
 
     return (img, labels)
 

@@ -1,7 +1,9 @@
 import tensorflow_datasets as tfds
 import argparse
 import os
-from preprocessing import cityScapes
+import tensorflow as tf
+from tensorflow.keras.applications.imagenet_utils import preprocess_input
+import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
@@ -12,6 +14,26 @@ DATASET_DIR = args.dataset_dir
 TRAIN_MODE = args.train_dataset
 
 os.makedirs(DATASET_DIR, exist_ok=True)
+AUTO = tf.data.experimental.AUTOTUNE
+def prepare_cityScapes(sample):
+    img = sample['image_left']
+    labels = sample['segmentation_label']
+
+    img = tf.image.random_crop(img, (512, 1024, 3))
+    labels = tf.image.random_crop(labels, (512, 1024, 1))
+
+    img = tf.cast(img, dtype=tf.float32)
+    labels = tf.cast(labels, dtype=tf.int64)
+
+
+    img = preprocess_input(img, mode='torch')
+
+    return (img, labels)
+
+
+def cityScapes(dataset, image_size=None, batch_size=None, train=False):
+    dataset = dataset.map(prepare_cityScapes, num_parallel_calls=AUTO)
+    return dataset
 
 if TRAIN_MODE == 'voc':
     train_pascal_12 = tfds.load('voc/2012', data_dir=DATASET_DIR, split='train')
@@ -66,5 +88,21 @@ elif TRAIN_MODE == 'cityscapes':
                          )
     test_ds = tfds.load('cityscapes/semantic_segmentation', data_dir=DATASET_DIR, split='test'
                         )
+
+    prepare_trainData = cityScapes(train_ds, [512, 1024], 1, False)
+
+    img = prepare_trainData.take(1)
+
+    from tensorflow.keras.applications.imagenet_utils import preprocess_input
+    for x, y in img:
+        print(y)
+
+        print(x)
+
+
+
+
+
+
 
 
