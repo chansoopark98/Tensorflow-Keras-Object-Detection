@@ -1,6 +1,7 @@
 import tensorflow_datasets as tfds
 import argparse
 import os
+from preprocessing import cityScapes
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
@@ -65,4 +66,5 @@ elif TRAIN_MODE == 'cityscapes':
                          )
     test_ds = tfds.load('cityscapes/semantic_segmentation', data_dir=DATASET_DIR, split='test'
                         )
+
 

@@ -1,6 +1,6 @@
 import tensorflow_datasets as tfds
 import tensorflow as tf
-from preprocessing import prepare_dataset
+from preprocessing import prepare_dataset, cityScapes
 
 
 class GenerateDatasets:
@@ -65,3 +65,47 @@ class GenerateDatasets:
                                                   self.target, self.num_classes, train=False)
 
 
+
+
+class CityScapes:
+    def __init__(self, data_dir, image_size, batch_size):
+        """
+        Args:
+            data_dir: 데이터셋 상대 경로 ( default : './datasets/' )
+            image_size: EfficientNet 백본에 따른 이미지 해상도 크기
+            batch_size: 배치 사이즈 크기
+        """
+        self.data_dir = data_dir
+        self.image_size = image_size
+        self.batch_size = batch_size
+
+        self.num_classes = None
+        self.training_dataset = None
+        self.validation_dataset = None
+
+        self.number_train = 0
+        self.number_test = 0
+
+        self.load_datasets()
+
+    def load_datasets(self):
+        self.num_classes = 21
+
+        train_data = tfds.load('cityscapes/semantic_segmentation', data_dir=self.data_dir, split='train'
+                             )
+        valid_data = tfds.load('cityscapes/semantic_segmentation', data_dir=self.data_dir, split='validation'
+                             )
+        test_data = tfds.load('cityscapes/semantic_segmentation', data_dir=self.data_dir, split='test'
+                            )
+
+        # self.number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
+        self.number_train = 2975
+        print("학습 데이터 개수", self.number_train)
+        # self.number_test = valid_data.reduce(0, lambda x, _: x + 1).numpy()
+        self.number_test = 500
+        print("테스트 데이터 개수:", self.number_test)
+
+
+
+        self.training_dataset = cityScapes(train_data, self.image_size, self.batch_size, train=True)
+        self.validation_dataset =cityScapes(valid_data, self.image_size, self.batch_size, train=False)

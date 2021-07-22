@@ -169,3 +169,27 @@ def test_priors_datasets(dataset, image_size, target_transform, batch_size=64):
     dataset = dataset.prefetch(AUTO)
 
     return dataset
+
+def prepare_cityScapes(sample):
+    img = tf.cast(sample['image_left'], dtype=tf.float32)
+    labels = sample['segmentation_label']
+    img = tf.image.resize(img, [512, 1024])
+    labels = tf.image.resize(labels, [512, 1024])
+
+
+    img = preprocess_input(img, mode='torch')
+
+    return (img, labels)
+
+
+def cityScapes(dataset, image_size=None, batch_size=None, train=False):
+    dataset = dataset.map(prepare_cityScapes, num_parallel_calls=AUTO)
+    if train:
+        dataset = dataset.shuffle(50)
+        dataset = dataset.repeat()
+        # augmentation 추가해야 함
+
+    dataset = dataset.padded_batch(batch_size)
+    dataset = dataset.prefetch(AUTO)
+    return dataset
+
