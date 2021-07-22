@@ -91,7 +91,6 @@ def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[1024, 2048
 
 
 def csnet_seg_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], backbone_trainable=True):
-    source_layers = []
     base = create_efficientNet(base_model_name, pretrained, IMAGE_SIZE, trainable=backbone_trainable)
 
     layer_names = GET_EFFICIENT_NAME[base_model_name]

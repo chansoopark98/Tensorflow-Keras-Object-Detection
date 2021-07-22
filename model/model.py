@@ -5,8 +5,7 @@ from tensorflow.keras.layers import Conv2D, Add, Activation, Dropout ,BatchNorma
     SeparableConv2D, MaxPooling2D, Concatenate, DepthwiseConv2D, GlobalAveragePooling2D, Reshape, multiply, add, ReLU
 from functools import reduce
 
-NUM_CHANNELS = [64, 64, 88, 112, 160, 224, 288, 288, 288]
-#NUM_CHANNELS = [48, 64, 88, 112, 160, 244, 288, 288]
+NUM_CHANNELS = [64, 88, 112, 160, 224, 288, 288, 288]
 FPN_TIMES = [1, 3, 4, 5, 6, 7, 7, 7, 7]
 CLS_TIEMS = [1, 3, 3, 3, 4, 4, 4, 4, 4]
 
@@ -15,7 +14,6 @@ MOMENTUM = 0.997
 EPSILON = 1e-4
 
 GET_EFFICIENT_NAME = {
-    'B0-tiny': ['block3b_add', 'block5c_add', 'block7a_project_bn'],
     'B0': ['block3b_add', 'block5c_add', 'block7a_project_bn'],
     'B1': ['block3c_add', 'block5d_add', 'block7b_add'],
     'B2': ['block3c_add', 'block5d_add', 'block7b_add'],
@@ -23,18 +21,17 @@ GET_EFFICIENT_NAME = {
     'B4': ['block3d_add', 'block5f_add', 'block7b_add'],
     'B5': ['block3e_add', 'block5g_add', 'block7c_add'],
     'B6': ['block3f_add', 'block5h_add', 'block7c_add'],
-    'B7': ['block3g_add', 'block5j_add', 'block7d_add'],
+    'B7': ['block3g_add', 'block5j_add', 'block7d_add']
 }
 
 MODEL_NAME = {
-    'B0-tiny': 0,
-    'B0': 1,
-    'B1': 2,
-    'B2': 3,
-    'B3': 4,
-    'B4': 5,
-    'B5': 6,
-    'B6': 7,
+    'B0': 0,
+    'B1': 1,
+    'B2': 2,
+    'B3': 3,
+    'B4': 4,
+    'B5': 5,
+    'B6': 6,
     'B7': 7,
 }
 
@@ -91,8 +88,6 @@ def create_efficientNet(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512],
     return base
 
 
-
-
 def SeparableConvBlock(num_channels, kernel_size, strides, name, freeze_bn=False):
     f1 = SeparableConv2D(num_channels, kernel_size=kernel_size, strides=strides, padding='same',
                                 use_bias=True, name=name+'/conv')
@@ -100,7 +95,7 @@ def SeparableConvBlock(num_channels, kernel_size, strides, name, freeze_bn=False
     # f2 = BatchNormalization(freeze=freeze_bn, name=f'{name}/bn')
     return reduce(lambda f, g: lambda *args, **kwargs: g(f(*args, **kwargs)), (f1, f2))
 
-def build_BiFPN(features, num_channels=64 , id=0, resize=False, bn_trainable=True):
+def build_fpn(features, num_channels=64, id=0, resize=False, bn_trainable=True):
     if resize:
         padding = 'valid'
     else:
@@ -270,7 +265,7 @@ def build_BiFPN(features, num_channels=64 , id=0, resize=False, bn_trainable=Tru
 
         return [P3_out, P4_td, P5_td, P6_td, P7_out]
 
-def build_tiny_BiFPN(features, num_channels=64 , id=0, resize=True, bn_trainable=True):
+def build_tiny_fpn(features, num_channels=64, id=0, resize=True, bn_trainable=True):
     if resize:
         padding = 'valid'
     else:
@@ -402,13 +397,13 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], b
 
 
     if base_model_name == 'B0-tiny':
-            features = build_tiny_BiFPN(features=features, num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]],
-                                   id=0, resize=feature_resize, bn_trainable=bn_trainable)
+            features = build_tiny_fpn(features=features, num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]],
+                                      id=0, resize=feature_resize, bn_trainable=bn_trainable)
     else:
         for i in range(FPN_TIMES[MODEL_NAME[base_model_name]]):
             print("times", i)
-            features = build_BiFPN(features=features, num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]],
-                                   id=i, resize=feature_resize, bn_trainable=bn_trainable)
+            features = build_fpn(features=features, num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]],
+                                 id=i, resize=feature_resize, bn_trainable=bn_trainable)
 
     # predict features
     source_layers.append(features[0])
