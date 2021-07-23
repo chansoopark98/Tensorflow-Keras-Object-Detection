@@ -113,4 +113,3 @@ class CityScapes:
 
         self.training_dataset = cityScapes(train_data, self.image_size, self.batch_size, train=True)
         self.validation_dataset = cityScapes(valid_data, self.image_size, self.batch_size, train=False)
-        self.test_dataset = test_data

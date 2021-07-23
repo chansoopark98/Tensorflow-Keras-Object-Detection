@@ -8,8 +8,9 @@ import argparse
 import time
 import os
 import tensorflow as tf
-import tqdm
+from tqdm import tqdm
 from preprocessing import cityScapes
+import tensorflow_datasets as tfds
 
 tf.keras.backend.clear_session()
 
@@ -63,33 +64,40 @@ dataset_config = CityScapes(DATASET_DIR, IMAGE_SIZE, BATCH_SIZE)
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 
+test_data = tfds.load('cityscapes/semantic_segmentation', data_dir=DATASET_DIR, split='test')
+test_data_number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+print("검증 데이터 개수:", test_data_number_test)
 
-test_steps = dataset_config.number_test // BATCH_SIZE
+test_steps = test_data_number_test // BATCH_SIZE
 
+test_datasets = cityScapes(test_data, IMAGE_SIZE, BATCH_SIZE, train=False)
 
+# if DISTRIBUTION_MODE == 'multi':
+#     mirrored_strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(
+#         tf.distribute.experimental.CollectiveCommunication.NCCL)
+#
+# else:
+#     mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
+# print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
+#
+# with mirrored_strategy.scope():
 
-if DISTRIBUTION_MODE == 'multi':
-    mirrored_strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(
-        tf.distribute.experimental.CollectiveCommunication.NCCL)
+model = seg_model_build(MODEL_NAME, pretrained=True, image_size=IMAGE_SIZE)
 
-else:
-    mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
-print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
+weight_name = 'voc_0723'
+model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
-with mirrored_strategy.scope():
+model.summary()
 
-    model = seg_model_build(MODEL_NAME, pretrained=True, image_size=IMAGE_SIZE)
+import matplotlib.pyplot as plt
+for x, y in tqdm(test_datasets, total=test_steps):
+    pred = model.predict_on_batch(x)
+    pred = tf.nn.softmax(pred)
+    arg_x = tf.argmax(pred, axis=-1)
+    for i in range(len(arg_x)):
+        plt.imshow(arg_x[i])
+        plt.show()
 
-    weight_name = 'voc_0723'
-    model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
-
-    model.summary()
-
-    test_datasets = cityScapes(dataset_config.test_dataset, IMAGE_SIZE, BATCH_SIZE, train=False)
-
-    for x, y in tqdm(test_datasets, total=test_steps):
-        pred = model.predict_on_batch(x)
-        print(x)
 
 
 
