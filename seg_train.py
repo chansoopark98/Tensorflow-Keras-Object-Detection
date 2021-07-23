@@ -12,7 +12,7 @@ import tensorflow as tf
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=8)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.01)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
@@ -87,43 +87,43 @@ if MIXED_PRECISION:
 
 callback = [checkpoint, tensorboard, testCallBack, lr_scheduler]
 
-# if DISTRIBUTION_MODE == 'multi':
-#     mirrored_strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(
-#         tf.distribute.experimental.CollectiveCommunication.NCCL)
-#
-# else:
-#     mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
-# print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
-#
-# with mirrored_strategy.scope():
+if DISTRIBUTION_MODE == 'multi':
+    mirrored_strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(
+        tf.distribute.experimental.CollectiveCommunication.NCCL)
 
-loss = Seg_loss(BATCH_SIZE)
-model = seg_model_build(MODEL_NAME, pretrained=True, image_size=IMAGE_SIZE)
+else:
+    mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
+print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
 
-if USE_WEIGHT_DECAY:
-    regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
-    for layer in model.layers:
-        for attr in ['kernel_regularizer', 'bias_regularizer']:
-            if hasattr(layer, attr) and layer.trainable:
-                setattr(layer, attr, regularizer)
+with mirrored_strategy.scope():
 
-model.compile(
-    optimizer=optimizer,
-    loss=loss.total_loss
-)
+    loss = Seg_loss(BATCH_SIZE)
+    model = seg_model_build(MODEL_NAME, pretrained=True, image_size=IMAGE_SIZE)
 
-if LOAD_WEIGHT:
-    weight_name = 'voc_0710'
-    model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
+    if USE_WEIGHT_DECAY:
+        regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
+        for layer in model.layers:
+            for attr in ['kernel_regularizer', 'bias_regularizer']:
+                if hasattr(layer, attr) and layer.trainable:
+                    setattr(layer, attr, regularizer)
 
-model.summary()
+    model.compile(
+        optimizer=optimizer,
+        loss=loss.total_loss
+    )
 
-history = model.fit(dataset_config.training_dataset,
-        validation_data=dataset_config.validation_dataset,
-        steps_per_epoch=steps_per_epoch,
-        validation_steps=validation_steps,
-        epochs=EPOCHS,
-        callbacks=callback)
+    if LOAD_WEIGHT:
+        weight_name = 'voc_0710'
+        model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
-model.save('./checkpoints/save_model.h5', True, True, 'h5')
+    model.summary()
+
+    history = model.fit(dataset_config.training_dataset,
+            validation_data=dataset_config.validation_dataset,
+            steps_per_epoch=steps_per_epoch,
+            validation_steps=validation_steps,
+            epochs=EPOCHS,
+            callbacks=callback)
+
+    model.save('./checkpoints/save_model.h5', True, True, 'h5')
 
