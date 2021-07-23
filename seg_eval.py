@@ -9,6 +9,7 @@ import time
 import os
 import tensorflow as tf
 import tqdm
+from preprocessing import cityScapes
 
 tf.keras.backend.clear_session()
 
@@ -83,7 +84,10 @@ with mirrored_strategy.scope():
     model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
     model.summary()
-    for x, y in tqdm(dataset_config.test_dataset, total=test_steps):
+
+    test_datasets = cityScapes(dataset_config.test_dataset, IMAGE_SIZE, BATCH_SIZE, train=False)
+
+    for x, y in tqdm(test_datasets, total=test_steps):
         pred = model.predict_on_batch(x)
         print(x)
 
