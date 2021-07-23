@@ -42,6 +42,7 @@ from keras.engine.topology import get_source_inputs
 from tensorflow.keras import backend as K
 from tensorflow.python.keras.utils import conv_utils
 import tensorflow as tf
+from tensorflow.keras.applications import ResNet101
 
 TF_WEIGHTS_PATH = "https://github.com/bonlime/keras-deeplab-v3-plus/releases/download/1.0/deeplabv3_weights_tf_dim_ordering_tf_kernels.h5"
 
@@ -214,29 +215,6 @@ def xception_block(inputs, depth_list, prefix, skip_connection_type, stride,
 
 
 def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1024, 3), classes=19, OS=16):
-    """ Instantiates the Deeplabv3+ architecture
-    Optionally loads weights pre-trained
-    on PASCAL VOC. This model is available for TensorFlow only,
-    and can only be used with inputs following the TensorFlow
-    data format `(width, height, channels)`.
-    # Arguments
-        weights: one of 'pascal_voc' (pre-trained on pascal voc)
-            or None (random initialization)
-        input_tensor: optional Keras tensor (i.e. output of `layers.Input()`)
-            to use as image input for the model.
-        input_shape: shape of input image. format HxWxC
-            PASCAL VOC model was trained on (512,512,3) images
-        classes: number of desired classes. If classes != 21,
-            last layer is initialized randomly
-        OS: determines input_shape/feature_extractor_output ratio. One of {8,16}
-    # Returns
-        A Keras model instance.
-    # Raises
-        RuntimeError: If attempting to run this model with a
-            backend that does not support separable convolutions.
-        ValueError: in case of invalid argument for `weights`
-    """
-
     if not (weights in {'pascal_voc', None}):
         raise ValueError('The `weights` argument should be either '
                          '`None` (random initialization) or `pascal_voc` '
@@ -257,44 +235,55 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
         exit_block_rates = (1, 2)
         atrous_rates = (6, 12, 18)
 
-    if input_tensor is None:
-        img_input = Input(shape=input_shape)
-    else:
-        if not K.is_keras_tensor(input_tensor):
-            img_input = Input(tensor=input_tensor, shape=input_shape)
-        else:
-            img_input = input_tensor
+    # if input_tensor is None:
+    #     img_input = Input(shape=input_shape)
+    # else:
+    #     if not K.is_keras_tensor(input_tensor):
+    #         img_input = Input(tensor=input_tensor, shape=input_shape)
+    #     else:
+    #         img_input = input_tensor
+    #
+    # x = Conv2D(32, (3, 3), strides=(2, 2),
+    #            name='entry_flow_conv1_1', use_bias=False, padding='same')(img_input)
+    # x = BatchNormalization(name='entry_flow_conv1_1_BN')(x)
+    # x = Activation('relu')(x)
+    #
+    # x = conv2d_same(x, 64, 'entry_flow_conv1_2', kernel_size=3, stride=1)
+    # x = BatchNormalization(name='entry_flow_conv1_2_BN')(x)
+    # x = Activation('relu')(x)
+    #
+    # x = xception_block(x, [128, 128, 128], 'entry_flow_block1',
+    #                    skip_connection_type='conv', stride=2,
+    #                    depth_activation=False)
+    # x, skip1 = xception_block(x, [256, 256, 256], 'entry_flow_block2',
+    #                           skip_connection_type='conv', stride=2,
+    #                           depth_activation=False, return_skip=True)
+    #
+    # x = xception_block(x, [728, 728, 728], 'entry_flow_block3',
+    #                    skip_connection_type='conv', stride=entry_block3_stride,
+    #                    depth_activation=False)
+    # for i in range(16):
+    #     x = xception_block(x, [728, 728, 728], 'middle_flow_unit_{}'.format(i + 1),
+    #                        skip_connection_type='sum', stride=1, rate=middle_block_rate,
+    #                        depth_activation=False)
+    #
+    # x = xception_block(x, [728, 1024, 1024], 'exit_flow_block1',
+    #                    skip_connection_type='conv', stride=1, rate=exit_block_rates[0],
+    #                    depth_activation=False)
+    # x = xception_block(x, [1536, 1536, 2048], 'exit_flow_block2',
+    #                    skip_connection_type='none', stride=1, rate=exit_block_rates[1],
+    #                    depth_activation=True)
 
-    x = Conv2D(32, (3, 3), strides=(2, 2),
-               name='entry_flow_conv1_1', use_bias=False, padding='same')(img_input)
-    x = BatchNormalization(name='entry_flow_conv1_1_BN')(x)
-    x = Activation('relu')(x)
 
-    x = conv2d_same(x, 64, 'entry_flow_conv1_2', kernel_size=3, stride=1)
-    x = BatchNormalization(name='entry_flow_conv1_2_BN')(x)
-    x = Activation('relu')(x)
+    base = ResNet101(include_top=False, input_shape=input_shape, weights='imagenet')
+    base.summary()
 
-    x = xception_block(x, [128, 128, 128], 'entry_flow_block1',
-                       skip_connection_type='conv', stride=2,
-                       depth_activation=False)
-    x, skip1 = xception_block(x, [256, 256, 256], 'entry_flow_block2',
-                              skip_connection_type='conv', stride=2,
-                              depth_activation=False, return_skip=True)
+    x = base.get_layer('conv4_block23_out').output
+    skip1 = base.get_layer('conv2_block3_out').output
+    # conv5_block3_out 16, 32, 2048
+    # conv3_block4_out 64, 128, 512
 
-    x = xception_block(x, [728, 728, 728], 'entry_flow_block3',
-                       skip_connection_type='conv', stride=entry_block3_stride,
-                       depth_activation=False)
-    for i in range(16):
-        x = xception_block(x, [728, 728, 728], 'middle_flow_unit_{}'.format(i + 1),
-                           skip_connection_type='sum', stride=1, rate=middle_block_rate,
-                           depth_activation=False)
 
-    x = xception_block(x, [728, 1024, 1024], 'exit_flow_block1',
-                       skip_connection_type='conv', stride=1, rate=exit_block_rates[0],
-                       depth_activation=False)
-    x = xception_block(x, [1536, 1536, 2048], 'exit_flow_block2',
-                       skip_connection_type='none', stride=1, rate=exit_block_rates[1],
-                       depth_activation=True)
     # end of feature extractor
 
     # branching for Atrous Spatial Pyramid Pooling
@@ -359,4 +348,5 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
 
 
 
-    return img_input, x
+    return base.input, x
+    #return img_input, x
