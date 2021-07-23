@@ -180,7 +180,7 @@ def prepare_cityScapes(sample):
     labels = tf.cast(labels, dtype=tf.int64)
 
     img = preprocessing.Rescaling(1.0 / 255)(img)
-    tf.print(img)
+
     #img = preprocess_input(img, mode='torch')
 
 
