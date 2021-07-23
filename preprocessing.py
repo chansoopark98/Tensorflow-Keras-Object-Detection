@@ -196,12 +196,13 @@ def prepare_cityScapes(sample):
 
 
 def prepare_cityScapes_val(sample):
-    gt_img = sample['image_left']
-    gt_label = sample['segmentation_label']
+    img = sample['image_left']
+    label = sample['segmentation_label']
 
-    img = tf.cast(gt_img, dtype=tf.float32)
-    labels = tf.cast(gt_label, dtype=tf.int64)
     img = preprocessing.Rescaling(1.0 / 255)(img)
+
+    img = tf.cast(img, dtype=tf.float32)
+    labels = tf.cast(label, dtype=tf.int64)
 
     return (img, labels)
 
