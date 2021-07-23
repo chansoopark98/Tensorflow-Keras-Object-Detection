@@ -15,7 +15,7 @@ tf.keras.backend.clear_session()
 parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
-parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.005)
+parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.0005)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0001)
 parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름",
                     default=str(time.strftime('%m%d', time.localtime(time.time()))))
@@ -25,7 +25,7 @@ parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=True)
-parser.add_argument("--load_weight",  type=bool,  help="가중치 로드", default=False)
+parser.add_argument("--load_weight",  type=bool,  help="가중치 로드", default=True)
 parser.add_argument("--mixed_precision",  type=bool,  help="mixed_precision 사용", default=True)
 parser.add_argument("--distribution_mode",  type=bool,  help="분산 학습 모드 설정 mirror or multi", default='mirror')
 
@@ -77,7 +77,7 @@ testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
 polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
                                                           decay_steps=EPOCHS,
-                                                          end_learning_rate=base_lr * 0.1, power=1.0)
+                                                          end_learning_rate=base_lr * 0.1, power=0.9)
 lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
 # optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
@@ -102,6 +102,10 @@ with mirrored_strategy.scope():
     loss = Seg_loss(BATCH_SIZE)
     model = seg_model_build(MODEL_NAME, pretrained=True, image_size=IMAGE_SIZE)
 
+    if LOAD_WEIGHT:
+        weight_name = 'voc_0723'
+        model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
+
     if USE_WEIGHT_DECAY:
         regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
         for layer in model.layers:
@@ -115,7 +119,7 @@ with mirrored_strategy.scope():
         metrics=[miou])
 
     if LOAD_WEIGHT:
-        weight_name = 'voc_0710'
+        weight_name = 'voc_0723'
         model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
     model.summary()

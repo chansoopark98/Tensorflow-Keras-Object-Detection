@@ -1,4 +1,5 @@
 import tensorflow as tf
+import gc
 
 class Scalar_LR(tf.keras.callbacks.Callback):
     def __init__(self, name, TENSORBOARD_DIR):
@@ -21,7 +22,10 @@ class DecayHistory(tf.keras.callbacks.Callback):
     def on_batch_end(self, batch, logs={}):
         self.lr.append(self.model.optimizer.lr(self.model.optimizer.iterations))
         self.wd.append(self.model.optimizer.weight_decay)
+        gc.collect()
 
     def on_epoch_end(self, epoch, logs={}):
         print("end_batch lr : ",self.model.optimizer.lr)
         print("end_batch wd : ",self.model.optimizer.weight_decay)
+
+        
