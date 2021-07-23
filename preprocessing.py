@@ -192,7 +192,10 @@ def prepare_cityScapes(sample):
     if tf.random.uniform([]) > 0.5:
         img = tf.image.random_contrast(img, lower=0.5, upper=1.5)  # 랜덤 대비
 
-    return (img, labels)
+    img = tf.cast(img, dtype=tf.float32)
+    lables = tf.cast(labels, dtype=tf.int64)
+
+    return (img, lables)
 
 
 def prepare_cityScapes_val(sample):
