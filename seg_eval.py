@@ -42,7 +42,7 @@ CHECKPOINT_DIR = args.checkpoint_dir
 TENSORBOARD_DIR = args.tensorboard_dir
 MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
-IMAGE_SIZE = [512, 1024]
+IMAGE_SIZE = [1024, 2048]
 USE_WEIGHT_DECAY = args.use_weightDecay
 LOAD_WEIGHT = args.load_weight
 MIXED_PRECISION = args.mixed_precision
@@ -91,8 +91,7 @@ model.summary()
 
 import matplotlib.pyplot as plt
 for x, y in tqdm(test_datasets, total=test_steps):
-    pred = model.predict_on_batch(x)
-    #pred = tf.nn.softmax(pred)
+    pred = model.predict_on_batch(x)#pred = tf.nn.softmax(pred)
     arg_x = tf.argmax(pred, axis=-1)
     for i in range(len(arg_x)):
         plt.imshow(arg_x[i])

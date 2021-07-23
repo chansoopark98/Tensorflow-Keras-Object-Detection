@@ -42,6 +42,7 @@ from keras.engine.topology import get_source_inputs
 from tensorflow.keras import backend as K
 from tensorflow.python.keras.utils import conv_utils
 import tensorflow as tf
+
 TF_WEIGHTS_PATH = "https://github.com/bonlime/keras-deeplab-v3-plus/releases/download/1.0/deeplabv3_weights_tf_dim_ordering_tf_kernels.h5"
 
 
@@ -207,6 +208,9 @@ def xception_block(inputs, depth_list, prefix, skip_connection_type, stride,
         return outputs, skip
     else:
         return outputs
+
+
+
 
 
 def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1024, 3), classes=19, OS=16):
