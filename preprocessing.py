@@ -199,10 +199,15 @@ def prepare_cityScapes_val(sample):
     img = sample['image_left']
     label = sample['segmentation_label']
 
+    concat_img = tf.concat([img, label], axis=2)
+    concat_img = tf.image.random_crop(concat_img, (512, 1024, 4))
+    img = concat_img[:, :, :3]
+    labels = concat_img[:, :, 3:]
+
     img = preprocessing.Rescaling(1.0 / 255)(img)
 
     img = tf.cast(img, dtype=tf.float32)
-    labels = tf.cast(label, dtype=tf.int64)
+    labels = tf.cast(labels, dtype=tf.int64)
 
     return (img, labels)
 
