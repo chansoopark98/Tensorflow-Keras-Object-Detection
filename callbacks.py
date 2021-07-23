@@ -13,6 +13,7 @@ class Scalar_LR(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         logs['learning rate'] = self.model.optimizer.lr
         tf.summary.scalar("end_lr", logs['learning rate'], step=epoch)
+        gc.collect()
 
 
 class DecayHistory(tf.keras.callbacks.Callback):
@@ -22,10 +23,10 @@ class DecayHistory(tf.keras.callbacks.Callback):
     def on_batch_end(self, batch, logs={}):
         self.lr.append(self.model.optimizer.lr(self.model.optimizer.iterations))
         self.wd.append(self.model.optimizer.weight_decay)
-        gc.collect()
+
 
     def on_epoch_end(self, epoch, logs={}):
         print("end_batch lr : ",self.model.optimizer.lr)
         print("end_batch wd : ",self.model.optimizer.weight_decay)
 
-        
+

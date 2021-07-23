@@ -223,6 +223,7 @@ def cityScapes(dataset, image_size=None, batch_size=None, train=False):
         dataset = dataset.repeat()
     else:
         dataset = dataset.map(prepare_cityScapes_val, num_parallel_calls=AUTO)
+        dataset = dataset.repeat()
 
     dataset = dataset.padded_batch(batch_size)
     dataset = dataset.prefetch(AUTO)
