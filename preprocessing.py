@@ -200,7 +200,7 @@ def prepare_cityScapes_val(sample):
     label = sample['segmentation_label']
 
     concat_img = tf.concat([img, label], axis=2)
-    concat_img = tf.image.random_crop(concat_img, (1024, 2048, 4))
+    concat_img = tf.image.random_crop(concat_img, (512, 1024, 4))
     img = concat_img[:, :, :3]
     labels = concat_img[:, :, 3:]
 
@@ -211,13 +211,6 @@ def prepare_cityScapes_val(sample):
 
     return (img, labels)
 
-def seg_aug(img, labels):
-
-
-    img = tf.cast(img, dtype=tf.float32)
-    labels = tf.cast(labels, dtype=tf.int64)
-
-    return img, labels
 
 def cityScapes(dataset, image_size=None, batch_size=None, train=False):
 
@@ -225,7 +218,6 @@ def cityScapes(dataset, image_size=None, batch_size=None, train=False):
         dataset = dataset.map(prepare_cityScapes, num_parallel_calls=AUTO)
         dataset = dataset.shuffle(100)
         dataset = dataset.repeat()
-        dataset = dataset.map(seg_aug, num_parallel_calls=AUTO)
     else:
         dataset = dataset.map(prepare_cityScapes_val, num_parallel_calls=AUTO)
 
