@@ -92,7 +92,7 @@ model.summary()
 import matplotlib.pyplot as plt
 for x, y in tqdm(test_datasets, total=test_steps):
     pred = model.predict_on_batch(x)
-    pred = tf.nn.softmax(pred)
+    #pred = tf.nn.softmax(pred)
     arg_x = tf.argmax(pred, axis=-1)
     for i in range(len(arg_x)):
         plt.imshow(arg_x[i])

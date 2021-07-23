@@ -209,7 +209,7 @@ def xception_block(inputs, depth_list, prefix, skip_connection_type, stride,
         return outputs
 
 
-def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 512, 3), classes=21, OS=16):
+def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1024, 3), classes=19, OS=16):
     """ Instantiates the Deeplabv3+ architecture
     Optionally loads weights pre-trained
     on PASCAL VOC. This model is available for TensorFlow only,

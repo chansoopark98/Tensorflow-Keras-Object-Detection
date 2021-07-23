@@ -3,6 +3,7 @@ import argparse
 import os
 import tensorflow as tf
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
+from tensorflow.keras.layers.experimental import preprocessing
 import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser()
@@ -18,15 +19,19 @@ AUTO = tf.data.experimental.AUTOTUNE
 def prepare_cityScapes(sample):
     img = sample['image_left']
     labels = sample['segmentation_label']
-
     img = tf.image.random_crop(img, (512, 1024, 3))
     labels = tf.image.random_crop(labels, (512, 1024, 1))
 
     img = tf.cast(img, dtype=tf.float32)
     labels = tf.cast(labels, dtype=tf.int64)
 
+    img = preprocessing.Rescaling(1.0 / 255)(img)
+    #img = preprocess_input(img, mode='torch')
 
-    img = preprocess_input(img, mode='torch')
+
+
+
+
 
     return (img, labels)
 
@@ -95,9 +100,18 @@ elif TRAIN_MODE == 'cityscapes':
 
     from tensorflow.keras.applications.imagenet_utils import preprocess_input
     for x, y in img:
-        print(y)
 
-        print(x)
+        plt.imshow(x)
+        plt.show()
+
+        plt.imshow(y)
+        plt.show()
+
+
+
+
+
+
 
 
 

@@ -1,6 +1,6 @@
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 from utils.augmentations import *
-
+from tensorflow.keras.layers.experimental import preprocessing
 AUTO = tf.data.experimental.AUTOTUNE
 
 
@@ -173,16 +173,23 @@ def test_priors_datasets(dataset, image_size, target_transform, batch_size=64):
 def prepare_cityScapes(sample):
     img = sample['image_left']
     labels = sample['segmentation_label']
-
     img = tf.image.random_crop(img, (512, 1024, 3))
     labels = tf.image.random_crop(labels, (512, 1024, 1))
 
     img = tf.cast(img, dtype=tf.float32)
     labels = tf.cast(labels, dtype=tf.int64)
 
-    img = preprocess_input(img, mode='tf')
+    img = preprocessing.Rescaling(1.0 / 255)(img)
+    tf.print(img)
+    #img = preprocess_input(img, mode='torch')
+
+
+
+
 
     return (img, labels)
+
+
 
 
 def cityScapes(dataset, image_size=None, batch_size=None, train=False):
