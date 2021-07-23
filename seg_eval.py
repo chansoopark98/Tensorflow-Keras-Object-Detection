@@ -8,6 +8,7 @@ import argparse
 import time
 import os
 import tensorflow as tf
+import tqdm
 
 tf.keras.backend.clear_session()
 
@@ -61,69 +62,33 @@ dataset_config = CityScapes(DATASET_DIR, IMAGE_SIZE, BATCH_SIZE)
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 
-steps_per_epoch = dataset_config.number_train // BATCH_SIZE
-validation_steps = dataset_config.number_valid // BATCH_SIZE
-print("학습 배치 개수:", steps_per_epoch)
-print("검증 배치 개수:", validation_steps)
+
+test_steps = dataset_config.number_test // BATCH_SIZE
 
 
 
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
+if DISTRIBUTION_MODE == 'multi':
+    mirrored_strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(
+        tf.distribute.experimental.CollectiveCommunication.NCCL)
 
-checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME + '.h5',
-                                 monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
-testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
-tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
-polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
-                                                          decay_steps=EPOCHS,
-                                                          end_learning_rate=base_lr * 0.1, power=1.0)
-lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
+else:
+    mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
+print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
 
-# optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
-optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
+with mirrored_strategy.scope():
 
-if MIXED_PRECISION:
-    optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
+    model = seg_model_build(MODEL_NAME, pretrained=True, image_size=IMAGE_SIZE)
 
-callback = [checkpoint, tensorboard, testCallBack, lr_scheduler]
-
-# if DISTRIBUTION_MODE == 'multi':
-#     mirrored_strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(
-#         tf.distribute.experimental.CollectiveCommunication.NCCL)
-#
-# else:
-#     mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
-# print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
-#
-# with mirrored_strategy.scope():
-
-loss = Seg_loss(BATCH_SIZE)
-model = seg_model_build(MODEL_NAME, pretrained=True, image_size=IMAGE_SIZE)
-
-if USE_WEIGHT_DECAY:
-    regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
-    for layer in model.layers:
-        for attr in ['kernel_regularizer', 'bias_regularizer']:
-            if hasattr(layer, attr) and layer.trainable:
-                setattr(layer, attr, regularizer)
-
-model.compile(
-    optimizer=optimizer,
-    loss=loss.total_loss
-)
-
-if LOAD_WEIGHT:
-    weight_name = 'voc_0710'
+    weight_name = 'voc_0723'
     model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
-model.summary()
+    model.summary()
+    for x, y in tqdm(dataset_config.test_dataset, total=test_steps):
+        pred = model.predict_on_batch(x)
+        print(x)
 
-history = model.fit(dataset_config.training_dataset,
-        validation_data=dataset_config.validation_dataset,
-        steps_per_epoch=steps_per_epoch,
-        validation_steps=validation_steps,
-        epochs=EPOCHS,
-        callbacks=callback)
 
-model.save('./checkpoints/save_model.h5', True, True, 'h5')
+
+
+
 

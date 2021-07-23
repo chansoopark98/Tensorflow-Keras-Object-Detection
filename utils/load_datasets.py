@@ -84,6 +84,7 @@ class CityScapes:
         self.validation_dataset = None
 
         self.number_train = 0
+        self.number_valid = 0
         self.number_test = 0
 
         self.load_datasets()
@@ -102,10 +103,14 @@ class CityScapes:
         self.number_train = 2975
         print("학습 데이터 개수", self.number_train)
         # self.number_test = valid_data.reduce(0, lambda x, _: x + 1).numpy()
-        self.number_test = 500
-        print("테스트 데이터 개수:", self.number_test)
+        self.number_valid = 500
+        print("검증 데이터 개수:", self.number_valid)
+
+        self.number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+        print("검증 데이터 개수:", self.number_test)
 
 
 
         self.training_dataset = cityScapes(train_data, self.image_size, self.batch_size, train=True)
-        self.validation_dataset =cityScapes(valid_data, self.image_size, self.batch_size, train=False)
+        self.validation_dataset = cityScapes(valid_data, self.image_size, self.batch_size, train=False)
+        self.test_dataset = cityScapes(test_data, self.image_size, self.batch_size, train=False)
