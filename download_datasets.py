@@ -17,21 +17,19 @@ TRAIN_MODE = args.train_dataset
 os.makedirs(DATASET_DIR, exist_ok=True)
 AUTO = tf.data.experimental.AUTOTUNE
 def prepare_cityScapes(sample):
-    img = sample['image_left']
-    labels = sample['segmentation_label']
-    img = tf.image.random_crop(img, (512, 1024, 3))
-    labels = tf.image.random_crop(labels, (512, 1024, 1))
+    gt_img = sample['image_left']
+    gt_label = sample['segmentation_label']
+
+    concat_img = tf.concat([gt_img, gt_label], axis=2)
+    concat_img = tf.image.random_crop(concat_img, (512, 1024, 4))
+
+    img = concat_img[:, :, :3]
+    labels = concat_img[:, :, 3:]
 
     img = tf.cast(img, dtype=tf.float32)
     labels = tf.cast(labels, dtype=tf.int64)
 
     img = preprocessing.Rescaling(1.0 / 255)(img)
-    #img = preprocess_input(img, mode='torch')
-
-
-
-
-
 
     return (img, labels)
 

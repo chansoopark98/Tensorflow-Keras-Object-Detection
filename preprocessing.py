@@ -171,33 +171,57 @@ def test_priors_datasets(dataset, image_size, target_transform, batch_size=64):
     return dataset
 
 def prepare_cityScapes(sample):
-    img = sample['image_left']
-    labels = sample['segmentation_label']
-    img = tf.image.random_crop(img, (512, 1024, 3))
-    labels = tf.image.random_crop(labels, (512, 1024, 1))
+    gt_img = sample['image_left']
+    gt_label = sample['segmentation_label']
 
-    img = tf.cast(img, dtype=tf.float32)
-    labels = tf.cast(labels, dtype=tf.int64)
+    concat_img = tf.concat([gt_img, gt_label], axis=2)
+    concat_img = tf.image.random_crop(concat_img, (512, 1024, 4))
+
+    if tf.random.uniform([]) > 0.5:
+        concat_img = tf.image.flip_left_right(concat_img)
+
+    img = concat_img[:, :, :3]
+    labels = concat_img[:, :, 3:]
 
     img = preprocessing.Rescaling(1.0 / 255)(img)
 
-    #img = preprocess_input(img, mode='torch')
-
-
-
-
+    if tf.random.uniform([]) > 0.5:
+        img = tf.image.random_saturation(img, lower=0.5, upper=1.5)  # 랜덤 채도
+    if tf.random.uniform([]) > 0.5:
+        img = tf.image.random_brightness(img, max_delta=0.15)  # 랜덤 밝기
+    if tf.random.uniform([]) > 0.5:
+        img = tf.image.random_contrast(img, lower=0.5, upper=1.5)  # 랜덤 대비
 
     return (img, labels)
 
 
+def prepare_cityScapes_val(sample):
+    gt_img = sample['image_left']
+    gt_label = sample['segmentation_label']
 
+    img = tf.cast(gt_img, dtype=tf.float32)
+    labels = tf.cast(gt_label, dtype=tf.int64)
+    img = preprocessing.Rescaling(1.0 / 255)(img)
+
+    return (img, labels)
+
+def seg_aug(img, labels):
+
+
+    img = tf.cast(img, dtype=tf.float32)
+    labels = tf.cast(labels, dtype=tf.int64)
+
+    return img, labels
 
 def cityScapes(dataset, image_size=None, batch_size=None, train=False):
-    dataset = dataset.map(prepare_cityScapes, num_parallel_calls=AUTO)
+
     if train:
+        dataset = dataset.map(prepare_cityScapes, num_parallel_calls=AUTO)
         dataset = dataset.shuffle(100)
         dataset = dataset.repeat()
-        # augmentation 추가해야 함
+        dataset = dataset.map(seg_aug, num_parallel_calls=AUTO)
+    else:
+        dataset = dataset.map(prepare_cityScapes_val, num_parallel_calls=AUTO)
 
     dataset = dataset.padded_batch(batch_size)
     dataset = dataset.prefetch(AUTO)
