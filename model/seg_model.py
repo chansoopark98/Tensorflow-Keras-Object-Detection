@@ -214,7 +214,7 @@ def xception_block(inputs, depth_list, prefix, skip_connection_type, stride,
 
 
 
-def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1024, 3), classes=19, OS=16):
+def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1024, 3), classes=20, OS=16):
     if not (weights in {'pascal_voc', None}):
         raise ValueError('The `weights` argument should be either '
                          '`None` (random initialization) or `pascal_voc` '
@@ -276,9 +276,11 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
 
 
     base = ResNet101(include_top=False, input_shape=input_shape, weights='imagenet')
-    base.summary()
 
-    x = base.get_layer('conv4_block23_out').output
+
+    # x = base.get_layer('conv4_block23_out').output
+    x = base.get_layer('conv5_block3_out').output
+    # skip1 = base.get_layer('conv2_block3_out').output
     skip1 = base.get_layer('conv2_block3_out').output
     # conv5_block3_out 16, 32, 2048
     # conv3_block4_out 64, 128, 512
@@ -290,27 +292,27 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
     # simple 1x1
     b0 = Conv2D(256, (1, 1), padding='same', use_bias=False, name='aspp0')(x)
     b0 = BatchNormalization(name='aspp0_BN', epsilon=1e-5)(b0)
-    b0 = Activation('relu', name='aspp0_activation')(b0)
+    b0 = Activation('relu', name='aspp0_activation')(b0) # 16, 32 @ 256
 
     # rate = 6 (12)
     b1 = SepConv_BN(x, 256, 'aspp1',
-                    rate=atrous_rates[0], depth_activation=True, epsilon=1e-5)
+                    rate=atrous_rates[0], depth_activation=True, epsilon=1e-5) # 16, 32 @ 256
     # rate = 12 (24)
     b2 = SepConv_BN(x, 256, 'aspp2',
-                    rate=atrous_rates[1], depth_activation=True, epsilon=1e-5)
+                    rate=atrous_rates[1], depth_activation=True, epsilon=1e-5) # 16, 32 @256
     # rate = 18 (36)
     b3 = SepConv_BN(x, 256, 'aspp3',
-                    rate=atrous_rates[2], depth_activation=True, epsilon=1e-5)
+                    rate=atrous_rates[2], depth_activation=True, epsilon=1e-5) # 16, 32 @256
 
     # Image Feature branch
-    out_shape = int(np.ceil(input_shape[0] / OS))
+    out_shape = int(np.ceil(input_shape[0] / OS)) # 16
     b4 = AveragePooling2D(pool_size=(out_shape, out_shape))(x)
     b4 = Conv2D(256, (1, 1), padding='same',
                 use_bias=False, name='image_pooling')(b4)
     b4 = BatchNormalization(name='image_pooling_BN', epsilon=1e-5)(b4)
     b4 = Activation('relu')(b4)
 
-    b4 = BilinearUpsampling((out_shape, out_shape))(b4)
+    b4 = BilinearUpsampling((out_shape, out_shape))(b4) # 16, 32
 
     # concatenate ASPP branches & project
     x = Concatenate()([b4, b0, b1, b2, b3])
@@ -324,10 +326,12 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
 
     # Feature projection
     # x4 (x2) block
+
+    # d
     x = BilinearUpsampling(output_size=(int(np.ceil(input_shape[0] / 4)),
-                                        int(np.ceil(input_shape[1] / 4))))(x)
+                                        int(np.ceil(input_shape[1] / 4))))(x) # 128, 256 @256
     dec_skip1 = Conv2D(48, (1, 1), padding='same',
-                       use_bias=False, name='feature_projection0')(skip1)
+                       use_bias=False, name='feature_projection0')(skip1) # 64, 128, 48
     dec_skip1 = BatchNormalization(
         name='feature_projection0_BN', epsilon=1e-5)(dec_skip1)
     dec_skip1 = Activation('relu')(dec_skip1)

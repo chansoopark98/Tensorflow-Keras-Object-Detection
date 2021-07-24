@@ -42,7 +42,7 @@ CHECKPOINT_DIR = args.checkpoint_dir
 TENSORBOARD_DIR = args.tensorboard_dir
 MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
-IMAGE_SIZE = [1024, 2048]
+IMAGE_SIZE = [512, 1024]
 USE_WEIGHT_DECAY = args.use_weightDecay
 LOAD_WEIGHT = args.load_weight
 MIXED_PRECISION = args.mixed_precision
@@ -84,7 +84,7 @@ test_datasets = cityScapes(test_data, IMAGE_SIZE, BATCH_SIZE, train=False)
 
 model = seg_model_build(MODEL_NAME, pretrained=True, image_size=IMAGE_SIZE)
 
-weight_name = 'voc_0723'
+weight_name = 'city_0724'
 model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
 model.summary()
