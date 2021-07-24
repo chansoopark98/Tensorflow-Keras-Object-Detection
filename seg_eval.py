@@ -15,7 +15,7 @@ import tensorflow_datasets as tfds
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=8)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
@@ -42,7 +42,7 @@ CHECKPOINT_DIR = args.checkpoint_dir
 TENSORBOARD_DIR = args.tensorboard_dir
 MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
-IMAGE_SIZE = [512, 1024]
+IMAGE_SIZE = [1024, 2048]
 USE_WEIGHT_DECAY = args.use_weightDecay
 LOAD_WEIGHT = args.load_weight
 MIXED_PRECISION = args.mixed_precision
@@ -57,14 +57,14 @@ os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
 
 # Create Dataset
-dataset_config = CityScapes(DATASET_DIR, IMAGE_SIZE, BATCH_SIZE)
+dataset_config = CityScapes(DATASET_DIR, IMAGE_SIZE, BATCH_SIZE, 'test')
 
 # Set loss function
 
 
 print("백본 EfficientNet{0} .".format(MODEL_NAME))
 
-test_data = tfds.load('cityscapes/semantic_segmentation', data_dir=DATASET_DIR, split='test')
+test_data = tfds.load('cityscapes/semantic_segmentation', data_dir=DATASET_DIR, split='validation')
 test_data_number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
 print("검증 데이터 개수:", test_data_number_test)
 
@@ -89,13 +89,27 @@ model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
 model.summary()
 
+
 import matplotlib.pyplot as plt
+
+class MeanIOU(tf.keras.metrics.MeanIoU):
+    def update_state(self, y_true, y_pred, sample_weight=None):
+        y_true = tf.squeeze(y_true, -1)
+        y_pred = tf.argmax(y_pred, axis=-1)
+
+        return super().update_state(y_true, y_pred, sample_weight)
+
+metric = MeanIOU(20)
 for x, y in tqdm(test_datasets, total=test_steps):
     pred = model.predict_on_batch(x)#pred = tf.nn.softmax(pred)
-    arg_x = tf.argmax(pred, axis=-1)
-    for i in range(len(arg_x)):
-        plt.imshow(arg_x[i])
-        plt.show()
+
+    for i in range(len(pred)):
+        metric.update_state(y[i], pred[i])
+        print(metric.result().numpy())
+
+    # for i in range(len(pred)):
+    #     plt.imshow(y[i])
+    #     plt.show()
 
 
 

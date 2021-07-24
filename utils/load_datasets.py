@@ -68,7 +68,7 @@ class GenerateDatasets:
 
 
 class CityScapes:
-    def __init__(self, data_dir, image_size, batch_size):
+    def __init__(self, data_dir, image_size, batch_size, mode):
         """
         Args:
             data_dir: 데이터셋 상대 경로 ( default : './datasets/' )
@@ -78,10 +78,12 @@ class CityScapes:
         self.data_dir = data_dir
         self.image_size = image_size
         self.batch_size = batch_size
+        self.mode = mode
 
         self.num_classes = None
         self.training_dataset = None
         self.validation_dataset = None
+        self.test_dataset = None
 
         self.number_train = 0
         self.number_valid = 0
@@ -106,10 +108,12 @@ class CityScapes:
         self.number_valid = 500
         print("검증 데이터 개수:", self.number_valid)
 
-        self.number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
-        print("검증 데이터 개수:", self.number_test)
+        # self.number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+        # print("검증 데이터 개수:", self.number_test)
 
 
-
-        self.training_dataset = cityScapes(train_data, self.image_size, self.batch_size, train=True)
-        self.validation_dataset = cityScapes(valid_data, self.image_size, self.batch_size, train=False)
+        if self.mode == 'train':
+            self.training_dataset = cityScapes(train_data, self.image_size, self.batch_size, train=True)
+            self.validation_dataset = cityScapes(valid_data, self.image_size, self.batch_size, train=False)
+        else :
+            self.test_dataset = cityScapes(test_data, self.image_size, self.batch_size, train=False)
