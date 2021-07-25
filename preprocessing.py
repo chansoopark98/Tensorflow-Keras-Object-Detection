@@ -206,7 +206,7 @@ def prepare_cityScapes_val(sample):
 def cityScapes_resize(img, labels):
 
     concat_img = tf.concat([img, labels], axis=2)
-    concat_img = tf.image.random_crop(concat_img, (256, 512, 4))
+    concat_img = tf.image.random_crop(concat_img, (512, 1024, 4))
     img = concat_img[:, :, :3]
     labels = concat_img[:, :, 3:]
 

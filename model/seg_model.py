@@ -292,14 +292,15 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
     # conv3_block4_out 64, 128, 512
 
     """ for EfficientNetV2S """
-    base = EfficientNetV2S(input_shape=input_shape, classifier_activation=None)
+    base = EfficientNetV2S(input_shape=input_shape, classifier_activation=None, survivals=None, dropout=1e-6, classes=0)
     base.load_weights('./checkpoints/efficientnetv2-s-21k-ft1k.h5', by_name=True)
-    divide_output_stride = 8
+    # base.load_weights('checkpoints/efficientnetv2-s-21k-ft1k.h5', by_name=True)
+    divide_output_stride = 4
     base.summary()
     #base.load_weights('efficientnetv2-s-21k.h5')
 
-    x = base.get_layer('add_34').output # 8
-    skip1 = base.get_layer('add_7').output # 32
+    x = base.get_layer('add_34').output # 32x64
+    skip1 = base.get_layer('add_4').output # 128x256
 
 
     # end of feature extractor
@@ -321,7 +322,7 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
                     rate=atrous_rates[2], depth_activation=True, epsilon=1e-5) # 16, 32 @256
 
     # Image Feature branch
-    out_shape = int(np.ceil(input_shape[0] / OS)) # 16
+    out_shape = int(np.ceil(input_shape[0] / OS)) # os 16 => 32 os 32 => 16
     b4 = AveragePooling2D(pool_size=(out_shape, out_shape))(x)
     b4 = Conv2D(256, (1, 1), padding='same',
                 use_bias=False, name='image_pooling')(b4)
@@ -342,6 +343,8 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
 
     # Feature projection
     # x4 (x2) block
+
+
 
     # d
     x = BilinearUpsampling(output_size=(int(np.ceil(input_shape[0] / divide_output_stride)),

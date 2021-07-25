@@ -13,6 +13,7 @@ class Scalar_LR(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         logs['learning rate'] = self.model.optimizer.lr
         tf.summary.scalar("end_lr", logs['learning rate'], step=epoch)
+        tf.keras.backend.clear_session()
         gc.collect()
 
 
