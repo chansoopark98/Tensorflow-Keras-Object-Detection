@@ -213,6 +213,7 @@ def xception_block(inputs, depth_list, prefix, skip_connection_type, stride,
 
 
 
+from model.efficientnet_v2 import *
 
 def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1024, 3), classes=20, OS=16):
     if not (weights in {'pascal_voc', None}):
@@ -234,6 +235,8 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
         middle_block_rate = 1
         exit_block_rates = (1, 2)
         atrous_rates = (6, 12, 18)
+
+
 
     # if input_tensor is None:
     #     img_input = Input(shape=input_shape)
@@ -275,15 +278,28 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
     #                    depth_activation=True)
 
 
-    base = ResNet101(include_top=False, input_shape=input_shape, weights='imagenet')
 
 
+
+    """ for resnet101 """
+    # base = ResNet101(include_top=False, input_shape=input_shape, weights='imagenet')
+    # divide_output_stride = 4
     # x = base.get_layer('conv4_block23_out').output
-    x = base.get_layer('conv5_block3_out').output
+    # x = base.get_layer('conv5_block3_out').output
     # skip1 = base.get_layer('conv2_block3_out').output
-    skip1 = base.get_layer('conv2_block3_out').output
+    # skip1 = base.get_layer('conv2_block3_out').output
     # conv5_block3_out 16, 32, 2048
     # conv3_block4_out 64, 128, 512
+
+    """ for EfficientNetV2S """
+    base = EfficientNetV2S(input_shape=input_shape, classifier_activation=None)
+    base.load_weights('./checkpoints/efficientnetv2-s-21k-ft1k.h5', by_name=True)
+    divide_output_stride = 8
+    base.summary()
+    #base.load_weights('efficientnetv2-s-21k.h5')
+
+    x = base.get_layer('add_34').output # 8
+    skip1 = base.get_layer('add_7').output # 32
 
 
     # end of feature extractor
@@ -328,8 +344,8 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
     # x4 (x2) block
 
     # d
-    x = BilinearUpsampling(output_size=(int(np.ceil(input_shape[0] / 4)),
-                                        int(np.ceil(input_shape[1] / 4))))(x) # 128, 256 @256
+    x = BilinearUpsampling(output_size=(int(np.ceil(input_shape[0] / divide_output_stride)),
+                                        int(np.ceil(input_shape[1] / divide_output_stride))))(x) # 128, 256 @256
     dec_skip1 = Conv2D(48, (1, 1), padding='same',
                        use_bias=False, name='feature_projection0')(skip1) # 64, 128, 48
     dec_skip1 = BatchNormalization(

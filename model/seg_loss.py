@@ -6,7 +6,7 @@ class Seg_loss:
 
     def total_loss(self, labels, logits):
         #logits = tf.reshape(logits, [-1, 20])
-
+        labels = tf.cast(labels, dtype=tf.int64)
         labels = tf.squeeze(labels, -1)
 
         ce = tf.nn.sparse_softmax_cross_entropy_with_logits(labels, logits)

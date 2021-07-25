@@ -176,7 +176,6 @@ def prepare_cityScapes(sample):
     gt_img = sample['image_left']
     gt_label = sample['segmentation_label']
 
-
     return (gt_img, gt_label)
 
 def data_augment_cityScapes(img, labels):
@@ -206,10 +205,10 @@ def prepare_cityScapes_val(sample):
 
 def cityScapes_resize(img, labels):
 
-    # concat_img = tf.concat([img, labels], axis=2)
-    # concat_img = tf.image.random_crop(concat_img, (512, 1024, 4))
-    # img = concat_img[:, :, :3]
-    # labels = concat_img[:, :, 3:]
+    concat_img = tf.concat([img, labels], axis=2)
+    concat_img = tf.image.random_crop(concat_img, (256, 512, 4))
+    img = concat_img[:, :, :3]
+    labels = concat_img[:, :, 3:]
 
     img = preprocessing.Rescaling(1.0 / 255)(img)
 
@@ -228,13 +227,14 @@ def cityScapes(dataset, image_size=None, batch_size=None, train=False):
         dataset = dataset.shuffle(100)
         dataset = dataset.repeat()
         dataset = dataset.map(data_augment_cityScapes, num_parallel_calls=AUTO)
-
+        dataset = dataset.map(cityScapes_resize, num_parallel_calls=AUTO)
 
     else:
         #dataset = dataset.map(prepare_cityScapes_val, num_parallel_calls=AUTO)
         dataset = dataset.map(prepare_cityScapes_val)
+        dataset = dataset.map(cityScapes_resize)
 
-    dataset = dataset.map(cityScapes_resize)
+
     dataset = dataset.padded_batch(batch_size)
     dataset = dataset.prefetch(AUTO)
     return dataset
