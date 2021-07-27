@@ -46,6 +46,7 @@ from tensorflow.keras.applications import ResNet101
 
 TF_WEIGHTS_PATH = "https://github.com/bonlime/keras-deeplab-v3-plus/releases/download/1.0/deeplabv3_weights_tf_dim_ordering_tf_kernels.h5"
 
+activation = 'relu'
 
 class BilinearUpsampling(Layer):
     """Just a simple bilinear upsampling layer. Works only with TF.
@@ -125,17 +126,17 @@ def SepConv_BN(x, filters, prefix, stride=1, kernel_size=3, rate=1, depth_activa
         depth_padding = 'valid'
 
     if not depth_activation:
-        x = Activation('relu')(x)
+        x = Activation(activation)(x)
     x = DepthwiseConv2D((kernel_size, kernel_size), strides=(stride, stride), dilation_rate=(rate, rate),
                         padding=depth_padding, use_bias=False, name=prefix + '_depthwise')(x)
     x = BatchNormalization(name=prefix + '_depthwise_BN', epsilon=epsilon)(x)
     if depth_activation:
-        x = Activation('relu')(x)
+        x = Activation(activation)(x)
     x = Conv2D(filters, (1, 1), padding='same',
                use_bias=False, name=prefix + '_pointwise')(x)
     x = BatchNormalization(name=prefix + '_pointwise_BN', epsilon=epsilon)(x)
     if depth_activation:
-        x = Activation('relu')(x)
+        x = Activation(activation)(x)
 
     return x
 
@@ -282,25 +283,35 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
 
 
     """ for resnet101 """
-    # base = ResNet101(include_top=False, input_shape=input_shape, weights='imagenet')
-    # divide_output_stride = 4
+    base = ResNet101(include_top=False, input_shape=input_shape, weights='imagenet')
+    base.summary()
+    divide_output_stride = 4
     # x = base.get_layer('conv4_block23_out').output
-    # x = base.get_layer('conv5_block3_out').output
+    x = base.get_layer('conv5_block3_out').output
     # skip1 = base.get_layer('conv2_block3_out').output
-    # skip1 = base.get_layer('conv2_block3_out').output
+    skip1 = base.get_layer('conv2_block3_out').output
     # conv5_block3_out 16, 32, 2048
     # conv3_block4_out 64, 128, 512
 
     """ for EfficientNetV2S """
-    base = EfficientNetV2S(input_shape=input_shape, classifier_activation=None, survivals=None, dropout=1e-6, classes=0)
-    base.load_weights('./checkpoints/efficientnetv2-s-21k-ft1k.h5', by_name=True)
-    # base.load_weights('checkpoints/efficientnetv2-s-21k-ft1k.h5', by_name=True)
-    divide_output_stride = 4
-    base.summary()
-    #base.load_weights('efficientnetv2-s-21k.h5')
 
-    x = base.get_layer('add_34').output # 32x64
-    skip1 = base.get_layer('add_4').output # 128x256
+
+    # # efficientnetv2 small
+    # divide_output_stride = 4
+    # base = EfficientNetV2S(input_shape=input_shape, classifier_activation=None, survivals=None, dropout=0)
+    # base.summary()
+    # base.load_weights('./checkpoints/efficientnetv2-s-21k-ft1k.h5', by_name=True)
+    # # x = base.get_layer('add_34').output # 32x64
+    # x = base.get_layer('post_relu').output # 32x64
+    # # skip1 = base.get_layer('stack_3_block0_sortcut_relu').output # 128x256
+    # skip1 = base.get_layer('add_4').output # 128x256
+
+    # efficientnetv2 medium
+    # base = EfficientNetV2('m', input_shape=input_shape, classifier_activation=None, first_strides=1)
+    # base.load_weights('checkpoints/efficientnetv2-m-21k-ft1k.h5', by_name=True)
+    # x = base.get_layer('add_50').output # 32x64
+    # skip1 = base.get_layer('add_9').output # 128x256
+
 
 
     # end of feature extractor
@@ -309,7 +320,7 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
     # simple 1x1
     b0 = Conv2D(256, (1, 1), padding='same', use_bias=False, name='aspp0')(x)
     b0 = BatchNormalization(name='aspp0_BN', epsilon=1e-5)(b0)
-    b0 = Activation('relu', name='aspp0_activation')(b0) # 16, 32 @ 256
+    b0 = Activation(activation, name='aspp0_activation')(b0) # 16, 32 @ 256
 
     # rate = 6 (12)
     b1 = SepConv_BN(x, 256, 'aspp1',
@@ -322,12 +333,12 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
                     rate=atrous_rates[2], depth_activation=True, epsilon=1e-5) # 16, 32 @256
 
     # Image Feature branch
-    out_shape = int(np.ceil(input_shape[0] / OS)) # os 16 => 32 os 32 => 16
+    out_shape = int(np.ceil(input_shape[0] / OS)) # 32
     b4 = AveragePooling2D(pool_size=(out_shape, out_shape))(x)
     b4 = Conv2D(256, (1, 1), padding='same',
                 use_bias=False, name='image_pooling')(b4)
     b4 = BatchNormalization(name='image_pooling_BN', epsilon=1e-5)(b4)
-    b4 = Activation('relu')(b4)
+    b4 = Activation(activation)(b4)
 
     b4 = BilinearUpsampling((out_shape, out_shape))(b4) # 16, 32
 
@@ -336,7 +347,7 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
     x = Conv2D(256, (1, 1), padding='same',
                use_bias=False, name='concat_projection')(x)
     x = BatchNormalization(name='concat_projection_BN', epsilon=1e-5)(x)
-    x = Activation('relu')(x)
+    x = Activation(activation)(x)
     x = Dropout(0.1)(x)
 
     # DeepLab v.3+ decoder
@@ -353,20 +364,14 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
                        use_bias=False, name='feature_projection0')(skip1) # 64, 128, 48
     dec_skip1 = BatchNormalization(
         name='feature_projection0_BN', epsilon=1e-5)(dec_skip1)
-    dec_skip1 = Activation('relu')(dec_skip1)
+    dec_skip1 = Activation(activation)(dec_skip1)
     x = Concatenate()([x, dec_skip1])
     x = SepConv_BN(x, 256, 'decoder_conv0',
                    depth_activation=True, epsilon=1e-5)
     x = SepConv_BN(x, 256, 'decoder_conv1',
                    depth_activation=True, epsilon=1e-5)
 
-    # you can use it with arbitary number of classes
-    if classes == 21:
-        last_layer_name = 'logits_semantic'
-    else:
-        last_layer_name = 'custom_logits_semantic'
-
-    x = Conv2D(classes, (1, 1), padding='same', name=last_layer_name)(x)
+    x = Conv2D(classes, (1, 1), padding='same', name='custom_logits_semantic')(x)
     x = BilinearUpsampling(output_size=(input_shape[0], input_shape[1]))(x)
 
 

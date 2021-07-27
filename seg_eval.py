@@ -15,7 +15,7 @@ import tensorflow_datasets as tfds
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=4)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
@@ -57,7 +57,7 @@ os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
 
 # Create Dataset
-dataset_config = CityScapes(DATASET_DIR, IMAGE_SIZE, BATCH_SIZE, 'test')
+# dataset_config = CityScapes(DATASET_DIR, IMAGE_SIZE, BATCH_SIZE)
 
 # Set loss function
 
@@ -69,6 +69,8 @@ test_data_number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
 print("검증 데이터 개수:", test_data_number_test)
 
 test_steps = test_data_number_test // BATCH_SIZE
+
+
 
 test_datasets = cityScapes(test_data, IMAGE_SIZE, BATCH_SIZE, train=False)
 
@@ -84,7 +86,7 @@ test_datasets = cityScapes(test_data, IMAGE_SIZE, BATCH_SIZE, train=False)
 
 model = seg_model_build(MODEL_NAME, pretrained=True, image_size=IMAGE_SIZE)
 
-weight_name = 'city_0724'
+weight_name = 'city_0727_best_miou'
 model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
 model.summary()
@@ -100,13 +102,15 @@ class MeanIOU(tf.keras.metrics.MeanIoU):
         return super().update_state(y_true, y_pred, sample_weight)
 
 metric = MeanIOU(20)
+buffer = 0
 for x, y in tqdm(test_datasets, total=test_steps):
     pred = model.predict_on_batch(x)#pred = tf.nn.softmax(pred)
 
     for i in range(len(pred)):
         metric.update_state(y[i], pred[i])
-        print(metric.result().numpy())
+        buffer += metric.result().numpy()
 
+print("miou", buffer/test_data_number_test)
     # for i in range(len(pred)):
     #     plt.imshow(y[i])
     #     plt.show()

@@ -68,7 +68,7 @@ class GenerateDatasets:
 
 
 class CityScapes:
-    def __init__(self, data_dir, image_size, batch_size, mode):
+    def __init__(self, data_dir, image_size, batch_size):
         """
         Args:
             data_dir: 데이터셋 상대 경로 ( default : './datasets/' )
@@ -78,7 +78,6 @@ class CityScapes:
         self.data_dir = data_dir
         self.image_size = image_size
         self.batch_size = batch_size
-        self.mode = mode
 
         self.num_classes = None
         self.training_dataset = None
@@ -94,12 +93,20 @@ class CityScapes:
     def load_datasets(self):
         self.num_classes = 20
 
-        train_data = tfds.load('cityscapes/semantic_segmentation', data_dir=self.data_dir, split='train'
-                             )
-        valid_data = tfds.load('cityscapes/semantic_segmentation', data_dir=self.data_dir, split='validation'
-                             )
-        test_data = tfds.load('cityscapes/semantic_segmentation', data_dir=self.data_dir, split='test'
-                            )
+        input_context = tf.distribute.InputContext(
+            input_pipeline_id=1,  # Worker id
+            num_input_pipelines=8,  # Total number of workers
+
+        )
+        read_config = tfds.ReadConfig(
+            input_context=input_context,
+        )
+
+        train_data = tfds.load('cityscapes/semantic_segmentation', data_dir=self.data_dir, split='train',
+                             read_config=read_config, shuffle_files=True)
+        valid_data = tfds.load('cityscapes/semantic_segmentation', data_dir=self.data_dir, split='validation',
+                               read_config=read_config)
+
 
         # self.number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
         self.number_train = 2975
@@ -112,8 +119,6 @@ class CityScapes:
         # print("검증 데이터 개수:", self.number_test)
 
 
-        if self.mode == 'train':
-            self.training_dataset = cityScapes(train_data, self.image_size, self.batch_size, train=True)
-            self.validation_dataset = cityScapes(valid_data, self.image_size, self.batch_size, train=False)
-        else :
-            self.test_dataset = cityScapes(test_data, self.image_size, self.batch_size, train=False)
+
+        self.training_dataset = cityScapes(train_data, self.image_size, self.batch_size, train=True)
+        self.validation_dataset = cityScapes(valid_data, self.image_size, self.batch_size, train=False)

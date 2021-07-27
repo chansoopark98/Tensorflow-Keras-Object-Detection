@@ -10,14 +10,16 @@ import time
 import os
 import tensorflow as tf
 from tensorflow_addons.optimizers import extend_with_decoupled_weight_decay
-#LD_PRELOAD=$CONDA_PREFIX/lib/libtcmalloc.so python seg_train.py
-tf.keras.backend.clear_session()
 
+#LD_PRELOAD=$CONDA_PREFIX/lib/libtcmalloc.so python seg_train.py
+#LD_PRELOAD=/path/to/libtcmalloc_minimal.so.4 python seg_train.py
+tf.keras.backend.clear_session()
+#LD_PRELOAD=/usr/lib/libtcmalloc.so.4 python seg_train.py
 parser = argparse.ArgumentParser()
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=24)
-parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
-parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.007)
-parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0001)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=8)
+parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=150)
+parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
+parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
 parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름",
                     default=str(time.strftime('%m%d', time.localtime(time.time()))))
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
@@ -25,7 +27,7 @@ parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉�
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
 parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='city')
-parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=False)
+parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=True)
 parser.add_argument("--load_weight",  type=bool,  help="가중치 로드", default=False)
 parser.add_argument("--mixed_precision",  type=bool,  help="mixed_precision 사용", default=True)
 parser.add_argument("--distribution_mode",  type=bool,  help="분산 학습 모드 설정 mirror or multi", default='mirror')
@@ -56,7 +58,7 @@ os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
 
 # Create Dataset
-dataset_config = CityScapes(DATASET_DIR, IMAGE_SIZE, BATCH_SIZE, 'train')
+dataset_config = CityScapes(DATASET_DIR, IMAGE_SIZE, BATCH_SIZE)
 
 # Set loss function
 
@@ -85,8 +87,9 @@ polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=
 lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
 # AdamW = extend_with_decoupled_weight_decay(tf.keras.optimizers.Adam)
-SGDW = extend_with_decoupled_weight_decay(tf.keras.optimizers.SGD)
-optimizer = SGDW(weight_decay=WEIGHT_DECAY, learning_rate=base_lr, momentum=0.9)
+# optimizer = AdamW(weight_decay=WEIGHT_DECAY, learning_rate=base_lr)
+
+optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
 
 
 if MIXED_PRECISION:
@@ -99,7 +102,8 @@ if DISTRIBUTION_MODE == 'multi':
         tf.distribute.experimental.CollectiveCommunication.NCCL)
 
 else:
-    mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
+    # mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
+    mirrored_strategy = tf.distribute.MirroredStrategy()
 print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
 
 with mirrored_strategy.scope():
@@ -122,7 +126,7 @@ with mirrored_strategy.scope():
         metrics=[miou])
 
     if LOAD_WEIGHT:
-        weight_name = 'city_0725'
+        weight_name = 'city_0726_best_loss'
         model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
     model.summary()

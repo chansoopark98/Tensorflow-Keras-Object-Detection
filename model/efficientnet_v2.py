@@ -21,6 +21,7 @@ BATCH_NORM_DECAY = 0.9
 BATCH_NORM_EPSILON = 0.001
 CONV_KERNEL_INITIALIZER = keras.initializers.VarianceScaling(scale=2.0, mode="fan_out", distribution="truncated_normal")
 # CONV_KERNEL_INITIALIZER = 'glorot_uniform'
+global_activation = 'relu'
 
 BLOCK_CONFIGS = {
     "b0": {  # width 1.0, depth 1.0
@@ -97,16 +98,10 @@ BLOCK_CONFIGS = {
 
 
 def _make_divisible(v, divisor=4, min_value=None):
-    """
-    This function is taken from the original tf repo.
-    It ensures that all layers have a channel number that is divisible by 8
-    It can be seen here:
-    https://github.com/tensorflow/models/blob/master/research/slim/nets/mobilenet/mobilenet.py
-    """
     if min_value is None:
         min_value = divisor
     new_v = max(min_value, int(v + divisor / 2) // divisor * divisor)
-    # Make sure that round down does not go down by more than 10%.
+
     if new_v < 0.9 * v:
         new_v += divisor
     return new_v
@@ -117,7 +112,7 @@ def conv2d_no_bias(inputs, filters, kernel_size, strides=1, padding="VALID", nam
         filters, kernel_size, strides=strides, padding=padding, use_bias=False, kernel_initializer=CONV_KERNEL_INITIALIZER, name=name + "conv"
     )(inputs)
 
-def batchnorm_with_activation(inputs, activation="swish", name=""):
+def batchnorm_with_activation(inputs, activation=global_activation, name=""):
     """Performs a batch normalization followed by an activation. """
     bn_axis = 1 if K.image_data_format() == "channels_first" else -1
     nn = BatchNormalization(
@@ -128,7 +123,6 @@ def batchnorm_with_activation(inputs, activation="swish", name=""):
     )(inputs)
     if activation:
         nn = Activation(activation=activation, name=name + activation)(nn)
-        # nn = PReLU(shared_axes=[1, 2], alpha_initializer=tf.initializers.Constant(0.25), name=name + "PReLU")(nn)
     return nn
 
 def se_module(inputs, se_ratio=4, name=""):
@@ -143,7 +137,7 @@ def se_module(inputs, se_ratio=4, name=""):
     se = tf.reduce_mean(inputs, [h_axis, w_axis], keepdims=True)
     se = Conv2D(reduction, kernel_size=1, use_bias=True, kernel_initializer=CONV_KERNEL_INITIALIZER, name=name + "1_conv")(se)
     # se = PReLU(shared_axes=[1, 2])(se)
-    se = Activation("swish")(se)
+    se = Activation(global_activation)(se)
     se = Conv2D(filters, kernel_size=1, use_bias=True, kernel_initializer=CONV_KERNEL_INITIALIZER, name=name + "2_conv")(se)
     se = Activation("sigmoid")(se)
     return Multiply()([inputs, se])
@@ -200,15 +194,7 @@ def EfficientNetV2(
     classifier_activation="softmax",
     name="EfficientNetV2",
 ):
-    """
-    model_type: is the pre-defined model, value in ["s", "m", "l", "b0", "b1", "b2", "b3"].
-    first_strides: is used in the first Conv2D layer.
-    survivals: is used for [Deep Networks with Stochastic Depth](https://arxiv.org/abs/1603.09382).
-        Can be a constant value like `0.5` or `0.8`,
-        or a tuple value like `(1, 0.8)` indicates the survival probability linearly changes from `1 --> 0.8` for `top --> bottom` layers.
-        A higher value means a higher probability will keep the conv branch.
-        or `None` to disable.
-    """
+
     blocks_config = BLOCK_CONFIGS.get(model_type.lower(), BLOCK_CONFIGS["s"])
     expands = blocks_config["expands"]
     out_channels = blocks_config["out_channels"]
@@ -223,7 +209,7 @@ def EfficientNetV2(
     nn = conv2d_no_bias(inputs, out_channel, (3, 3), strides=first_strides, padding="same", name="stem_")
     nn = batchnorm_with_activation(nn, name="stem_")
 
-    # StochasticDepth survival_probability values
+
     total_layers = sum(depthes)
     if isinstance(survivals, float):
         survivals = [survivals] * total_layers

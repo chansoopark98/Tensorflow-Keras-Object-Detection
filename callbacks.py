@@ -1,5 +1,5 @@
 import tensorflow as tf
-import gc
+import psutil
 
 class Scalar_LR(tf.keras.callbacks.Callback):
     def __init__(self, name, TENSORBOARD_DIR):
@@ -13,8 +13,7 @@ class Scalar_LR(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         logs['learning rate'] = self.model.optimizer.lr
         tf.summary.scalar("end_lr", logs['learning rate'], step=epoch)
-        tf.keras.backend.clear_session()
-        gc.collect()
+        print(psutil.virtual_memory().used / 2 ** 30)
 
 
 class DecayHistory(tf.keras.callbacks.Callback):

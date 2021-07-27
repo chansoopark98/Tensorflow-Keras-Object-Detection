@@ -5,6 +5,7 @@ from tensorflow.keras.layers.experimental import preprocessing
 AUTO = tf.data.experimental.AUTOTUNE
 
 
+
 @tf.function
 def data_augment(image, boxes, labels):
     if tf.random.uniform([]) > 0.5:
@@ -173,16 +174,32 @@ def test_priors_datasets(dataset, image_size, target_transform, batch_size=64):
     return dataset
 
 def prepare_cityScapes(sample):
-    gt_img = sample['image_left']
-    gt_label = sample['segmentation_label']
+    img = sample['image_left']
+    labels = sample['segmentation_label']
 
-    return (gt_img, gt_label)
+    return (img, labels)
 
+@tf.function
 def data_augment_cityScapes(img, labels):
 
     if tf.random.uniform([]) > 0.5:
-        img = tf.image.flip_left_right(img)
-        labels = tf.image.flip_left_right(labels)
+        concat_img = tf.concat([img, labels], axis=-1)
+        concat_img = tf.image.random_crop(concat_img, (512, 1024, 4))
+        concat_img = tf.cast(concat_img, dtype=tf.uint8)
+        img = concat_img[:, :, :3]
+        labels = concat_img[:, :, 3:]
+    else:
+        concat_img = tf.concat([img, labels], axis=-1)
+        concat_img = tf.image.resize(concat_img, (512, 1024))
+        concat_img = tf.cast(concat_img, dtype=tf.uint8)
+        img = concat_img[:, :, :3]
+        labels = concat_img[:, :, 3:]
+
+    img = tf.cast(img, dtype=tf.float32)
+    image_mean = (0.28689554, 0.32513303, 0.28389177)
+    image_std = (0.18696375, 0.19017339, 0.18720214)
+
+    img = (img - image_mean) / image_std # Cityscapes mean, std 실험
 
     if tf.random.uniform([]) > 0.5:
         img = tf.image.random_saturation(img, lower=0.5, upper=1.5)  # 랜덤 채도
@@ -191,51 +208,47 @@ def data_augment_cityScapes(img, labels):
     if tf.random.uniform([]) > 0.5:
         img = tf.image.random_contrast(img, lower=0.5, upper=1.5)  # 랜덤 대비
 
-    #img = preprocessing.Rescaling(1.0 / 255)(img)
+    if tf.random.uniform([]) > 0.5:
+        img = tf.image.flip_left_right(img)
+        labels = tf.image.flip_left_right(labels)
+
+
+    #labels = tf.cast(labels, dtype=tf.int64)
 
 
     return (img, labels)
 
-def prepare_cityScapes_val(sample):
-    img = sample['image_left']
-    labels = sample['segmentation_label']
 
-    return (img, labels)
-
-
-def cityScapes_resize(img, labels):
-
+def cityScapes_val_resize(img, labels):
     concat_img = tf.concat([img, labels], axis=2)
-    concat_img = tf.image.random_crop(concat_img, (512, 1024, 4))
+    concat_img = tf.image.resize(concat_img, (512, 1024))
     img = concat_img[:, :, :3]
     labels = concat_img[:, :, 3:]
 
-    img = preprocessing.Rescaling(1.0 / 255)(img)
-
     img = tf.cast(img, dtype=tf.float32)
-    labels = tf.cast(labels, dtype=tf.int64)
+    image_mean = (0.28689554, 0.32513303, 0.28389177)
+    image_std = (0.18696375, 0.19017339, 0.18720214)
 
+    img = (img - image_mean) / image_std # Cityscapes mean, std 실험
+
+    #labels = tf.cast(labels, dtype=tf.int64)
 
     return (img, labels)
 
-
-
 def cityScapes(dataset, image_size=None, batch_size=None, train=False):
-
     if train:
         dataset = dataset.map(prepare_cityScapes, num_parallel_calls=AUTO)
         dataset = dataset.shuffle(100)
         dataset = dataset.repeat()
         dataset = dataset.map(data_augment_cityScapes, num_parallel_calls=AUTO)
-        dataset = dataset.map(cityScapes_resize, num_parallel_calls=AUTO)
+        # dataset = dataset.map(cityScapes_resize, num_parallel_calls=AUTO)
 
     else:
-        #dataset = dataset.map(prepare_cityScapes_val, num_parallel_calls=AUTO)
-        dataset = dataset.map(prepare_cityScapes_val)
-        dataset = dataset.map(cityScapes_resize)
+        dataset = dataset.map(prepare_cityScapes)
+        dataset = dataset.repeat()
+        dataset = dataset.map(cityScapes_val_resize)
 
-
-    dataset = dataset.padded_batch(batch_size)
+    dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(AUTO)
     return dataset
 
