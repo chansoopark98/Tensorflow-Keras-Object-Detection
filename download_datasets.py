@@ -74,18 +74,25 @@ elif TRAIN_MODE == 'cityscapes':
                         )
 
     prepare_trainData = cityScapes(train_ds, [512, 1024], 1, True)
+    prepare_trainData_v = cityScapes(valid_ds, [512, 1024], 1, False)
 
 
-    img = prepare_trainData.take(500)
+    img = prepare_trainData.take(1)
+    v_img = prepare_trainData_v.take(1)
 
     from tensorflow.keras.applications.imagenet_utils import preprocess_input
     for x, y in img:
+        print(x)
 
-        plt.imshow(x[0])
-        plt.show()
 
-        plt.imshow(y[0])
-        plt.show()
+        # plt.imshow(x[0])
+        # plt.show()
+
+    for x, y in v_img:
+        print(x)
+        # plt.imshow(x[0])
+        # plt.show()
+
 
 
 

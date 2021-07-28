@@ -1,231 +1,79 @@
-# -*- coding: utf-8 -*-
-
-""" Deeplabv3+ model for Keras.
-This model is based on TF repo:
-https://github.com/tensorflow/models/tree/master/research/deeplab
-On Pascal VOC, original model gets to 84.56% mIOU
-This model is only available for the TensorFlow backend,
-due to its reliance on `SeparableConvolution` layers.
-# Reference
-- [Encoder-Decoder with Atrous Separable Convolution
-    for Semantic Image Segmentation](https://arxiv.org/pdf/1802.02611.pdf)
-"""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-import os
-import warnings
-import numpy as np
-
-from keras.models import Model
-from keras import layers
-from keras.layers import Input
-from keras.layers import Activation
-from keras.layers import Dense
-from keras.layers import Concatenate
-from keras.layers import Softmax
-from keras.layers import Dropout
-from keras.layers import BatchNormalization
-from keras.layers import Conv2D
-from keras.layers import SeparableConv2D
-from keras.layers import MaxPooling2D
-from keras.layers import DepthwiseConv2D
-from keras.layers import ZeroPadding2D
-from keras.layers import GlobalAveragePooling2D
-from keras.layers import GlobalMaxPooling2D
-from keras.layers import AveragePooling2D
-from keras.engine import Layer
-from keras.engine import InputSpec
-from keras.engine.topology import get_source_inputs
-from tensorflow.keras import backend as K
-from tensorflow.python.keras.utils import conv_utils
+from model.efficientnet_v2 import *
 import tensorflow as tf
-from tensorflow.keras.applications import ResNet101
-
-TF_WEIGHTS_PATH = "https://github.com/bonlime/keras-deeplab-v3-plus/releases/download/1.0/deeplabv3_weights_tf_dim_ordering_tf_kernels.h5"
+from model.resnet101 import ResNet
+from tensorflow.keras import layers
 
 activation = 'relu'
 
-class BilinearUpsampling(Layer):
-    """Just a simple bilinear upsampling layer. Works only with TF.
-       Args:
-           upsampling: tuple of 2 numbers > 0. The upsampling ratio for h and w
-           output_size: used instead of upsampling arg if passed!
-    """
-
-    def __init__(self, upsampling=(2, 2), output_size=None, data_format=None, **kwargs):
-
-        super(BilinearUpsampling, self).__init__(**kwargs)
-
-        self.data_format = conv_utils.normalize_data_format(data_format)
-        self.input_spec = InputSpec(ndim=4)
-        if output_size:
-            self.upsample_size = conv_utils.normalize_tuple(
-                output_size, 2, 'size')
-            self.upsampling = None
-        else:
-            self.upsampling = conv_utils.normalize_tuple(upsampling, 2, 'size')
-
-    def compute_output_shape(self, input_shape):
-        if self.upsampling:
-            height = self.upsampling[0] * \
-                input_shape[1] if input_shape[1] is not None else None
-            width = self.upsampling[1] * \
-                input_shape[2] if input_shape[2] is not None else None
-        else:
-            height = self.upsample_size[0]
-            width = self.upsample_size[1]
-        return (input_shape[0],
-                height,
-                width,
-                input_shape[3])
+class GlobalAveragePooling2D(tf.keras.layers.GlobalAveragePooling2D):
+    def __init__(self, keep_dims=False, **kwargs):
+        super(GlobalAveragePooling2D, self).__init__(**kwargs)
+        self.keep_dims = keep_dims
 
     def call(self, inputs):
-        if self.upsampling:
-
-
-            return tf.compat.v1.image.resize_bilinear(inputs, (inputs.shape[1] * self.upsampling[0],
-                                                       inputs.shape[2] * self.upsampling[1]),
-                                              align_corners=True)
+        if self.keep_dims is False:
+            return super(GlobalAveragePooling2D, self).call(inputs)
         else:
-            return tf.compat.v1.image.resize_bilinear(inputs, (self.upsample_size[0],
-                                                       self.upsample_size[1]),
-                                              align_corners=True)
+            return tf.keras.backend.mean(inputs, axis=[1, 2], keepdims=True)
+
+    def compute_output_shape(self, input_shape):
+        if self.keep_dims is False:
+            return super(GlobalAveragePooling2D, self).compute_output_shape(input_shape)
+        else:
+            input_shape = tf.TensorShape(input_shape).as_list()
+            return tf.TensorShape([input_shape[0], 1, 1, input_shape[3]])
 
     def get_config(self):
-        config = {'size': self.upsampling,
-                  'data_format': self.data_format}
-        base_config = super(BilinearUpsampling, self).get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        config = super(GlobalAveragePooling2D, self).get_config()
+        config['keep_dim'] = self.keep_dims
+        return config
 
 
-def SepConv_BN(x, filters, prefix, stride=1, kernel_size=3, rate=1, depth_activation=False, epsilon=1e-3):
-    """ SepConv with BN between depthwise & pointwise. Optionally add activation after BN
-        Implements right "same" padding for even kernel sizes
-        Args:
-            x: input tensor
-            filters: num of filters in pointwise convolution
-            prefix: prefix before name
-            stride: stride at depthwise conv
-            kernel_size: kernel size for depthwise convolution
-            rate: atrous rate for depthwise convolution
-            depth_activation: flag to use activation between depthwise & poinwise convs
-            epsilon: epsilon to use in BN layer
-    """
+class Concatenate(tf.keras.layers.Concatenate):
+    def __init__(self, out_size=None, axis=-1, name=None):
+        super(Concatenate, self).__init__(axis=axis, name=name)
+        self.out_size = out_size
 
-    if stride == 1:
-        depth_padding = 'same'
-    else:
-        kernel_size_effective = kernel_size + (kernel_size - 1) * (rate - 1)
-        pad_total = kernel_size_effective - 1
-        pad_beg = pad_total // 2
-        pad_end = pad_total - pad_beg
-        x = ZeroPadding2D((pad_beg, pad_end))(x)
-        depth_padding = 'valid'
+    def call(self, inputs):
+        return tf.keras.backend.concatenate(inputs, self.axis)
 
-    if not depth_activation:
-        x = Activation(activation)(x)
-    x = DepthwiseConv2D((kernel_size, kernel_size), strides=(stride, stride), dilation_rate=(rate, rate),
-                        padding=depth_padding, use_bias=False, name=prefix + '_depthwise')(x)
-    x = BatchNormalization(name=prefix + '_depthwise_BN', epsilon=epsilon)(x)
-    if depth_activation:
-        x = Activation(activation)(x)
-    x = Conv2D(filters, (1, 1), padding='same',
-               use_bias=False, name=prefix + '_pointwise')(x)
-    x = BatchNormalization(name=prefix + '_pointwise_BN', epsilon=epsilon)(x)
-    if depth_activation:
-        x = Activation(activation)(x)
+    def build(self, input_shape):
+        pass
 
-    return x
+    def compute_output_shape(self, input_shape):
+        if self.out_size is None:
+            return super(Concatenate, self).compute_output_shape(input_shape)
+        else:
+            if not isinstance(input_shape, list):
+                raise ValueError('A `Concatenate` layer should be called '
+                                 'on a list of inputs.')
+            input_shapes = input_shape
+            output_shape = list(input_shapes[0])
+            for shape in input_shapes[1:]:
+                if output_shape[self.axis] is None or shape[self.axis] is None:
+                    output_shape[self.axis] = None
+                    break
+                output_shape[self.axis] += shape[self.axis]
+            return tuple([output_shape[0]] + list(self.out_size) + [output_shape[-1]])
 
-
-def conv2d_same(x, filters, prefix, stride=1, kernel_size=3, rate=1):
-    """Implements right 'same' padding for even kernel sizes
-        Without this there is a 1 pixel drift when stride = 2
-        Args:
-            x: input tensor
-            filters: num of filters in pointwise convolution
-            prefix: prefix before name
-            stride: stride at depthwise conv
-            kernel_size: kernel size for depthwise convolution
-            rate: atrous rate for depthwise convolution
-    """
-    if stride == 1:
-        return Conv2D(filters,
-                      (kernel_size, kernel_size),
-                      strides=(stride, stride),
-                      padding='same', use_bias=False,
-                      dilation_rate=(rate, rate),
-                      name=prefix)(x)
-    else:
-        kernel_size_effective = kernel_size + (kernel_size - 1) * (rate - 1)
-        pad_total = kernel_size_effective - 1
-        pad_beg = pad_total // 2
-        pad_end = pad_total - pad_beg
-        x = ZeroPadding2D((pad_beg, pad_end))(x)
-        return Conv2D(filters,
-                      (kernel_size, kernel_size),
-                      strides=(stride, stride),
-                      padding='valid', use_bias=False,
-                      dilation_rate=(rate, rate),
-                      name=prefix)(x)
-
-
-def xception_block(inputs, depth_list, prefix, skip_connection_type, stride,
-                   rate=1, depth_activation=False, return_skip=False):
-    """ Basic building block of modified Xception network
-        Args:
-            inputs: input tensor
-            depth_list: number of filters in each SepConv layer. len(depth_list) == 3
-            prefix: prefix before name
-            skip_connection_type: one of {'conv','sum','none'}
-            stride: stride at last depthwise conv
-            rate: atrous rate for depthwise convolution
-            depth_activation: flag to use activation between depthwise & pointwise convs
-            return_skip: flag to return additional tensor after 2 SepConvs for decoder
-            """
-    residual = inputs
-    for i in range(3):
-        residual = SepConv_BN(residual,
-                              depth_list[i],
-                              prefix + '_separable_conv{}'.format(i + 1),
-                              stride=stride if i == 2 else 1,
-                              rate=rate,
-                              depth_activation=depth_activation)
-        if i == 1:
-            skip = residual
-    if skip_connection_type == 'conv':
-        shortcut = conv2d_same(inputs, depth_list[-1], prefix + '_shortcut',
-                               kernel_size=1,
-                               stride=stride)
-        shortcut = BatchNormalization(name=prefix + '_shortcut_BN')(shortcut)
-        outputs = layers.add([residual, shortcut])
-    elif skip_connection_type == 'sum':
-        outputs = layers.add([residual, inputs])
-    elif skip_connection_type == 'none':
-        outputs = residual
-    if return_skip:
-        return outputs, skip
-    else:
-        return outputs
+    def get_config(self):
+        config = super(Concatenate, self).get_config()
+        config['out_size'] = self.out_size
+        return config
 
 
 
-
-from model.efficientnet_v2 import *
 
 def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1024, 3), classes=20, OS=16):
-    if not (weights in {'pascal_voc', None}):
-        raise ValueError('The `weights` argument should be either '
-                         '`None` (random initialization) or `pascal_voc` '
-                         '(pre-trained on PASCAL VOC)')
-
-    if K.backend() != 'tensorflow':
-        raise RuntimeError('The Deeplabv3+ model is only available with '
-                           'the TensorFlow backend.')
-
+    # if not (weights in {'pascal_voc', None}):
+    #     raise ValueError('The `weights` argument should be either '
+    #                      '`None` (random initialization) or `pascal_voc` '
+    #                      '(pre-trained on PASCAL VOC)')
+    #
+    # if K.backend() != 'tensorflow':
+    #     raise RuntimeError('The Deeplabv3+ model is only available with '
+    #                        'the TensorFlow backend.')
+    #
     if OS == 8:
         entry_block3_stride = 1
         middle_block_rate = 2  # ! Not mentioned in paper, but required
@@ -237,8 +85,8 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
         exit_block_rates = (1, 2)
         atrous_rates = (6, 12, 18)
 
-
-
+    #
+    #
     # if input_tensor is None:
     #     img_input = Input(shape=input_shape)
     # else:
@@ -278,20 +126,22 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
     #                    skip_connection_type='none', stride=1, rate=exit_block_rates[1],
     #                    depth_activation=True)
 
+    input_tensor = tf.keras.Input(shape=(512, 1024, 3))
+    encoder = ResNet('ResNet101', [1, 2])
+    c2, c5 = encoder(input_tensor, ['c2', 'c5'])
+    aspp_size = (512 // 16, 1024 // 16)
 
-
-
-
-    """ for resnet101 """
-    base = ResNet101(include_top=False, input_shape=input_shape, weights='imagenet')
-    base.summary()
+    # """ for resnet101 """
+    # base = resnet101.ResNet101(include_top=False, input_shape=input_shape, weights='imagenet')
+    # base = ResNet101(include_top=False, input_shape=input_shape, weights='imagenet')
+    # base.summary()
     divide_output_stride = 4
-    # x = base.get_layer('conv4_block23_out').output
-    x = base.get_layer('conv5_block3_out').output
+    # # x = base.get_layer('conv4_block23_out').output
+    # x = base.get_layer('conv5_block3_out').output
+    # # skip1 = base.get_layer('conv2_block3_out').output
     # skip1 = base.get_layer('conv2_block3_out').output
-    skip1 = base.get_layer('conv2_block3_out').output
-    # conv5_block3_out 16, 32, 2048
-    # conv3_block4_out 64, 128, 512
+    # # conv5_block3_out 16, 32, 2048
+    # # conv3_block4_out 64, 128, 512
 
     """ for EfficientNetV2S """
 
@@ -312,69 +162,116 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
     # x = base.get_layer('add_50').output # 32x64
     # skip1 = base.get_layer('add_9').output # 128x256
 
+    x = _aspp(c5, 256)
+    x = layers.Dropout(rate=0.5)(x)
+
+    x = layers.UpSampling2D(size=(4, 4), interpolation='bilinear')(x)
+    x = _conv_bn_relu(x, 48, 1, strides=1)
+
+    x = Concatenate(out_size=aspp_size)([x, c2])
+    x = _conv_bn_relu(x, 256, 3, 1)
+    x = layers.Dropout(rate=0.5)(x)
+
+    x = _conv_bn_relu(x, 256, 3, 1)
+    x = layers.Dropout(rate=0.1)(x)
+
+    x = layers.Conv2D(20, 1, strides=1)(x)
+    x = layers.UpSampling2D(size=(4, 4), interpolation='bilinear')(x)
+
+    return input_tensor, x
 
 
-    # end of feature extractor
-
-    # branching for Atrous Spatial Pyramid Pooling
-    # simple 1x1
-    b0 = Conv2D(256, (1, 1), padding='same', use_bias=False, name='aspp0')(x)
-    b0 = BatchNormalization(name='aspp0_BN', epsilon=1e-5)(b0)
-    b0 = Activation(activation, name='aspp0_activation')(b0) # 16, 32 @ 256
-
-    # rate = 6 (12)
-    b1 = SepConv_BN(x, 256, 'aspp1',
-                    rate=atrous_rates[0], depth_activation=True, epsilon=1e-5) # 16, 32 @ 256
-    # rate = 12 (24)
-    b2 = SepConv_BN(x, 256, 'aspp2',
-                    rate=atrous_rates[1], depth_activation=True, epsilon=1e-5) # 16, 32 @256
-    # rate = 18 (36)
-    b3 = SepConv_BN(x, 256, 'aspp3',
-                    rate=atrous_rates[2], depth_activation=True, epsilon=1e-5) # 16, 32 @256
-
-    # Image Feature branch
-    out_shape = int(np.ceil(input_shape[0] / OS)) # 32
-    b4 = AveragePooling2D(pool_size=(out_shape, out_shape))(x)
-    b4 = Conv2D(256, (1, 1), padding='same',
-                use_bias=False, name='image_pooling')(b4)
-    b4 = BatchNormalization(name='image_pooling_BN', epsilon=1e-5)(b4)
-    b4 = Activation(activation)(b4)
-
-    b4 = BilinearUpsampling((out_shape, out_shape))(b4) # 16, 32
-
-    # concatenate ASPP branches & project
-    x = Concatenate()([b4, b0, b1, b2, b3])
-    x = Conv2D(256, (1, 1), padding='same',
-               use_bias=False, name='concat_projection')(x)
-    x = BatchNormalization(name='concat_projection_BN', epsilon=1e-5)(x)
-    x = Activation(activation)(x)
-    x = Dropout(0.1)(x)
-
-    # DeepLab v.3+ decoder
-
-    # Feature projection
-    # x4 (x2) block
+def _conv_bn_relu(x, filters, kernel_size, strides=1):
+    x = layers.Conv2D(filters, kernel_size, strides=strides, padding='same')(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.ReLU()(x)
+    return x
 
 
+def _aspp(x, out_filters):
+    xs = list()
+    x1 = layers.Conv2D(out_filters, 1, strides=1)(x)
+    xs.append(x1)
+    aspp_size = (512//16, 1024//16)
+    for i in range(3):
+        xi = layers.Conv2D(out_filters, 3, strides=1, padding='same', dilation_rate=6 * (i + 1))(x)
+        xs.append(xi)
+    img_pool = GlobalAveragePooling2D(keep_dims=True)(x)
+    img_pool = layers.Conv2D(out_filters, 1, 1, kernel_initializer='he_normal')(img_pool)
+    img_pool = layers.UpSampling2D(size=aspp_size, interpolation='bilinear')(img_pool)
+    xs.append(img_pool)
 
-    # d
-    x = BilinearUpsampling(output_size=(int(np.ceil(input_shape[0] / divide_output_stride)),
-                                        int(np.ceil(input_shape[1] / divide_output_stride))))(x) # 128, 256 @256
-    dec_skip1 = Conv2D(48, (1, 1), padding='same',
-                       use_bias=False, name='feature_projection0')(skip1) # 64, 128, 48
-    dec_skip1 = BatchNormalization(
-        name='feature_projection0_BN', epsilon=1e-5)(dec_skip1)
-    dec_skip1 = Activation(activation)(dec_skip1)
-    x = Concatenate()([x, dec_skip1])
-    x = SepConv_BN(x, 256, 'decoder_conv0',
-                   depth_activation=True, epsilon=1e-5)
-    x = SepConv_BN(x, 256, 'decoder_conv1',
-                   depth_activation=True, epsilon=1e-5)
+    x = Concatenate(out_size=aspp_size)(xs)
+    x = layers.Conv2D(out_filters, 1, strides=1, kernel_initializer='he_normal')(x)
+    x = layers.BatchNormalization()(x)
 
-    x = Conv2D(classes, (1, 1), padding='same', name='custom_logits_semantic')(x)
-    x = BilinearUpsampling(output_size=(input_shape[0], input_shape[1]))(x)
+    return x
+
+    """ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"""
+    #
+    # # end of feature extractor
+    #
+    # # branching for Atrous Spatial Pyramid Pooling
+    # # simple 1x1
+    # b0 = Conv2D(256, (1, 1), padding='same', use_bias=False, name='aspp0')(x)
+    # b0 = BatchNormalization(name='aspp0_BN', epsilon=1e-5)(b0)
+    # b0 = Activation(activation, name='aspp0_activation')(b0) # 16, 32 @ 256
+    #
+    # # rate = 6 (12)
+    # b1 = SepConv_BN(x, 256, 'aspp1',
+    #                 rate=atrous_rates[0], depth_activation=True, epsilon=1e-5) # 16, 32 @ 256
+    # # rate = 12 (24)
+    # b2 = SepConv_BN(x, 256, 'aspp2',
+    #                 rate=atrous_rates[1], depth_activation=True, epsilon=1e-5) # 16, 32 @256
+    # # rate = 18 (36)
+    # b3 = SepConv_BN(x, 256, 'aspp3',
+    #                 rate=atrous_rates[2], depth_activation=True, epsilon=1e-5) # 16, 32 @256
+    #
+    # # Image Feature branch
+    # out_shape = int(np.ceil(input_shape[0] / OS)) # os16 => 32
+    # b4 = AveragePooling2D(pool_size=(out_shape, out_shape))(x) # 1,2
+    # b4 = Conv2D(256, (1, 1), padding='same',
+    #             use_bias=False, name='image_pooling')(b4)
+    # b4 = BatchNormalization(name='image_pooling_BN', epsilon=1e-5)(b4)
+    # b4 = Activation(activation)(b4)
+    #
+    # b4 = BilinearUpsampling((out_shape, out_shape))(b4) # 16, 32
+    #
+    #
+    # # concatenate ASPP branches & project
+    # x = Concatenate()([b4, b0, b1, b2, b3])
+    # x = Conv2D(256, (1, 1), padding='same',
+    #            use_bias=False, name='concat_projection')(x)
+    # x = BatchNormalization(name='concat_projection_BN', epsilon=1e-5)(x)
+    # x = Activation(activation)(x)
+    # x = Dropout(0.5)(x)
+    #
+    # # DeepLab v.3+ decoder
+    #
+    # # Feature projection
+    # # x4 (x2) block
+    #
+    #
+    # # d
+    # x = BilinearUpsampling(output_size=(int(np.ceil(input_shape[0] / 4)),
+    #                                     int(np.ceil(input_shape[1] / 4))))(x) # 128, 256 @256
+    # dec_skip1 = Conv2D(48, (1, 1), padding='same',
+    #                    use_bias=False, name='feature_projection0')(skip1) # 64, 128, 48
+    # dec_skip1 = BatchNormalization(
+    #     name='feature_projection0_BN', epsilon=1e-5)(dec_skip1)
+    # dec_skip1 = Activation(activation)(dec_skip1)
+    # x = Concatenate()([x, dec_skip1])
+    # x = SepConv_BN(x, 256, 'decoder_conv0',
+    #                depth_activation=True, epsilon=1e-5)
+    # x = Dropout(0.5)(x)
+    # x = SepConv_BN(x, 256, 'decoder_conv1',
+    #                depth_activation=True, epsilon=1e-5)
+    # x = Dropout(0.1)(x)
+    #
+    # x = Conv2D(classes, (1, 1), padding='same', name='custom_logits_semantic')(x)
+    # x = BilinearUpsampling(output_size=(input_shape[0], input_shape[1]))(x)
 
 
 
-    return base.input, x
-    #return img_input, x
+    # return input_tensor, x
+    # #return img_input, x

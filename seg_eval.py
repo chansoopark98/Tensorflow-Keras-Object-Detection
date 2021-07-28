@@ -42,7 +42,7 @@ CHECKPOINT_DIR = args.checkpoint_dir
 TENSORBOARD_DIR = args.tensorboard_dir
 MODEL_NAME = args.backbone_model
 TRAIN_MODE = args.train_dataset
-IMAGE_SIZE = [1024, 2048]
+IMAGE_SIZE = (1024, 2048)
 USE_WEIGHT_DECAY = args.use_weightDecay
 LOAD_WEIGHT = args.load_weight
 MIXED_PRECISION = args.mixed_precision
@@ -105,16 +105,18 @@ metric = MeanIOU(20)
 buffer = 0
 for x, y in tqdm(test_datasets, total=test_steps):
     pred = model.predict_on_batch(x)#pred = tf.nn.softmax(pred)
+    pred = tf.argmax(pred, axis=-1)
+    # for i in range(len(pred)):
+    #     metric.update_state(y[i], pred[i])
+    #     buffer += metric.result().numpy()
+
 
     for i in range(len(pred)):
-        metric.update_state(y[i], pred[i])
-        buffer += metric.result().numpy()
+
+        plt.imshow(pred[i])
+        plt.show()
 
 print("miou", buffer/test_data_number_test)
-    # for i in range(len(pred)):
-    #     plt.imshow(y[i])
-    #     plt.show()
-
 
 
 

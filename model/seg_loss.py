@@ -2,6 +2,7 @@ import tensorflow as tf
 import itertools
 from typing import Any, Optional
 _EPSILON = tf.keras.backend.epsilon()
+import tensorflow.keras.backend as K
 
 def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
                                   class_weight: Optional[Any] = None,
@@ -100,23 +101,30 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
                                              gamma=self.gamma,
                                              from_logits=self.from_logits)
 
+
 class Seg_loss:
     def __init__(self, batch_size):
         self.batch_size = batch_size
 
     def total_loss(self, y_true, y_pred):
-        #y_pred = tf.reshape(y_pred, [-1, 20])
-        y_true = tf.cast(y_true, tf.int32)
-        y_true = tf.squeeze(y_true, -1)
+        """
+        Args:
+            y_true: (N, H, W, 1)
+            y_pred: (N, H, W, Classes)
 
-        # fl = SparseCategoricalFocalLoss(gamma=1.5, from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
-        # loss = fl(labels, logits)
+            predcit [[0.3, 0.2, 01] [/../..], [/...,///]]
+            labels [[1], [3], [5]]
+        Returns:
 
-        # ce = tf.nn.sparse_softmax_cross_entropy_with_logits(labels, logits)
+        """
+        # y_true = tf.squeeze(y_true, -1)
+        # ce_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_true, logits=y_pred)
 
-        #loss = tf.math.reduce_mean(focal_loss)
+        # loss = tf.nn.compute_average_loss(
+        #     ce_loss)
 
         gamma = 2.0
+        y_true = tf.squeeze(y_true, -1)
 
         logits = y_pred
         probs = tf.nn.softmax(y_pred, axis=-1)
@@ -130,7 +138,9 @@ class Seg_loss:
         probs = tf.gather(probs, y_true, axis=-1, batch_dims=y_true_rank)
 
         focal_modulation = (1 - probs) ** gamma
-        loss = tf.math.reduce_mean(focal_modulation * xent_loss)
+        fl_loss = focal_modulation * xent_loss
+
+        loss = tf.nn.compute_average_loss(fl_loss)
 
         return loss
 

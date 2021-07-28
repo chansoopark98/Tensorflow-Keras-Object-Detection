@@ -12,7 +12,9 @@ class Scalar_LR(tf.keras.callbacks.Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         logs['learning rate'] = self.model.optimizer.lr
-        tf.summary.scalar("end_lr", logs['learning rate'], step=epoch)
+        # logs['weight decay'] = self.model.optimizer.weight_decay
+        tf.summary.scalar("learning rate", logs['learning rate'], step=epoch)
+        # tf.summary.scalar("weight_decay", logs['weight decay'], step=epoch)
         print(psutil.virtual_memory().used / 2 ** 30)
 
 

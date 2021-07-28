@@ -93,31 +93,30 @@ class CityScapes:
     def load_datasets(self):
         self.num_classes = 20
 
-        input_context = tf.distribute.InputContext(
-            input_pipeline_id=1,  # Worker id
-            num_input_pipelines=8,  # Total number of workers
+        # input_context = tf.distribute.InputContext(
+        #     input_pipeline_id=1,  # Worker id
+        #     num_input_pipelines=8,  # Total number of workers
+        #
+        # )
+        # read_config = tfds.ReadConfig(
+        #     input_context=input_context,
+        # )
 
-        )
-        read_config = tfds.ReadConfig(
-            input_context=input_context,
-        )
-
-        train_data = tfds.load('cityscapes/semantic_segmentation', data_dir=self.data_dir, split='train',
-                             read_config=read_config, shuffle_files=True)
-        valid_data = tfds.load('cityscapes/semantic_segmentation', data_dir=self.data_dir, split='validation',
-                               read_config=read_config)
+        train_data = tfds.load('cityscapes/semantic_segmentation', data_dir=self.data_dir, split='train'
+                             )
+        valid_data = tfds.load('cityscapes/semantic_segmentation', data_dir=self.data_dir, split='validation'
+                               )
 
 
-        # self.number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
-        self.number_train = 2975
+        self.number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
+        # self.number_train = 2975
         print("학습 데이터 개수", self.number_train)
-        # self.number_test = valid_data.reduce(0, lambda x, _: x + 1).numpy()
-        self.number_valid = 500
+        self.number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
+        # self.number_valid = 500
         print("검증 데이터 개수:", self.number_valid)
 
         # self.number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
         # print("검증 데이터 개수:", self.number_test)
-
 
 
         self.training_dataset = cityScapes(train_data, self.image_size, self.batch_size, train=True)
