@@ -127,13 +127,13 @@ def prepare_dataset(dataset, image_size, batch_size, target_transform, classes, 
 # predict 할 때
 def prepare_for_prediction(file_path):
     img = tf.io.read_file(file_path)
-    img = decode_img(img, [224, 224])
+    img = decode_img(img, [512, 512])
     img = preprocess_input(img, mode='torch')
 
     return img
 
 
-def decode_img(img,  image_size=[384, 384]):
+def decode_img(img,  image_size=[512, 512]):
     # 텐서 변환
     img = tf.image.decode_jpeg(img, channels=3)
     # 이미지 리사이징

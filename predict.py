@@ -8,6 +8,8 @@ import argparse
 from config import *
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 import time
+import matplotlib.pyplot as plt
+
 tf.keras.backend.clear_session()
 
 policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
@@ -17,11 +19,11 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
-parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/voc_0719.h5')
+parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/0615_b0_mAP81.9%_voc.h5')
 # parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./datasets/test/VOCdevkit/VOC2007/JPEGImages/')
 parser.add_argument("--input_dir", type=str,   help="테스트 이미지 디렉토리 설정", default='./inputs/')
 parser.add_argument("--output_dir", type=str,   help="테스트 결과 이미지 디렉토리 설정", default='./outputs/')
-parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='CSNet-tiny')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
 parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 
 
@@ -105,6 +107,12 @@ for batch in tqdm(dataset, total=test_steps):
 
     start = time.perf_counter_ns()
     pred = model.predict_on_batch(batch)
+
+    #feature = model.get_layer('block5c_add').output
+    feature = model.layers[13].output
+    plt.imshow(feature[0].numpy())
+    plt.show()
+
     duration = (time.perf_counter_ns() - start) / BATCH_SIZE
     print(f"inference time : {duration // 1000000}ms.")
 
