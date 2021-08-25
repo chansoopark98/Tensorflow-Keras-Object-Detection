@@ -100,7 +100,7 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
     # x = BatchNormalization(name='entry_flow_conv1_1_BN')(x)
     # x = Activation('relu')(x)
     #
-    # x = conv2d_same(x, 64, 'entry_flow_conv1_2', kernel_size=3, stride=1)
+    # x = conv2d_same(x, 32, 'entry_flow_conv1_2', kernel_size=3, stride=1)
     # x = BatchNormalization(name='entry_flow_conv1_2_BN')(x)
     # x = Activation('relu')(x)
     #
@@ -141,7 +141,7 @@ def csnet_seg_model(weights='pascal_voc', input_tensor=None, input_shape=(512, 1
     # # skip1 = base.get_layer('conv2_block3_out').output
     # skip1 = base.get_layer('conv2_block3_out').output
     # # conv5_block3_out 16, 32, 2048
-    # # conv3_block4_out 64, 128, 512
+    # # conv3_block4_out 32, 128, 512
 
     """ for EfficientNetV2S """
 
@@ -256,7 +256,7 @@ def _aspp(x, out_filters):
     # x = BilinearUpsampling(output_size=(int(np.ceil(input_shape[0] / 4)),
     #                                     int(np.ceil(input_shape[1] / 4))))(x) # 128, 256 @256
     # dec_skip1 = Conv2D(48, (1, 1), padding='same',
-    #                    use_bias=False, name='feature_projection0')(skip1) # 64, 128, 48
+    #                    use_bias=False, name='feature_projection0')(skip1) # 32, 128, 48
     # dec_skip1 = BatchNormalization(
     #     name='feature_projection0_BN', epsilon=1e-5)(dec_skip1)
     # dec_skip1 = Activation(activation)(dec_skip1)

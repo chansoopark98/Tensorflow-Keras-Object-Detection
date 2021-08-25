@@ -128,6 +128,7 @@ def tiny_classifier(source_layers, num_priors, num_classes=21):
                              name= name + '_mbox_conf_1')(x)
 
 
+
         x1 = Flatten(name=name + '_mbox_conf_flat')(x1)
         mbox_conf.append(x1)
 

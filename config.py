@@ -42,10 +42,10 @@ class TrainHyperParams:
 
 """ anchor test 
 
-            Spec(64, 8, BoxSizes(19, 22), [2]), # 0.029
+            Spec(32, 8, BoxSizes(19, 22), [2]), # 0.029
             Spec(32, 16, BoxSizes(41, 51), [2]), # 0.08
             Spec(16, 32, BoxSizes(102, 112), [2]), # 0.238 -> 0.199
-            Spec(8, 64, BoxSizes(204, 224), [2]), # 0.4
+            Spec(8, 32, BoxSizes(204, 224), [2]), # 0.4
             Spec(4, 128, BoxSizes(332, 347), [2]), # 0.65
             
             target:
@@ -57,10 +57,10 @@ class TrainHyperParams:
 
 
 """ origin B0 
-            Spec(64, 8, BoxSizes(20, 25), [2]),  # 0.039
+            Spec(32, 8, BoxSizes(20, 25), [2]),  # 0.039
             Spec(32, 16, BoxSizes(41, 51), [2]),  # 0.099
             Spec(16, 32, BoxSizes(92, 112), [2]),  # 0.238 -> 0.199
-            Spec(8, 64, BoxSizes(194, 224), [2]),  # 0.449 -> 0.398
+            Spec(8, 32, BoxSizes(194, 224), [2]),  # 0.449 -> 0.398
             Spec(4, 128, BoxSizes(307, 347), [2]),  # 0.599
             
             target:
@@ -71,10 +71,10 @@ class TrainHyperParams:
 """
 
 """ 0531 test b0 512
-            Spec(64, 8, BoxSizes(15, 22), [2]), # 0.029
+            Spec(32, 8, BoxSizes(15, 22), [2]), # 0.029
             Spec(32, 16, BoxSizes(41, 51), [2]), # 0.08
             Spec(16, 32, BoxSizes(102, 112), [2]), # 0.238 -> 0.199
-            Spec(8, 64, BoxSizes(204, 224), [2]), # 0.4
+            Spec(8, 32, BoxSizes(204, 224), [2]), # 0.4
             Spec(4, 128, BoxSizes(332, 347), [2]), # 0.65
             
             traget:
@@ -86,7 +86,7 @@ class TrainHyperParams:
 #     Spec(38, 8, BoxSizes(30, 60), [2]),
 #     Spec(19, 16, BoxSizes(60, 111), [2]),
 #     Spec(10, 32, BoxSizes(111, 162), [2]),
-#     Spec(5, 64, BoxSizes(162, 213), [2]),
+#     Spec(5, 32, BoxSizes(162, 213), [2]),
 #     Spec(3, 100, BoxSizes(213, 264), [2]),
 #     Spec(1, 300, BoxSizes(264, 315), [2])
 # ]
@@ -96,7 +96,7 @@ class TrainHyperParams:
 #         Spec(38, 8, BoxSizes(10, 20), [2]),
 #         Spec(19, 16, BoxSizes(23, 33), [2]),
 #         Spec(10, 32, BoxSizes(53, 108), [2]),
-#         Spec(5, 64, BoxSizes(113, 134), [2]),
+#         Spec(5, 32, BoxSizes(113, 134), [2]),
 #         Spec(3, 100, BoxSizes(182, 226), [2])
 #     ]
 def set_priorBox(model_name):
@@ -192,7 +192,7 @@ def set_priorBox(model_name):
             Spec(68, 8, BoxSizes(18, 22), [2]), # 0.039
             Spec(34, 16, BoxSizes(37, 48), [2]), # 0.099
             Spec(17, 32, BoxSizes(81, 119), [2]), # 0.238 -> 0.199
-            Spec(8, 64, BoxSizes(194, 224), [2]), # 0.449 -> 0.398
+            Spec(8, 32, BoxSizes(194, 224), [2]), # 0.449 -> 0.398
             Spec(4, 128, BoxSizes(307, 347), [2]), # 0.599
 
 기존 augmentation 방법으로 학습 
@@ -229,7 +229,7 @@ mAP결과: 0.8246687118906533
             Spec(72, 8, BoxSizes(18, 22), [2]),  # 0.039
             Spec(36, 16, BoxSizes(37, 48), [2]),  # 0.099
             Spec(18, 32, BoxSizes(81, 119), [2]),  # 0.238 -> 0.199
-            Spec(8, 64, BoxSizes(194, 224), [2]),  # 0.449 -> 0.398
+            Spec(8, 32, BoxSizes(194, 224), [2]),  # 0.449 -> 0.398
             Spec(4, 128, BoxSizes(307, 347), [2]),  # 0.599
             
 기존 AUGMENTATION 
@@ -267,10 +267,10 @@ mAP결과: 0.8226381831238367
 """
 0531 input 512 b0 test
 
-            Spec(64, 8, BoxSizes(15, 22), [2]), # 0.029
+            Spec(32, 8, BoxSizes(15, 22), [2]), # 0.029
             Spec(32, 16, BoxSizes(41, 51), [2]), # 0.08
             Spec(16, 32, BoxSizes(102, 112), [2]), # 0.238 -> 0.199
-            Spec(8, 64, BoxSizes(204, 224), [2]), # 0.4
+            Spec(8, 32, BoxSizes(204, 224), [2]), # 0.4
             Spec(4, 128, BoxSizes(332, 347), [2]), # 0.65
             
             
@@ -301,10 +301,10 @@ mAP결과: 0.8107554064125498
 
 """
 0531 input b0 512 test
-            Spec(64, 8, BoxSizes(18, 22), [2]), # 0.039
+            Spec(32, 8, BoxSizes(18, 22), [2]), # 0.039
             Spec(32, 16, BoxSizes(37, 48), [2]), # 0.099
             Spec(16, 32, BoxSizes(81, 119), [2]), # 0.238 -> 0.199
-            Spec(8, 64, BoxSizes(194, 224), [2]), # 0.449 -> 0.398
+            Spec(8, 32, BoxSizes(194, 224), [2]), # 0.449 -> 0.398
             Spec(4, 128, BoxSizes(307, 347), [2]), # 0.599
 
 AP 결과
@@ -334,10 +334,10 @@ mAP결과: 0.8132666876240279
 
 """
 0601 input b0 512 test
-            Spec(64, 8, BoxSizes(18, 18), [2]), # 0.039
+            Spec(32, 8, BoxSizes(18, 18), [2]), # 0.039
             Spec(32, 16, BoxSizes(36, 36), [2]), # 0.099
             Spec(16, 32, BoxSizes(72, 72), [2]), # 0.238 -> 0.199
-            Spec(8, 64, BoxSizes(144, 144), [2]), # 0.449 -> 0.398
+            Spec(8, 32, BoxSizes(144, 144), [2]), # 0.449 -> 0.398
             Spec(4, 128, BoxSizes(288, 288), [2]), # 0.599
             
       {'aeroplane': 0.8650881023953919,
@@ -366,10 +366,10 @@ mAP결과: 0.7991502988774183
 
 """
 0601 input b0 512 test
-            Spec(64, 8, BoxSizes(15, 31), [2]), # 0.039
+            Spec(32, 8, BoxSizes(15, 31), [2]), # 0.039
             Spec(32, 16, BoxSizes(40, 82), [2]), # 0.099
             Spec(16, 32, BoxSizes(92, 184), [2]), # 0.238 -> 0.199
-            Spec(8, 64, BoxSizes(194, 228), [2]), # 0.449 -> 0.398
+            Spec(8, 32, BoxSizes(194, 228), [2]), # 0.449 -> 0.398
             Spec(4, 128, BoxSizes(310, 386), [2]), # 0.599
             
 AP 결과
@@ -403,7 +403,7 @@ mAP결과: 0.8168145948877312
             Spec(68, 8, BoxSizes(16, 22), [2]),
             Spec(34, 16, BoxSizes(42, 60), [2]),
             Spec(17, 32, BoxSizes(92, 184), [2]),
-            Spec(8, 64, BoxSizes(206, 242), [2]),
+            Spec(8, 32, BoxSizes(206, 242), [2]),
             Spec(4, 128, BoxSizes(329, 410), [2]),
             
 AP 결과
@@ -438,7 +438,7 @@ mAP결과: 0.8272732097698473
             Spec(76, 8, BoxSizes(18, 25), [2]),  # 0.039
             Spec(38, 16, BoxSizes(47, 67), [2]),  # 0.099
             Spec(19, 32, BoxSizes(109, 218), [2]),  # 0.238 -> 0.199
-            Spec(9, 64, BoxSizes(230, 271), [2]),  # 0.449 -> 0.398
+            Spec(9, 32, BoxSizes(230, 271), [2]),  # 0.449 -> 0.398
             Spec(5, 128, BoxSizes(368, 458), [2]),  # 0.599
 
 AP 결과
@@ -471,7 +471,7 @@ mAP결과: 0.8300357291962237
             Spec(76, 8, BoxSizes(18, 25), [2]),  # 0.039
             Spec(38, 16, BoxSizes(47, 67), [2]),  # 0.099
             Spec(19, 32, BoxSizes(109, 218), [2]),  # 0.238 -> 0.199
-            Spec(9, 64, BoxSizes(230, 271), [2]),  # 0.449 -> 0.398
+            Spec(9, 32, BoxSizes(230, 271), [2]),  # 0.449 -> 0.398
             Spec(5, 128, BoxSizes(368, 458), [2]),  # 0.599
 
 AP 결과
@@ -504,7 +504,7 @@ mAP결과: 0.8431159689847098
             Spec(80, 8, BoxSizes(19, 26), [2]), # 0.029 | 0.041
             Spec(40, 16, BoxSizes(50, 71), [2]), # 0.078 | 0.111       + 0.049
             Spec(20, 32, BoxSizes(115, 230), [2]), # 0.179 | 0.359      + 0.101
-            Spec(9, 64, BoxSizes(242, 285), [2]), # 0.378 | 0.445      + 0.199
+            Spec(9, 32, BoxSizes(242, 285), [2]), # 0.378 | 0.445      + 0.199
             Spec(5, 128, BoxSizes(387, 482), [2]), # 0.605 | 0.753     + 0.227
             
 AP 결과

@@ -4,7 +4,7 @@ from tensorflow import keras
 from tensorflow.keras.layers import Conv2D, Add, Activation, Dropout ,BatchNormalization,  UpSampling2D,\
     SeparableConv2D, MaxPooling2D, Concatenate, DepthwiseConv2D, GlobalAveragePooling2D, Reshape, multiply, add, ReLU
 from functools import reduce
-
+import matplotlib.pyplot as plt
 NUM_CHANNELS = [64, 88, 112, 160, 224, 288, 288, 288]
 FPN_TIMES = [3, 4, 5, 6, 7, 7, 7, 7]
 CLS_TIEMS = [3, 3, 3, 4, 4, 4, 4, 4]
@@ -381,7 +381,7 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], b
     layer_names = GET_EFFICIENT_NAME[base_model_name]
 
     # get extra layer
-    p3 = base.get_layer(layer_names[0]).output # 64 64 40
+    p3 = base.get_layer(layer_names[0]).output # 32 32 40
     p5 = base.get_layer(layer_names[1]).output # 32 32 112
     p7 = base.get_layer(layer_names[2]).output # 16 16 320
 
@@ -409,7 +409,7 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], b
     source_layers.append(features[3])
     source_layers.append(features[4])
 
-    return base.input, source_layers, CLS_TIEMS[MODEL_NAME[base_model_name]]
+    return base.input, source_layers, CLS_TIEMS[MODEL_NAME[base_model_name]], p5
 
 """CSNet-tiny hyper parameters"""
 

@@ -108,10 +108,39 @@ for batch in tqdm(dataset, total=test_steps):
     start = time.perf_counter_ns()
     pred = model.predict_on_batch(batch)
 
-    #feature = model.get_layer('block5c_add').output
-    feature = model.layers[13].output
-    plt.imshow(feature[0].numpy())
-    plt.show()
+    pred, feature, p7 = pred
+    # #feature = model.get_layer('block5c_add').output
+    # feature = model.layers[13].output
+
+    for j in range(feature.shape[3]):
+        fig = plt.figure()
+
+        # v = np.arange(feature, 14.2, 2)
+
+        plt.imshow(tf.cast(feature[0,:,:,j],dtype=tf.float32))
+
+        plt.colorbar()
+
+        plt.savefig('./checkpoints/results/fpn/'+str(j)+'.png')
+        plt.close(fig)
+
+
+    for j in range(p7.shape[3]):
+        fig = plt.figure()
+
+        plt.imshow(tf.cast(p7[0, :, :, j], dtype=tf.float32))
+        # plt.imshow(tf.cast(p7[0, :, :, j], dtype=tf.float32), vmax=1.5, vmin=-1.5)
+        plt.colorbar()
+        plt.savefig('./checkpoints/results/original/' + str(j) + '.png')
+        plt.close(fig)
+
+
+        # tensor = tf.expand_dims(feature[0,:,:,j], axis=-1)
+        # plt.imsave(str(j)+'.png', tensor)
+
+    break
+        # tf.keras.preprocessing.image.save_img('./checkpoints/results/32/' + str(j) + '.png', tf.expand_dims(feature[0,:,:,j], axis=-1))
+
 
     duration = (time.perf_counter_ns() - start) / BATCH_SIZE
     print(f"inference time : {duration // 1000000}ms.")

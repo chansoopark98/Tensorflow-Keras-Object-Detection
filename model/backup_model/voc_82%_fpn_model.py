@@ -287,7 +287,7 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], b
 
     # get extra layer
     #efficient_conv75 = base.get_layer('block2b_add').output  # 75 75 24
-    # p3 = base.get_layer(layer_names[0]).output # 64 64 40
+    # p3 = base.get_layer(layer_names[0]).output # 32 32 40
     p3 = base.get_layer(layer_names[1]).output # 32 32 112
     p5 = base.get_layer(layer_names[2]).output # 16 16 320
     p7 = SeparableConvBlock(num_channels=NUM_CHANNELS[MODEL_NAME[base_model_name]], kernel_size=3, strides=2,
