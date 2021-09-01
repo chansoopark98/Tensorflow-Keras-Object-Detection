@@ -409,7 +409,7 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], b
     source_layers.append(features[3])
     source_layers.append(features[4])
 
-    return base.input, source_layers, CLS_TIEMS[MODEL_NAME[base_model_name]], p5
+    return base.input, source_layers, CLS_TIEMS[MODEL_NAME[base_model_name]]
 
 """CSNet-tiny hyper parameters"""
 

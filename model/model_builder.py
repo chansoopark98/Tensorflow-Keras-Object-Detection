@@ -22,10 +22,9 @@ def model_build(model_mode, base_model_name, pretrained=True, backbone_trainable
         return model
     else:
 
-        inputs, source_layers, classifier_times, p7 = csnet_extra_model(base_model_name, pretrained, image_size, backbone_trainable=backbone_trainable)
+        inputs, source_layers, classifier_times = csnet_extra_model(base_model_name, pretrained, image_size, backbone_trainable=backbone_trainable)
         output = create_classifier(source_layers, num_priors, normalizations, classes, classifier_times)
-        output_layers = [output, source_layers[1], p7]
-        model = keras.Model(inputs, outputs=output_layers)
+        model = keras.Model(inputs, outputs=output)
         return model
 
 
