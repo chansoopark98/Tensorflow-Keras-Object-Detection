@@ -13,3 +13,21 @@ def get_flops(model, batch_size=1):
     flops = tf.compat.v1.profiler.profile(graph=frozen_func.graph, run_meta=run_meta, cmd='op', options=opts)
 
     return flops.total_float_ops
+
+
+def get_flops_v2(model):
+    session = tf.compat.v1.Session()
+    graph = tf.compat.v1.get_default_graph()
+
+    with graph.as_default():
+        with session.as_default():
+            model = model
+
+            run_meta = tf.compat.v1.RunMetadata()
+            opts = tf.compat.v1.profiler.ProfileOptionBuilder.float_operation()
+
+            # We use the Keras session graph in the call to the profiler.
+            flops = tf.compat.v1.profiler.profile(graph=graph,
+                                                  run_meta=run_meta, cmd='op', options=opts)
+
+            return flops.total_float_ops

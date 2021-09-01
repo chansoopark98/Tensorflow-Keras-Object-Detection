@@ -4,7 +4,8 @@ from model.seg_model import csnet_seg_model
 # for detection
 from model.model import csnet_extra_model, tiny_csnet
 from model.model_classifer import create_classifier, tiny_classifier
-
+# from calc_flops import get_flops, get_flops_v2
+from keras_flops import get_flops
 # from tensorflow.keras.utils import get_file
 
 # train.py에서 priors를 변경하면 여기도 수정해야함
