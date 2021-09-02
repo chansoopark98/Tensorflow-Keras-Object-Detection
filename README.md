@@ -20,7 +20,7 @@
 
 ## Preferences
 
-CSNet은 Tensorflow 기반 코드로 작성되었습니다. 코드는 **Windows** 및 **Linux(Ubuntu)** 환경에서 모두 동작합니다.
+ESDet은 Tensorflow 기반 코드로 작성되었습니다. 코드는 **Windows** 및 **Linux(Ubuntu)** 환경에서 모두 동작합니다.
 <table border="0">
 <tr>
     <tr>
@@ -155,7 +155,7 @@ parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 da
 사전 저장된 모델로 이미지 추론을 predict.py로 실행합니다. 테스트에 사용할 이미지 파일과 출력 결과를 저장할 디렉토리를 지정해야 합니다.  
 
 ```plain
-└── CSNet root
+└── ESDet root
        ├── inputs/  # This is the image directory to use for testing.
        |   ├── image_1.jpg 
        |   └── image_2.jpg
