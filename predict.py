@@ -8,8 +8,7 @@ import argparse
 from config import *
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 import time
-import matplotlib.pyplot as plt
-from calc_flops import get_flops
+
 tf.keras.backend.clear_session()
 
 policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)

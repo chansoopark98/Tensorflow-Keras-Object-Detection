@@ -1,12 +1,9 @@
 import tensorflow_datasets as tfds
-from utils.priors import *
 from model.model_builder import model_build
 from preprocessing import prepare_dataset
 from preprocessing import coco_eval_dataset
 from utils.model_post_processing import post_process  #
 from utils.model_evaluation import eval_detection_voc
-from tensorflow.keras.utils import plot_model
-from calc_flops import get_flops
 # from pycocotools.coco import COCO
 # from pycocotools.cocoeval import COCOeval
 from config import *

@@ -1,6 +1,6 @@
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
-from callbacks import Scalar_LR, DecayHistory
+from callbacks import Scalar_LR
 from metrics import CreateMetrics
 from config import *
 from utils.load_datasets import GenerateDatasets
@@ -9,7 +9,6 @@ from model.loss import Total_loss
 import argparse
 import time
 import os
-from calc_flops import get_flops
 
 tf.keras.backend.clear_session()
 
@@ -47,15 +46,11 @@ LOAD_WEIGHT = args.load_weight
 MIXED_PRECISION = args.mixed_precision
 DISTRIBUTION_MODE = args.distribution_mode
 
-if MIXED_PRECISION:
-    policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
-    mixed_precision.set_policy(policy)
-
 os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
+# Matching target transform
 specs = set_priorBox(MODEL_NAME)
-
 priors = create_priors_boxes(specs, IMAGE_SIZE[0])
 TARGET_TRANSFORM = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
@@ -65,14 +60,15 @@ dataset_config = GenerateDatasets(TRAIN_MODE, DATASET_DIR, IMAGE_SIZE, BATCH_SIZ
 # Set loss function
 loss = Total_loss(dataset_config.num_classes)
 
-print("백본 EfficientNet{0} .".format(MODEL_NAME))
+print("Backbone Network Version : EfficientNet{0} .".format(MODEL_NAME))
 
 steps_per_epoch = dataset_config.number_train // BATCH_SIZE
 validation_steps = dataset_config.number_test // BATCH_SIZE
-print("학습 배치 개수:", steps_per_epoch)
-print("검증 배치 개수:", validation_steps)
+print("Train batch samples{0}".format(steps_per_epoch))
+print("Validation batch samples{0}".format(validation_steps))
 
 metrics = CreateMetrics(dataset_config.num_classes)
+
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
 
 checkpoint = ModelCheckpoint(CHECKPOINT_DIR + TRAIN_MODE + '_' + SAVE_MODEL_NAME + '.h5',
@@ -84,10 +80,12 @@ polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=
                                                           end_learning_rate=0.0001, power=1.0)
 lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay)
 
-# optimizer = tf.keras.optimizers.SGD(learning_rate=base_lr, momentum=0.9)
 optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
 
+# Whether to use Mixed Precision
 if MIXED_PRECISION:
+    policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
+    mixed_precision.set_policy(policy)
     optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
 
 callback = [checkpoint, tensorboard, testCallBack, lr_scheduler]
@@ -98,21 +96,16 @@ if DISTRIBUTION_MODE == 'multi':
 
 else:
     mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
+
 print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
 
-if MODEL_NAME == 'CSNet-tiny':
-    normalize = [-1, -1, -1, -1, -1, -1]
-    num_priors = [3, 3, 3, 3, 3, 3]
-else :
-    normalize = [20, 20, 20, -1, -1]
-    num_priors = [3, 3, 3, 3, 3]
-
 with mirrored_strategy.scope():
+    # Model builder
     model = model_build(TRAIN_MODE, MODEL_NAME, normalizations=normalize, num_priors=num_priors,
                         image_size=IMAGE_SIZE, backbone_trainable=True)
 
+    # Model summary
     model.summary()
-    print(get_flops(model, 1))
 
     if USE_WEIGHT_DECAY:
         regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
@@ -121,19 +114,19 @@ with mirrored_strategy.scope():
                 if hasattr(layer, attr) and layer.trainable:
                     setattr(layer, attr, regularizer)
 
+    # Model compile
     model.compile(
         optimizer=optimizer,
         loss=loss.total_loss,
         metrics=[metrics.precision, metrics.recall, metrics.cross_entropy, metrics.localization]
     )
 
+    # If you use pre-trained model or resume training
     if LOAD_WEIGHT:
         weight_name = 'voc_0710'
         model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
-
-
-
+    # Start train
     history = model.fit(dataset_config.training_dataset,
             validation_data=dataset_config.validation_dataset,
             steps_per_epoch=steps_per_epoch,
@@ -141,5 +134,6 @@ with mirrored_strategy.scope():
             epochs=EPOCHS,
             callbacks=callback)
 
+    # Model save after training
     model.save('./checkpoints/save_model.h5', True, True, 'h5')
 
