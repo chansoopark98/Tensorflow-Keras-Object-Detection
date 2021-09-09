@@ -7,8 +7,6 @@ class CreateMetrics:
     def __init__(self, classes):
         self.num_classes = classes
 
-
-
     def recall(self, y_target, y_pred):
         y_target_yn = K.round(K.clip(y_target, 0, 1)) # 실제값을 0(Negative) 또는 1(Positive)로 설정한다
         y_pred_yn = K.round(K.clip(y_pred, 0, 1)) # 예측값을 0(Negative) 또는 1(Positive)로 설정한다

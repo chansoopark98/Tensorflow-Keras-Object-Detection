@@ -2,6 +2,14 @@ import tensorflow as tf
 from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2_as_graph
 
 def get_flops(model, batch_size=1):
+    """
+         Args:
+             model: the model to compute FLOPs from
+             batch_size: batch size (fixed value of 1)
+
+         Returns:
+             Tensorflow profile
+     """
     if batch_size is None:
         batch_size = 1
 

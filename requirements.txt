@@ -1,6 +1,6 @@
-tensorflow==2.2.0
+tensorflow==2.4.1
 pycocotools
-keras
+keras==2.4.3
 matplotlib
 tensorflow_datasets
 efficientnet

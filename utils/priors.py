@@ -4,21 +4,16 @@ import itertools
 import collections
 from utils.misc import *
 
-"""CSNET Prior Box 생성 (= Default box)
-중심, 높이 및 너비값 반환
- 사전의 중심, 높이 및 너비를 반환합니다. 값은 이미지 크기에 상대적입니다.
+"""
+ESDet Prior Box (= Default box)
+
+Returns center, height and width values
+Returns the center, height and width of a dictionary. The value is relative to the image size.
+
  Args :
-     specs : 이전 상자의 크기 모양에 대한 SSDSpecs
-         spec = [
-             Spec (38, 8, BoxSizes (30, 60), [2]),
-             Spec (19, 16, BoxSizes (60, 111), [2, 3]),
-             Spec (10, 32, BoxSizes (111, 162), [2, 3]),
-             Spec (5, 32, BoxSizes (162, 213), [2, 3]),
-             Spec (3, 100, BoxSizes (213, 264), [2]),
-             Spec (1, 300, BoxSizes (264, 315), [2])
-         ]
-     image_size : 이미지 크기.
-     clamp : 참이면 값을 [0.0, 1.0] 사이로 고정합니다.
+     specs : Specs for size shape of prior box
+     image_size : Image size
+     clamp : If true, the value is fixed between [0.0, 1.0].
  returns:
      priors (num_priors, 4) : [[center_x, center_y, w, h]] priors box
  """
@@ -47,20 +42,6 @@ def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
                 h
             ])
 
-
-            # # 큰 bbox
-            # size = np.sqrt(spec.box_sizes.max * spec.box_sizes.min)
-            # h = w = size / image_size
-            # priors.append([
-            #     x_center,
-            #     y_center,
-            #     w,
-            #     h
-            # ])
-
-
-            # 작은 bbox 높이, 너비 비율 변경
-            #size = spec.box_sizes.min 기존
             size = np.sqrt(spec.box_sizes.max * spec.box_sizes.min)
             h = w = size / image_size
             if spec.aspect_ratios :
@@ -79,9 +60,6 @@ def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
                         h * ratio
                     ])
 
-
-
-
     # priors > shape(Batch, 13792)
     # 2차원 배열이고 각 배열마다 4개씩 존재(x_center, y_center, w, h) * 13792
     priors = np.array(priors, dtype=np.float32)
@@ -93,16 +71,15 @@ def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
 
 
 @tf.function
-def assign_gt2_priors(gt_boxes, gt_labels, corner_form_priors,
-                      iou_threshold=0.45):
-    """Ground truth <-> priors(default box) 할당
+def assign_gt2_priors(gt_boxes, gt_labels, corner_form_priors, iou_threshold=0.45):
+    """Ground truth <-> priors(default box)
     Args:
         gt_boxes (num_targets, 4): ground truth boxes
         gt_labels (num_targets): ground truth class labels
         priors (num_priors, 4): priors
     Returns:
-        boxes (num_priors, 4): gt 박스
-        labels (num_priors): gt 라벨
+        boxes (num_priors, 4): gt box
+        labels (num_priors): gt labels
     """
     # size: num_priors x num_targets
     ious = iou_of(tf.expand_dims(gt_boxes, axis=0), tf.expand_dims(corner_form_priors, axis=1))
@@ -128,7 +105,7 @@ def assign_gt2_priors(gt_boxes, gt_labels, corner_form_priors,
 
     labels = tf.where(tf.less(best_target_per_prior, iou_threshold), tf.constant(0, dtype='int64'), labels)
 
-    # 라벨이 임계값을 넘기 않는 경우 background(배경) 처리
+    # Handle background if label does not cross the threshold
     boxes = tf.gather(gt_boxes, best_target_per_prior_index)
 
     return boxes, labels

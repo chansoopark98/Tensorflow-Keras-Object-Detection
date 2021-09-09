@@ -291,36 +291,3 @@ def corner_form_to_center_form(boxes):
         (boxes[..., :2] + boxes[..., 2:]) / 2,
         boxes[..., 2:] - boxes[..., :2]
     ], tf.rank(boxes) - 1)
-
-# 작업중
-# def hard_nms(box_scores, iou_threshold, top_k=-1, candidate_size=200):
-#     """
-#     Args:
-#         box_scores (N, 5): 코너 형식의 box와 확률값
-#         iou_threshold: IoU 임계값
-#         top_k: 값 유지    If k <= 0, 모든 값 유지
-#         candidate_size: 가장 높은 점수를 가지는 후보 경계만 사용.
-#     Returns:
-#          picked: bbox index 리스트
-#     """
-#     scores = box_scores[:, 4]
-#     boxes = box_scores[:, :-2]
-#     picked = []
-#     indexes = np.argsort(scores)[::-1]
-#     indexes = indexes[:candidate_size]
-#
-#     while len(indexes) > 0:
-#         current = indexes[0]
-#         picked.append(current)
-#         if 0 < top_k == len(picked) or len(indexes) == 1:
-#             break
-#         current_box = boxes[current, :]
-#         indexes = indexes[1:]
-#         rest_boxes = boxes[indexes, :]
-#         iou = iou_of(
-#             rest_boxes,
-#             np.expand_dims(current_box, axis=0),
-#         ).numpy()
-#         indexes = indexes[iou <= iou_threshold]
-#
-#     return box_scores[picked, :]
