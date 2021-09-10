@@ -2,7 +2,7 @@
 
 > ESDet : Efficient Shot Detector
 
-이 저장소는 **EfficientNet** 기반 객체 검출 네트워크를 구현하였습니다. 본 구현은 **Tensorflow Keras** 라이브러리 기반 경량화 네트워크입니다. 적은 params와 FLOPS로 경쟁력있는 검출 정확도를 달성하였습니다.
+이 저장소는 **EfficientNet** 기반 객체 검출 네트워크를 구현하였습니다. 본 구현은 **Tensorflow Keras** 라이브러리 기반 경량화 네트워크입니다. 적은 params와 FLOPs로 경쟁력있는 검출 정확도를 달성하였습니다.
 
 <hr/>
 
@@ -114,25 +114,31 @@ Download COCO Dataset
 훈련 과정에 앞서 데이터셋을 사전에 준비해야 합니다. 데이터셋을 다운로드 한 후 train.py로 훈련을 시작합니다.  
 <br/>
 ```python
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=32)
-parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
-parser.add_argument("--image_size",     type=int,   help="모델 입력 이미지 크기 설정", default=384)
-parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
-parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름", default='MODEL_NAME')
-parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
-parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
-parser.add_argument("--backbone_model", type=str,   help="EfficientNet 모델 설정", default='B0')
-parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
-parser.add_argument("--pretrain_mode",  type=bool,  help="저장되어 있는 가중치 로드", default=False)
+parser.add_argument("--batch_size",     type=int,   help="Set Batch Size", default=32)
+parser.add_argument("--epoch",          type=int,   help="Set Train Epochs", default=200)
+parser.add_argument("--lr",             type=float, help="Set Learning Rate", default=0.005)
+parser.add_argument("--weight_decay",   type=float, help="Set Weight Decay", default=0.0005)
+parser.add_argument("--model_name",     type=str,   help="Set the model name to be saved",
+                    default=str(time.strftime('%m%d', time.localtime(time.time()))))
+parser.add_argument("--dataset_dir",    type=str,   help="The directory path where the dataset is stored", default='./datasets/')
+parser.add_argument("--checkpoint_dir", type=str,   help="The path to the directory where the model is stored", default='./checkpoints/')
+parser.add_argument("--tensorboard_dir",  type=str,   help="Path where TensorBoard will be stored", default='tensorboard')
+parser.add_argument("--backbone_model", type=str,   help="EfficientNet (backbone) model", default='B0')
+parser.add_argument("--train_dataset",  type=str,   help="Set the dataset to be used for training coco or voc", default='voc')
+parser.add_argument("--use_weightDecay",  type=bool,  help="Whether to use weight decay", default=True)
+parser.add_argument("--load_weight",  type=bool,  help="Use pre-train weight", default=False)
+parser.add_argument("--mixed_precision",  type=bool,  help="Whether to use Mixed Precision", default=False)
+parser.add_argument("--distribution_mode",  type=bool,  help="Set up distributed learning mode (mirror or multi)", default='mirror')
+
 ```  
 아래와 같이 실행할 수 있습니다.  
 
-    python train.py --batch_size=32 --epoch=200 --image_size=384 --lr=0.001 --model_name=test model  
+    python train.py --batch_size=32 --epoch=200 --lr=0.001 --model_name=test_model  
     --dataset_dir='./datasets/' --checkpoint_dir='./checkpoints/' --backbone_model=B0 --train_dataset=voc  
 
 사전 저장된 모델을 이어서 훈련하는 경우 아래 인자를 추가하십시요.  
 
-    --pretrain_mode=True
+    --load_weight=True
 <br>
 <hr>
 

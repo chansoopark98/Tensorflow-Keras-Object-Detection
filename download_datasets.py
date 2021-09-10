@@ -1,11 +1,8 @@
 import tensorflow_datasets as tfds
 import argparse
 import os
-import tensorflow as tf
-from tensorflow.keras.applications.imagenet_utils import preprocess_input
-from tensorflow.keras.layers.experimental import preprocessing
 from preprocessing import *
-import matplotlib.pyplot as plt
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
@@ -54,50 +51,6 @@ elif TRAIN_MODE == 'coco' :
 
     number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
     print("테스트 데이터 개수:", number_test)
-
-elif TRAIN_MODE == 'cityscapes':
-    download_config = tfds.download.DownloadConfig(
-        manual_dir=DATASET_DIR + '/downloads', extract_dir=DATASET_DIR + '/cityscapes')
-
-    # train_ds = tfds.load('cityscapes/semantic_segmentation', data_dir=DATASET_DIR, split='train',
-    #                      download_and_prepare_kwargs={"download_config": download_config})
-    # valid_ds = tfds.load('cityscapes/semantic_segmentation', data_dir=DATASET_DIR, split='validation',
-    #                      download_and_prepare_kwargs={"download_config": download_config})
-    # test_ds = tfds.load('cityscapes/semantic_segmentation', data_dir=DATASET_DIR, split='test',
-    #                     download_and_prepare_kwargs={"download_config": download_config})
-
-    train_ds = tfds.load('cityscapes/semantic_segmentation', data_dir=DATASET_DIR, split='train'
-                         )
-    valid_ds = tfds.load('cityscapes/semantic_segmentation', data_dir=DATASET_DIR, split='validation'
-                         )
-    test_ds = tfds.load('cityscapes/semantic_segmentation', data_dir=DATASET_DIR, split='test'
-                        )
-
-    prepare_trainData = cityScapes(train_ds, [512, 1024], 1, True)
-    prepare_trainData_v = cityScapes(valid_ds, [512, 1024], 1, False)
-
-
-    img = prepare_trainData.take(1)
-    v_img = prepare_trainData_v.take(1)
-
-    from tensorflow.keras.applications.imagenet_utils import preprocess_input
-    for x, y in img:
-        print(x)
-
-
-        # plt.imshow(x[0])
-        # plt.show()
-
-    for x, y in v_img:
-        print(x)
-        # plt.imshow(x[0])
-        # plt.show()
-
-
-
-
-
-
 
 
 
