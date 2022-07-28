@@ -4,22 +4,22 @@ AUTO = tf.data.experimental.AUTOTUNE
 
 @tf.function
 def data_augment(image, boxes, labels):
-    if tf.random.uniform([]) > 0.5:
-        image = tf.image.random_saturation(image, lower=0.5, upper=1.5) # 랜덤 채도
-    if tf.random.uniform([]) > 0.5:
-        image = tf.image.random_brightness(image, max_delta=0.15) # 랜덤 밝기
-    if tf.random.uniform([]) > 0.5:
-        image = tf.image.random_contrast(image, lower=0.5, upper=1.5) # 랜덤 대비
-    if tf.random.uniform([]) > 0.5:
-        image = tf.image.random_hue(image, max_delta=0.2) # 랜덤 휴 트랜스폼
+    # if tf.random.uniform([]) > 0.5:
+    #     image = tf.image.random_saturation(image, lower=0.5, upper=1.5) # 랜덤 채도
+    # if tf.random.uniform([]) > 0.5:
+    #     image = tf.image.random_brightness(image, max_delta=0.15) # 랜덤 밝기
+    # if tf.random.uniform([]) > 0.5:
+    #     image = tf.image.random_contrast(image, lower=0.5, upper=1.5) # 랜덤 대비
+    # if tf.random.uniform([]) > 0.5:
+    #     image = tf.image.random_hue(image, max_delta=0.2) # 랜덤 휴 트랜스폼
     # if tf.random.uniform([]) > 0.5:
     #     image = tfa.image.gaussian_filter2d(image, [3, 3])
     # if tf.random.uniform([]) > 0.5: # 컷 아웃
     #     image = cutout(image)
-    image = random_lighting_noise(image)
-    image, boxes = expand(image, boxes)
-    image, boxes, labels = random_crop(image, boxes, labels) # 랜덤 자르기
-    image, boxes = random_flip(image, boxes) # 랜덤 뒤집기
+    # image = random_lighting_noise(image)
+    # image, boxes = expand(image, boxes)
+    # image, boxes, labels = random_crop(image, boxes, labels) # 랜덤 자르기
+    # image, boxes = random_flip(image, boxes) # 랜덤 뒤집기
 
     return (image, boxes, labels)
 
@@ -48,6 +48,8 @@ def prepare_input(sample, convert_to_normal=True):
     #image_mean = (0.485, 0.456, 0.406)
     #image_std = (0.229, 0.224, 0.225)
     #img = (img - image_mean) / image_std # 데이터셋 pascal 평균 분산치 실험
+
+
     return (img, bbox, labels)
 
 def prepare_cocoEval_input(sample):
@@ -69,7 +71,8 @@ def join_target(image, bbox, labels, image_size, target_transform, classes):
     locations, labels = target_transform(tf.cast(bbox, tf.float32), labels)
     labels = tf.one_hot(labels, classes, axis=1, dtype=tf.float32) ### 1 -> classes
     targets = tf.concat([labels, locations], axis=1)
-
+    
+    print('targetrs', targets)
     return (tf.image.resize(image, image_size), targets)
 
 # def join_target(image, bbox, labels, image_size, target_transform, classes):

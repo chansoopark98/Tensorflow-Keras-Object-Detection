@@ -1,4 +1,5 @@
-import efficientnet.keras as efn
+from xmlrpc.client import TRANSPORT_ERROR
+from .efficientnet_v2 import EfficientNetV2S
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.layers import Conv2D, Add, Activation, Dropout ,BatchNormalization,  UpSampling2D,\
@@ -143,7 +144,12 @@ def build_fpn(features, num_channels=64, id=0, resize=False, bn_trainable=True):
         P4_in_1 = BatchNormalization(momentum=MOMENTUM, epsilon=EPSILON, trainable=bn_trainable,
                                             name='fpn_cells/cell_/fnode2/resample_0_1_7/bn')(P4_in_1)
 
-        P5_U = UpSampling2D()(P5_td)
+
+        if resize:
+            P5_U = tf.image.resize(P5_td, (P4_in_1.shape[1:3]))
+        else:
+            P5_U = UpSampling2D()(P5_td)
+
         P4_td = Add(name='fpn_cells/cell_/fnode2/add')([P4_in_1, P5_U]) # 18x18
         P4_td = Activation(lambda x: tf.nn.swish(x))(P4_td)
         P4_td = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
@@ -222,7 +228,14 @@ def build_fpn(features, num_channels=64, id=0, resize=False, bn_trainable=True):
         P5_td = Activation(lambda x: tf.nn.swish(x))(P5_td)
         P5_td = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
                                    name=f'fpn_cells/cell_{id}/fnode1/op_after_combine6')(P5_td)
-        P5_U = UpSampling2D()(P5_td) # 9x9 to 18x18
+
+
+        if resize:
+            P5_U = tf.image.resize(P5_td, (P4_in.shape[1:3]))
+        else:
+            P5_U = UpSampling2D()(P5_td)
+
+
         P4_td = Add(name=f'fpn_cells/cell_{id}/fnode2/add')([P4_in, P5_U]) # 18x18
         P4_td = Activation(lambda x: tf.nn.swish(x))(P4_td)
         P4_td = SeparableConvBlock(num_channels=num_channels, kernel_size=3, strides=1,
@@ -376,19 +389,26 @@ def csnet_extra_model(base_model_name, pretrained=True, IMAGE_SIZE=[512, 512], b
     print("backbone_trainable", backbone_trainable)
     print("bn_trainable", bn_trainable)
     source_layers = []
-    base = create_efficientNet(base_model_name, pretrained, IMAGE_SIZE, trainable=backbone_trainable)
+    # base = create_efficientNet(base_model_name, pretrained, IMAGE_SIZE, trainable=backbone_trainable)
+    base = EfficientNetV2S(input_shape=(IMAGE_SIZE[0], IMAGE_SIZE[1], 3), pretrained='imagenet')
 
     layer_names = GET_EFFICIENT_NAME[base_model_name]
 
+    base.summary()
     # get extra layer
-    p3 = base.get_layer(layer_names[0]).output # 32 32 40
-    p5 = base.get_layer(layer_names[1]).output # 32 32 112
-    p7 = base.get_layer(layer_names[2]).output # 16 16 320
+    p3 = base.get_layer('add_7').output # 38 38
+    p5 = base.get_layer('add_20').output # 19, 19
+    p7 = base.get_layer('add_34').output # 10, 10
+
+    # p3 = base.get_layer(layer_names[0]).output # 32 32 40
+    # p5 = base.get_layer(layer_names[1]).output # 32 32 112
+    # p7 = base.get_layer(layer_names[2]).output # 16 16 320
 
     features = [p3, p5, p7]
     print(features)
     if base_model_name == 'B0':
         feature_resize = False
+        
     else:
         feature_resize = True
 

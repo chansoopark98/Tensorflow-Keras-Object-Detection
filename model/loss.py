@@ -23,10 +23,13 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
 class Total_loss:
     def __init__(self, num_classes):
         self.num_classes = num_classes
+        print(self.num_classes)
 
 
     def total_loss(self, y_true, y_pred):
-        labels = tf.argmax(y_true[:,:,:self.num_classes], axis=2)
+        print(y_true.shape)
+        # labels = tf.argmax(y_true[:,:,:self.num_classes], axis=2)
+        labels = tf.math.argmax(y_true[:,:,:self.num_classes], axis=2)
         confidence = y_pred[:,:,:self.num_classes]
         predicted_locations = y_pred[:,:,self.num_classes:]
         gt_locations = y_true[:,:,self.num_classes:]

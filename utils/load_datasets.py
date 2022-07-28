@@ -1,6 +1,6 @@
 import tensorflow_datasets as tfds
 import tensorflow as tf
-from preprocessing import prepare_dataset, cityScapes
+from preprocessing import prepare_dataset
 
 
 class GenerateDatasets:

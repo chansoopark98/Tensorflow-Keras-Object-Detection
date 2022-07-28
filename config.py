@@ -20,7 +20,7 @@ MODEL_INPUT_SIZE = {
 
 class TrainHyperParams:
     def __init__(self):
-        self.optimizer_name = 'sgd'
+        self.optimizer_name = 'adam'
         self.weight_decay = 0.0005
         self.learning_rate = 0.001
         self.sgd_momentum = 0.9

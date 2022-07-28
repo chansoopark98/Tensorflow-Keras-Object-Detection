@@ -11,11 +11,12 @@ import time
 import os
 
 tf.keras.backend.clear_session()
+# tf.config.run_functions_eagerly(True)
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--batch_size",     type=int,   help="Set Batch Size", default=1)
-parser.add_argument("--epoch",          type=int,   help="Set Train Epochs", default=1000)
-parser.add_argument("--lr",             type=float, help="Set Learning Rate", default=0.01)
+parser.add_argument("--batch_size",     type=int,   help="Set Batch Size", default=32)
+parser.add_argument("--epoch",          type=int,   help="Set Train Epochs", default=100)
+parser.add_argument("--lr",             type=float, help="Set Learning Rate", default=0.001)
 parser.add_argument("--weight_decay",   type=float, help="Set Weight Decay", default=0.0005)
 parser.add_argument("--model_name",     type=str,   help="Set the model name to be saved",
                     default=str(time.strftime('%m%d', time.localtime(time.time()))))
@@ -26,7 +27,7 @@ parser.add_argument("--backbone_model", type=str,   help="EfficientNet (backbone
 parser.add_argument("--train_dataset",  type=str,   help="Set the dataset to be used for training coco or voc", default='voc')
 parser.add_argument("--use_weightDecay",  type=bool,  help="Whether to use weight decay", default=True)
 parser.add_argument("--load_weight",  type=bool,  help="Use pre-train weight", default=False)
-parser.add_argument("--mixed_precision",  type=bool,  help="Whether to use Mixed Precision", default=False)
+parser.add_argument("--mixed_precision",  type=bool,  help="Whether to use Mixed Precision", default=True)
 parser.add_argument("--distribution_mode",  type=bool,  help="Set up distributed learning mode (mirror or multi)", default='mirror')
 
 args = parser.parse_args()
@@ -99,41 +100,41 @@ else:
 
 print("Number of devices: {}".format(mirrored_strategy.num_replicas_in_sync))
 
-with mirrored_strategy.scope():
-    # Model builder
-    model = model_build(TRAIN_MODE, MODEL_NAME, normalizations=normalize, num_priors=num_priors,
-                        image_size=IMAGE_SIZE, backbone_trainable=True)
+    
+# Model builder
+model = model_build(TRAIN_MODE, MODEL_NAME, normalizations=normalize, num_priors=num_priors,
+                    image_size=IMAGE_SIZE, backbone_trainable=True)
 
-    # Model summary
-    model.summary()
+# Model summary
+model.summary()
 
-    if USE_WEIGHT_DECAY:
-        regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
-        for layer in model.layers:
-            for attr in ['kernel_regularizer', 'bias_regularizer']:
-                if hasattr(layer, attr) and layer.trainable:
-                    setattr(layer, attr, regularizer)
+if USE_WEIGHT_DECAY:
+    regularizer = tf.keras.regularizers.l2(WEIGHT_DECAY / 2)
+    for layer in model.layers:
+        for attr in ['kernel_regularizer', 'bias_regularizer']:
+            if hasattr(layer, attr) and layer.trainable:
+                setattr(layer, attr, regularizer)
 
-    # Model compile
-    model.compile(
-        optimizer=optimizer,
-        loss=loss.total_loss,
-        metrics=[metrics.precision, metrics.recall, metrics.cross_entropy, metrics.localization]
-    )
+# Model compile
+model.compile(
+    optimizer=optimizer,
+    loss=loss.total_loss,
+    metrics=[metrics.precision, metrics.recall, metrics.cross_entropy, metrics.localization]
+)
 
-    # If you use pre-trained model or resume training
-    if LOAD_WEIGHT:
-        weight_name = 'voc_0710'
-        model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
+# If you use pre-trained model or resume training
+if LOAD_WEIGHT:
+    weight_name = 'voc_0710'
+    model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
-    # Start train
-    history = model.fit(dataset_config.training_dataset,
-            validation_data=dataset_config.validation_dataset,
-            steps_per_epoch=steps_per_epoch,
-            validation_steps=validation_steps,
-            epochs=EPOCHS,
-            callbacks=callback)
+# Start train
+history = model.fit(dataset_config.training_dataset,
+        validation_data=dataset_config.validation_dataset,
+        steps_per_epoch=steps_per_epoch,
+        validation_steps=validation_steps,
+        epochs=EPOCHS,
+        callbacks=callback)
 
-    # Model save after training
-    model.save('./checkpoints/save_model.h5', True, True, 'h5')
+# Model save after training
+model.save('./checkpoints/save_model.h5', True, True, 'h5')
 

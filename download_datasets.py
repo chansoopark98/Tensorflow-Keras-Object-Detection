@@ -2,11 +2,19 @@ import tensorflow_datasets as tfds
 import argparse
 import os
 from preprocessing import *
+import resource
+
+
+"""
+https://github.com/tensorflow/datasets/issues/1441#issuecomment-581660890
+"""
+low, high = resource.getrlimit(resource.RLIMIT_NOFILE)
+resource.setrlimit(resource.RLIMIT_NOFILE, (high, high))
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
-parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='cityscapes')
+parser.add_argument("--train_dataset",  type=str,   help="학습에 사용할 dataset 설정 coco or voc", default='voc')
 
 args = parser.parse_args()
 DATASET_DIR = args.dataset_dir
@@ -51,12 +59,3 @@ elif TRAIN_MODE == 'coco' :
 
     number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
     print("테스트 데이터 개수:", number_test)
-
-
-
-
-
-
-
-
-

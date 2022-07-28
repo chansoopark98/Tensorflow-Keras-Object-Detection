@@ -70,7 +70,7 @@ def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
 
 
 
-@tf.function
+# @tf.function
 def assign_gt2_priors(gt_boxes, gt_labels, corner_form_priors, iou_threshold=0.45):
     """Ground truth <-> priors(default box)
     Args:
