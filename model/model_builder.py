@@ -5,6 +5,7 @@ from tensorflow.keras.initializers import Constant, VarianceScaling
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from .model_zoo.mobileNet_ssd import MobileNetV2
+from .model_zoo.EffcientNetV2B0 import EfficientNetV2B0
 import tensorflow.keras.backend as K
 
 # l2 normalize
@@ -43,9 +44,16 @@ class ModelBuilder():
         self.normalize = [20, 20, 20, -1, -1, -1]
         self.num_priors = [4, 6, 6, 6, 4, 4]
 
-    
+
     def build_model(self, model_name: str) -> Model:
-        model_input, detector_output = MobileNetV2(image_size=self.image_size, pretrained="imagenet").build_extra_layer()
+        if model_name == 'mobilenetv2':
+            model = MobileNetV2(image_size=self.image_size, pretrained="imagenet")
+        elif model_name == 'efficientv2b0':
+            model = EfficientNetV2B0(image_size=self.image_size, pretrained="imagenet")
+        else:
+            raise NotImplementedError('Your input model_name is not implemented')
+        
+        model_input, detector_output = model.build_extra_layer()
         
         model_output = self.create_classifier(source_layers=detector_output,
                                num_priors=self.num_priors, normalizations=self.normalize)

@@ -244,5 +244,3 @@ with mirrored_strategy.scope():
         w.writerow(["Class", "Average Precision"])
         for key, val in ap_dict.items():
             w.writerow([key, val])
-
-

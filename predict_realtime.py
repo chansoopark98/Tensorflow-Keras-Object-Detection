@@ -8,6 +8,8 @@ from model.model_builder import ModelBuilder
 from utils.misc import draw_bounding, CLASSES, COCO_CLASSES
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--backbone_name",     type=str,    help="Pretrained backbone name",
+                    default='efficientv2b0')
 parser.add_argument("--batch_size",     type=int,
                     help="Evaluation batch size", default=1)
 parser.add_argument("--train_dataset_type",     type=str,
@@ -35,7 +37,7 @@ if __name__ == '__main__':
     priors = create_priors_boxes(specs=spec_list, image_size=args.image_size[0], clamp=True)
     target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
-    model = ModelBuilder(image_size=args.image_size, num_classes=NUM_CLASSES).build_model('mobilenet')
+    model = ModelBuilder(image_size=args.image_size, num_classes=NUM_CLASSES).build_model(args.backbone_name)
     model.load_weights(args.checkpoint_dir + args.weight_name)
     model.summary()
 

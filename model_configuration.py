@@ -1,3 +1,4 @@
+from statistics import mode
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, TensorBoard, LearningRateScheduler
 from tensorflow.keras.optimizers.schedules import PolynomialDecay
 from tensorflow.keras import mixed_precision
@@ -49,6 +50,7 @@ class ModelConfiguration(GenerateDatasets):
             Set training variables from argparse's arguments 
         """
         self.MODEL_PREFIX = self.args.model_prefix
+        self.BACKBONE_NAME = self.args.backbone_name
         self.WEIGHT_DECAY = self.args.weight_decay
         self.OPTIMIZER_TYPE = self.args.optimizer
         self.BATCH_SIZE = self.args.batch_size
@@ -148,6 +150,14 @@ class ModelConfiguration(GenerateDatasets):
 
         return metrics
 
+        
+    def __configuration_model(self):
+        """
+            Build a deep learning model.
+        """
+        self.model = ModelBuilder(image_size=self.IMAGE_SIZE,
+                                  num_classes=self.num_classes).build_model(model_name=self.BACKBONE_NAME)
+
     
     def train(self):
         """
@@ -159,15 +169,17 @@ class ModelConfiguration(GenerateDatasets):
         self.__set_optimizer()
         self.metrics = self.__set_metrics()
         self.__set_callbacks()
+        self.__configuration_model()
 
-        self.model = ModelBuilder(image_size=self.IMAGE_SIZE,
-                                  num_classes=self.num_classes).build_model('mobilenet_v2')
-
-        self.loss = Total_loss(num_classes=self.num_classes).total_loss
+        self.loss = Total_loss(num_classes=self.num_classes,
+                               global_batch_size=self.batch_size,
+                               use_multi_gpu=self.DISTRIBUTION_MODE).total_loss
 
         self.model.compile(optimizer=self.optimizer,
                            loss=self.loss,
                            metrics=self.metrics)
+
+        self.model.summary()
 
         self.model.fit(self.train_data,
                        validation_data=self.valid_data,

@@ -14,6 +14,8 @@ tf.keras.backend.clear_session()
 # tf.config.run_functions_eagerly(True)
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--backbone_name",     type=str,    help="Pretrained backbone name",
+                    default='efficientv2b0')
 parser.add_argument("--batch_size",      type=int,
                     help="Evaluation batch size", default=1)
 parser.add_argument("--image_size",      type=tuple,
@@ -50,7 +52,7 @@ if __name__ == '__main__':
     test_steps = dataset_config.number_test // args.batch_size
 
     # Model build and load pre-trained weights
-    model = ModelBuilder(image_size=args.image_size, num_classes=dataset_config.num_classes).build_model('mobilenet')
+    model = ModelBuilder(image_size=args.image_size, num_classes=dataset_config.num_classes).build_model(args.backbone_name)
     model.load_weights(args.checkpoint_dir + args.weight_path)
     model.summary()
 
@@ -112,7 +114,7 @@ if __name__ == '__main__':
     batch_idx += 1
 
     print('Model FLOPs {0}'.format(get_flops(model=model, batch_size=1)))
-    print('avg inference time : {0}sec.'.format((avg_duration / dataset_config.number_test)))
+    print('Avg inference time : {0}sec.'.format((avg_duration / dataset_config.number_test)))
     ap_dict = dict(zip(CLASSES, answer['ap']))
     print('AP per classes : {0}.'.format((ap_dict)))
     print('Image size : {0},  mAP : {1}'.format(args.image_size, answer['map']))

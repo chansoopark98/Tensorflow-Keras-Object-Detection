@@ -21,8 +21,10 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
 
 
 class Total_loss:
-    def __init__(self, num_classes):
+    def __init__(self, num_classes, global_batch_size: int, use_multi_gpu: bool = False):
         self.num_classes = num_classes
+        self.global_batch_size = global_batch_size
+        self.use_multi_gpu = use_multi_gpu
         
 
 
@@ -52,5 +54,10 @@ class Total_loss:
         # divide num_pos objects
         loc_loss = smooth_l1_loss / num_pos
         class_loss = classification_loss / num_pos
+
+        if self.use_multi_gpu:
+            loc_loss *= (1. / self.global_batch_size)
+            class_loss *= (1. / self.global_batch_size)
+            
         mbox_loss = loc_loss + class_loss
         return mbox_loss
