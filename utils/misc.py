@@ -2,6 +2,7 @@ import tensorflow as tf
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
+import cv2
 from collections import namedtuple
 
 CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog',
@@ -205,6 +206,28 @@ def coco_color_map(index):
     ]
 
     return label_defs[index]
+
+def draw_bounding(img , bboxes, labels, img_size, label_list):
+    # resizing 작업
+    if np.max(bboxes) < 10:
+
+        bboxes[:, [0,2]] = bboxes[:, [0,2]]*img_size[1]
+        bboxes[:, [1,3]] = bboxes[:, [1,3]]*img_size[0]
+
+    for i, bbox in enumerate(bboxes):
+        xmin = int(bbox[0])
+        ymin = int(bbox[1])
+        xmax = int(bbox[2])
+        ymax = int(bbox[3])
+        img_box = np.copy(img)
+        _, color = coco_color_map(int(labels[i] - 1))
+        cv2.rectangle(img_box, (xmin, ymin), (xmax, ymax), color, 2)
+        cv2.rectangle(img_box, (xmin - 1, ymin), (xmax + 1, ymin - 20), color, cv2.FILLED)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(img_box, label_list[int(labels[i]-1)], (xmin + 5, ymin - 5), font, 0.5,
+                    (255, 255, 255), 1, cv2.LINE_AA)
+        alpha = 0.8
+        cv2.addWeighted(img_box, alpha, img, 1. - alpha, 0, img)
 
 
 @tf.function

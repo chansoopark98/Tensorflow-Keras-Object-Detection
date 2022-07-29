@@ -62,7 +62,7 @@ if __name__ == '__main__':
     voc_bboxes = []
     voc_labels = []
     for sample in dataset_config.test_data:             
-        labels = sample['objects']['label'].numpy
+        labels = sample['objects']['label'].numpy()
         boxes = sample['objects']['bbox'].numpy()[:, [1, 0, 3, 2]]
         is_difficult = sample['objects']['is_difficult'].numpy()
         voc_labels.append(labels)
@@ -88,14 +88,16 @@ if __name__ == '__main__':
         pred = model.predict_on_batch(x)
         duration = (time.process_time() - start)
 
-        
-        predictions = post_process(pred, target_transform, classes=dataset_config.num_classes)
+        predictions = post_process(pred,
+                                   target_transform,
+                                   classes=dataset_config.num_classes,
+                                   confidence_threshold=0.01)
+
         for prediction in predictions:
             boxes, scores, labels = prediction
             pred_bboxes.append(boxes)
             pred_labels.append(labels.astype(int) - 1)
             pred_scores.append(scores)
-
 
     answer = eval_detection_voc(pred_bboxes=pred_bboxes,
                             pred_labels=pred_labels,
