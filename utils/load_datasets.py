@@ -132,7 +132,17 @@ class GenerateDatasets(DataLoadHandler):
         self.target_transform = target_transform
         self.dataset_name = dataset_name
         super().__init__(data_dir=self.data_dir, dataset_name=self.dataset_name)
-    
+
+    @tf.function    
+    def preprocess_test(self, sample: dict) -> Union[tf.Tensor, tf.Tensor, tf.Tensor]:
+        image = tf.cast(sample[self.image_key], dtype=tf.float32)
+        labels = sample['objects'][self.label_key] + 1
+        boxes = sample['objects'][self.bbox_key]
+
+        image = preprocess_input(image, mode='tf')
+        print(image, boxes, labels)
+        return (image, boxes, labels)    
+
 
     @tf.function
     def preprocess(self, sample: dict, clip_bbox: bool = True) -> Union[tf.Tensor, tf.Tensor, tf.Tensor]:
@@ -150,8 +160,8 @@ class GenerateDatasets(DataLoadHandler):
         image = preprocess_input(image, mode='tf')
 
         return (image, boxes, labels)
-
-
+    
+    
     @tf.function
     def augmentation(self, image: tf.Tensor, boxes: tf.Tensor, labels: tf.Tensor)-> Union[tf.Tensor, tf.Tensor, tf.Tensor]:
         if tf.random.uniform([]) > 0.5:
@@ -199,12 +209,12 @@ class GenerateDatasets(DataLoadHandler):
         return valid_data
 
 
-    def get_testData(self, valid_data):
-        valid_data = valid_data.map(self.preprocess)
-        valid_data = valid_data.map(lambda image, boxes, labels: self.join_target(image, boxes, labels))
-        valid_data = valid_data.batch(self.batch_size).prefetch(AUTO)
+    def get_testData(self, test_data):
+        test_data = test_data.map(self.preprocess_test)
+        test_data = test_data.map(lambda image, boxes, labels: self.join_target(image, boxes, labels))
+        test_data = test_data.batch(self.batch_size).prefetch(AUTO)
 
-        return valid_data
+        return test_data
 
 
 
