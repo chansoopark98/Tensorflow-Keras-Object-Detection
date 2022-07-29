@@ -143,10 +143,7 @@ class ModelConfiguration(GenerateDatasets):
 
     def __set_metrics(self):
         metric = CreateMetrics(num_classes=self.num_classes)
-        metrics = [metric.precision,
-                   metric.recall,
-                   metric.cross_entropy,
-                   metric.localization]
+        metrics = None
 
         return metrics
 
