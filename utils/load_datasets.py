@@ -147,7 +147,7 @@ class GenerateDatasets(DataLoadHandler):
             y_max = tf.where(tf.greater_equal(y_min, boxes[:,2]), tf.cast(y_min+0.1, dtype=tf.float32), boxes[:,2])
             boxes = tf.stack([x_min, y_min, x_max, y_max], axis=1)
 
-        image = preprocess_input(image, mode='torch')
+        image = preprocess_input(image, mode='tf')
 
         return (image, boxes, labels)
 

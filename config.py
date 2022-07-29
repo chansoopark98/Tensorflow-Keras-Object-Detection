@@ -1,8 +1,13 @@
 from utils.priors import *
 
-iou_threshold = 0.5
-center_variance = 0.1
-size_variance = 0.2
+# Spec(38, 8, BoxSizes(30, 60), [2]),
+# Spec(19, 16, BoxSizes(60, 111), [2, 3]),
+# Spec(10, 32, BoxSizes(111, 162), [2, 3]),
+# Spec(5, 64, BoxSizes(162, 213), [2, 3]),
+# Spec(3, 100, BoxSizes(213, 264), [2]),
+# Spec(1, 300, BoxSizes(264, 315), [2]),
+
+
 normalize = [20, 20, 20, -1, -1]
 num_priors = [3, 3, 3, 3, 3]
 
@@ -42,11 +47,12 @@ class TrainHyperParams:
 def set_priorBox(model_name):
     if model_name == 'B0-tiny':
         return [
-            Spec(38, 8, BoxSizes(10, 20), [2]),
-            Spec(19, 16, BoxSizes(23, 33), [2]),
-            Spec(10, 32, BoxSizes(53, 108), [2]),
-            Spec(5, 64, BoxSizes(113, 134), [2]),
-            Spec(3, 100, BoxSizes(182, 226), [2]),
+            Spec(38, 8, BoxSizes(30, 60), [2]),
+            Spec(19, 16, BoxSizes(60, 111), [2, 3]),
+            Spec(10, 32, BoxSizes(111, 162), [2, 3]),
+            Spec(5, 64, BoxSizes(162, 213), [2, 3]),
+            Spec(3, 100, BoxSizes(213, 264), [2]),
+            Spec(1, 300, BoxSizes(264, 315), [2]),
         ]
     elif model_name == 'B0':
         return [

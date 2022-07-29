@@ -20,6 +20,20 @@ Returns the center, height and width of a dictionary. The value is relative to t
 
 BoxSizes = collections.namedtuple('Boxsizes', ['min', 'max'])
 Spec = collections.namedtuple('Spec', ['feature_map_size', 'shrinkage', 'box_sizes', 'aspect_ratios'])
+iou_threshold = 0.5
+center_variance = 0.1
+size_variance = 0.2
+
+def convert_spec_list():
+    spec_list = [Spec(38, 8, BoxSizes(30, 60), [2]),
+                 Spec(19, 16, BoxSizes(60, 111), [2, 3]),
+                 Spec(10, 32, BoxSizes(111, 162), [2, 3]),
+                 Spec(5, 64, BoxSizes(162, 213), [2, 3]),
+                 Spec(3, 100, BoxSizes(213, 264), [2]),
+                 Spec(1, 300, BoxSizes(264, 315), [2])
+                 ]
+
+    return spec_list
 
 
 def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
@@ -42,7 +56,18 @@ def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
                 h
             ])
 
+            # 큰 bbox
             size = np.sqrt(spec.box_sizes.max * spec.box_sizes.min)
+            h = w = size / image_size
+            priors.append([
+                x_center,
+                y_center,
+                w,
+                h
+            ])
+
+            # 작은 bbox 높이, 너비 비율 변경
+            size = spec.box_sizes.min
             h = w = size / image_size
             if spec.aspect_ratios :
                 for ratio in spec.aspect_ratios:
