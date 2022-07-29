@@ -1,7 +1,11 @@
 import os
 import tensorflow_datasets as tfds
 import tensorflow as tf
-from preprocessing import prepare_dataset
+from .augmentations import *
+from tensorflow.keras.applications.imagenet_utils import preprocess_input
+from typing import Union
+
+AUTO = tf.data.experimental.AUTOTUNE
 
 class DataLoadHandler:
     def __init__(self, data_dir: str, dataset_name: str):
@@ -13,26 +17,31 @@ class DataLoadHandler:
         """
         self.data_dir = data_dir
         self.dataset_name = dataset_name
-        self.__select_dataset(dataset_name)
+        self.__select_dataset()
+
 
     def __select_dataset(self):
         try:
             if self.dataset_name == 'voc':
+                self.num_classes = 21
                 self.dataset_list = self.__load_voc()
                 self.image_key = 'image'
                 self.label_key = 'label'
-                self.box_key = 'bbox'
+                self.bbox_key = 'bbox'
 
             elif self.dataset_name == 'coco':
-                self.dataset_list = self.__load_custom_dataset()
+                self.num_classes = 81
+                self.dataset_list = self.__load_coco()
                 self.image_key = 'image'
                 self.label_key = 'label'
-                self.box_key = 'bbox'
+                self.bbox_key = 'bbox'
             else:
-                raise Exception('Cannot find dataset_name! \n your dataset is {0}.'.format(
-                    self.dataset_name))
+                raise Exception('Cannot find dataset_name! \n your dataset is {0}. \
+                                 Currently available default dataset types are: \
+                                 voc, coco'.format(self.dataset_name))
 
-            self.train_data, self.number_train, self.valid_data, self.number_valid = self.dataset_list
+            self.train_data, self.number_train, self.valid_data, self.number_valid,\
+                             self.test_data, self.number_test = self.dataset_list
         
         except Exception as error:
             print('Cannot select dataset. \n {0}'.format(error))
@@ -91,75 +100,111 @@ class DataLoadHandler:
         # Remove blank label files
         valid_data = valid_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
         valid_data = valid_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
+        
 
+        test_data = tfds.load('coco/2017', data_dir=self.data_dir, split='test')
 
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
         number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
+        number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
 
         print("Nuber of train dataset = {0}".format(number_train))
         print("Nuber of validation dataset = {0}".format(number_valid))
+        print("Nuber of validation dataset = {0}".format(number_test))
 
-        return (train_data, number_train, valid_data, number_valid)
+        return (train_data, number_train, valid_data, number_valid, test_data, number_test)
 
 
-class GenerateDatasets:
-    def __init__(self, mode, data_dir, image_size, batch_size, target):
+class GenerateDatasets(DataLoadHandler):
+    def __init__(self, data_dir: str, image_size: tuple, batch_size: int, target_transform: object,
+                 dataset_name: str = 'voc'):
         """
-             Args:
-                 mode: the type of dataset to load ( params : 'voc' or 'coco' )
-                 data_dir: Dataset relative path ( default : './datasets/' )
-                 image_size: size of image resolution according to EfficientNet backbone
-                 batch_size: batch size size
-                 target: target transform function
-         """
-        self.mode = mode
+        Args:
+            data_dir         (str)    : Dataset relative path (default : './datasets/').
+            image_size       (tuple)  : Model input image resolution.
+            batch_size       (int)    : Batch size.
+            target_transform (object) : Class instance defining prior box.
+            dataset_name     (str)    : Tensorflow dataset name (e.g: 'cityscapes').
+        """
         self.data_dir = data_dir
         self.image_size = image_size
         self.batch_size = batch_size
-        self.target = target
+        self.target_transform = target_transform
+        self.dataset_name = dataset_name
+        super().__init__(data_dir=self.data_dir, dataset_name=self.dataset_name)
+    
 
-        self.num_classes = None
-        self.training_dataset = None
-        self.validation_dataset = None
+    @tf.function
+    def preprocess(self, sample: dict, clip_bbox: bool = True) -> Union[tf.Tensor, tf.Tensor, tf.Tensor]:
+        image = tf.cast(sample[self.image_key], dtype=tf.float32)
+        labels = sample['objects'][self.label_key] + 1
+        boxes = sample['objects'][self.bbox_key]
+        
+        if clip_bbox:
+            x_min = tf.where(tf.greater_equal(boxes[:,1], boxes[:,3]), tf.cast(0, dtype=tf.float32), boxes[:,1])
+            y_min = tf.where(tf.greater_equal(boxes[:,0], boxes[:,2]), tf.cast(0, dtype=tf.float32), boxes[:,0])
+            x_max = tf.where(tf.greater_equal(x_min, boxes[:,3]), tf.cast(x_min+0.1, dtype=tf.float32), boxes[:,3])
+            y_max = tf.where(tf.greater_equal(y_min, boxes[:,2]), tf.cast(y_min+0.1, dtype=tf.float32), boxes[:,2])
+            boxes = tf.stack([x_min, y_min, x_max, y_max], axis=1)
 
-        self.number_train = 0
-        self.number_test = 0
+        image = preprocess_input(image, mode='torch')
 
-        self.load_datasets()
-
-    def load_datasets(self):
-        if self.mode == 'voc':
-            self.num_classes = 21
-
-            train_pascal_12 = tfds.load('voc/2012', data_dir=self.data_dir, split='train')
-            valid_train_12 = tfds.load('voc/2012', data_dir=self.data_dir, split='validation')
-
-            train_pascal_07 = tfds.load("voc", data_dir=self.data_dir, split='train')
-            valid_train_07 = tfds.load("voc", data_dir=self.data_dir, split='validation')
-
-            train_data = train_pascal_07.concatenate(valid_train_07).\
-                concatenate(train_pascal_12).concatenate(valid_train_12)
-            test_data = tfds.load("voc", data_dir=self.data_dir, split='test')
-
-        else:
-            self.num_classes = 81
-
-            train_data = tfds.load('coco/2017', data_dir=self.data_dir, split='train')
-            train_data = train_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
-            train_data = train_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
-
-            test_data = tfds.load('coco/2017', data_dir=self.data_dir, split='validation')
-            test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
-            test_data = test_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
+        return (image, boxes, labels)
 
 
-        self.number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
-        self.number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+    @tf.function
+    def augmentation(self, image: tf.Tensor, boxes: tf.Tensor, labels: tf.Tensor)-> Union[tf.Tensor, tf.Tensor, tf.Tensor]:
+        if tf.random.uniform([]) > 0.5:
+            image = tf.image.random_saturation(image, lower=0.5, upper=1.5) # 랜덤 채도
+        if tf.random.uniform([]) > 0.5:
+            image = tf.image.random_brightness(image, max_delta=0.15) # 랜덤 밝기
+        if tf.random.uniform([]) > 0.5:
+            image = tf.image.random_contrast(image, lower=0.5, upper=1.5) # 랜덤 대비
+        if tf.random.uniform([]) > 0.5:
+            image = tf.image.random_hue(image, max_delta=0.2) # 랜덤 휴 트랜스폼
+        image = random_lighting_noise(image)
+        image, boxes = expand(image, boxes)
+        image, boxes, labels = random_crop(image, boxes, labels) # 랜덤 자르기
+        image, boxes = random_flip(image, boxes) # 랜덤 뒤집기
 
-        self.training_dataset = prepare_dataset(train_data, self.image_size, self.batch_size,
-                                                self.target, self.num_classes, train=True)
-        self.validation_dataset = prepare_dataset(test_data, self.image_size, self.batch_size,
-                                                  self.target, self.num_classes, train=False)
+        return (image, boxes, labels)
+
+
+    def join_target(self, image: tf.Tensor, bbox: tf.Tensor, labels: tf.Tensor) -> Union[tf.Tensor, tf.Tensor]:
+        locations, labels = self.target_transform(tf.cast(bbox, tf.float32), labels)
+        labels = tf.one_hot(labels, self.num_classes, axis=1, dtype=tf.float32)
+        targets = tf.concat([labels, locations], axis=1)
+        resized_img = tf.image.resize(image, self.image_size)
+
+        return (resized_img, targets)
+
+
+    def get_trainData(self, train_data):
+        train_data = train_data.shuffle(256)
+        train_data = train_data.map(self.preprocess, num_parallel_calls=AUTO)
+        train_data = train_data.map(self.augmentation, num_parallel_calls=AUTO)
+        train_data = train_data.map(lambda image, boxes, labels: self.join_target(image, boxes, labels))
+        train_data = train_data.padded_batch(self.batch_size)
+        train_data = train_data.prefetch(AUTO)
+        train_data = train_data.repeat()
+
+        return train_data
+
+
+    def get_validData(self, valid_data):
+        valid_data = valid_data.map(self.preprocess, num_parallel_calls=AUTO)
+        valid_data = valid_data.map(lambda image, boxes, labels: self.join_target(image, boxes, labels))
+        valid_data = valid_data.padded_batch(self.batch_size).prefetch(AUTO)
+
+        return valid_data
+
+
+    def get_testData(self, valid_data):
+        valid_data = valid_data.map(self.preprocess)
+        valid_data = valid_data.map(lambda image, boxes, labels: self.join_target(image, boxes, labels))
+        valid_data = valid_data.batch(self.batch_size).prefetch(AUTO)
+
+        return valid_data
 
 
 

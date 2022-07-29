@@ -1,3 +1,4 @@
+from tkinter.tix import IMAGE
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from callbacks import Scalar_LR
@@ -56,8 +57,9 @@ priors = create_priors_boxes(specs, IMAGE_SIZE[0])
 TARGET_TRANSFORM = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
 # Create Dataset
-dataset_config = GenerateDatasets(TRAIN_MODE, DATASET_DIR, IMAGE_SIZE, BATCH_SIZE, TARGET_TRANSFORM)
-
+dataset_config = GenerateDatasets(data_dir=DATASET_DIR, image_size=IMAGE_SIZE, batch_size=BATCH_SIZE, target_transform=TARGET_TRANSFORM, dataset_name='voc')
+train_data = dataset_config.get_trainData(train_data=dataset_config.train_data)
+valid_data = dataset_config.get_validData(valid_data=dataset_config.valid_data)
 # Set loss function
 loss = Total_loss(dataset_config.num_classes)
 
@@ -128,8 +130,8 @@ if LOAD_WEIGHT:
     model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
 # Start train
-history = model.fit(dataset_config.training_dataset,
-        validation_data=dataset_config.validation_dataset,
+history = model.fit(train_data,
+        validation_data=valid_data,
         steps_per_epoch=steps_per_epoch,
         validation_steps=validation_steps,
         epochs=EPOCHS,
