@@ -20,7 +20,7 @@ parser.add_argument("--saved_model_path", type=str,   help="Saved model weight p
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
                     default='EFFV2B0_B16_E200_LR0.001_Input_torch')
-parser.add_argument("--backbone_name",     type=str,    help="Pretrained backbone name",
+parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name",
                     default='efficientv2b0')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
                     default=16)
@@ -32,6 +32,8 @@ parser.add_argument("--weight_decay",     type=float,  help="Set Weight Decay",
                     default=0.0005)
 parser.add_argument("--image_size",       type=tuple,  help="Set model input size",
                     default=(300, 300))
+parser.add_argument("--image_norm_type",  type=str,    help="Set RGB image nornalize format (tf or torch)",
+                    default='torch')
 parser.add_argument("--optimizer",        type=str,    help="Set optimizer",
                     default='adam')
 parser.add_argument("--use_weightDecay",  type=bool,   help="Whether to use weightDecay",
@@ -44,7 +46,7 @@ parser.add_argument("--model_name",       type=str,    help="Set the model name 
 # Set directory path (Dataset,  Dataset_type, Chekcpoints, Tensorboard)
 parser.add_argument("--dataset_dir",      type=str,    help="Set the dataset download directory",
                     default='./datasets/')
-parser.add_argument("--dataset_name",      type=str,    help="Set the dataset type (cityscapes, custom etc..)",
+parser.add_argument("--dataset_name",     type=str,    help="Set the dataset type (cityscapes, custom etc..)",
                     default='voc')
 parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
                     default='./checkpoints/')

@@ -14,30 +14,31 @@ tf.keras.backend.clear_session()
 # tf.config.run_functions_eagerly(True)
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--backbone_name",     type=str,    help="Pretrained backbone name",
+parser.add_argument("--backbone_name",      type=str,    help="Pretrained backbone name",
                     default='efficientv2b0')
-parser.add_argument("--batch_size",      type=int,
-                    help="Evaluation batch size", default=1)
-parser.add_argument("--image_size",      type=tuple,
-                    help="Model image size (input resolution H,W)", default=(300, 300))
-parser.add_argument("--dataset_dir",     type=str,
-                    help="Dataset directory", default='./datasets/')
-parser.add_argument("--checkpoint_dir",  type=str,
-                    help="Setting the model storage directory", default='./checkpoints/')
-parser.add_argument("--weight_path",     type=str,
-                    help="Saved model weights directory", default='0729/_0729_Test_efficientnet_v2_b0_best_loss.h5')
+parser.add_argument("--batch_size",         type=int,    help="Evaluation batch size",
+                    default=1)
+parser.add_argument("--image_size",         type=tuple,  help="Model image size (input resolution H,W)",
+                    default=(300, 300))
+parser.add_argument("--image_norm_type",    type=str,    help="Set RGB image nornalize format (tf or torch)",
+                    default='torch')
+parser.add_argument("--dataset_dir",        type=str,    help="Dataset directory",
+                    default='./datasets/')
+parser.add_argument("--checkpoint_dir",     type=str,    help="Setting the model storage directory",
+                    default='./checkpoints/')
+parser.add_argument("--weight_path",        type=str,    help="Saved model weights directory",
+                    default='0729/_0729_Test_efficientnet_v2_b0_best_loss.h5')
 
 # Prediction results visualize options
 parser.add_argument("--visualize",  help="Whether to image and save inference results", action='store_true')
-parser.add_argument("--result_dir",      type=str,
-                    help="Test result save directory", default='./results/')
+parser.add_argument("--result_dir",         type=str,    help="Test result save directory",
+                    default='./results/')
 
 args = parser.parse_args()
 
 if __name__ == '__main__':
     # Create result plot image path
     os.makedirs(args.result_dir, exist_ok=True)
-    
                 
     # Set target transforms
     spec_list = convert_spec_list()
@@ -47,6 +48,7 @@ if __name__ == '__main__':
     # Configuration test(valid) datasets
     dataset_config = GenerateDatasets(data_dir=args.dataset_dir, image_size=args.image_size,
                                       batch_size=args.batch_size, target_transform=target_transform,
+                                      image_norm_type=args.image_norm_type,
                                       dataset_name='voc')
     test_dataset = dataset_config.get_testData(test_data=dataset_config.test_data)
     test_steps = dataset_config.number_test // args.batch_size
@@ -71,13 +73,7 @@ if __name__ == '__main__':
         voc_bboxes.append(boxes)
         voc_difficults.append(is_difficult)
 
-
-    # Set plot config
-    rows = 1
-    cols = 2
-    batch_idx = 0
     avg_duration = 0
-    batch_index = 0
 
     # Eval
     print("Evaluating..")
@@ -109,9 +105,7 @@ if __name__ == '__main__':
                             gt_difficults=voc_difficults,
                             use_07_metric=True)
 
-
     avg_duration += duration
-    batch_idx += 1
 
     print('Model FLOPs {0}'.format(get_flops(model=model, batch_size=1)))
     print('Avg inference time : {0}sec.'.format((avg_duration / dataset_config.number_test)))

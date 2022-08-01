@@ -116,13 +116,15 @@ class DataLoadHandler:
 
 
 class GenerateDatasets(DataLoadHandler):
-    def __init__(self, data_dir: str, image_size: tuple, batch_size: int, target_transform: object,
+    def __init__(self, data_dir: str, image_size: tuple, batch_size: int, image_norm_type: str,
+                 target_transform: object,
                  dataset_name: str = 'voc'):
         """
         Args:
             data_dir         (str)    : Dataset relative path (default : './datasets/').
             image_size       (tuple)  : Model input image resolution.
             batch_size       (int)    : Batch size.
+            image_norm_type  (str)    : Input RGB image scaling type(normalize, tf or torch)
             target_transform (object) : Class instance defining prior box.
             dataset_name     (str)    : Tensorflow dataset name (e.g: 'cityscapes').
         """

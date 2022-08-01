@@ -30,6 +30,7 @@ class ModelConfiguration(GenerateDatasets):
         super().__init__(data_dir=self.DATASET_DIR,
                          image_size=self.IMAGE_SIZE,
                          batch_size=self.BATCH_SIZE,
+                         image_norm_type=args.image_norm_type,
                          target_transform=self.target_transform)
 
 
