@@ -21,7 +21,7 @@ parser.add_argument("--threshold",     type=float,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='0729/_0729_test_mobilenet_ssd_best_loss.h5')
+                    help="Saved model weights directory", default='0729/_0729_Test_efficientnet_v2_b0_best_loss.h5')
 
 args = parser.parse_args()
 

@@ -19,13 +19,13 @@ parser.add_argument("--saved_model_path", type=str,   help="Saved model weight p
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='Test_efficientnet_v2_b0')
+                    default='EFFV2B0_B16_E200_LR0.001_Input_torch')
 parser.add_argument("--backbone_name",     type=str,    help="Pretrained backbone name",
                     default='efficientv2b0')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
                     default=16)
 parser.add_argument("--epoch",            type=int,    help="Training epochs",
-                    default=100)
+                    default=200)
 parser.add_argument("--lr",               type=float,  help="Initial learning rate",
                     default=0.001)
 parser.add_argument("--weight_decay",     type=float,  help="Set Weight Decay",

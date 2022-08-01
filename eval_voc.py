@@ -25,7 +25,7 @@ parser.add_argument("--dataset_dir",     type=str,
 parser.add_argument("--checkpoint_dir",  type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_path",     type=str,
-                    help="Saved model weights directory", default='0729/_0729_test_mobilenet_ssd_best_loss.h5')
+                    help="Saved model weights directory", default='0730/_0730_EFFV2B0_B16_E200_LR0.001_Input_torch_best_loss.h5')
 
 # Prediction results visualize options
 parser.add_argument("--visualize",  help="Whether to image and save inference results", action='store_true')
