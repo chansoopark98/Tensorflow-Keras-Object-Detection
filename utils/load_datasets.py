@@ -138,9 +138,9 @@ class GenerateDatasets(DataLoadHandler):
         image = tf.cast(sample[self.image_key], dtype=tf.float32)
         labels = sample['objects'][self.label_key] + 1
         boxes = sample['objects'][self.bbox_key]
-
+        
         image = preprocess_input(image, mode='torch')
-        print(image, boxes, labels)
+        
         return (image, boxes, labels)    
 
 
@@ -184,7 +184,7 @@ class GenerateDatasets(DataLoadHandler):
         locations, labels = self.target_transform(tf.cast(bbox, tf.float32), labels)
         labels = tf.one_hot(labels, self.num_classes, axis=1, dtype=tf.float32)
         targets = tf.concat([labels, locations], axis=1)
-        resized_img = tf.image.resize(image, self.image_size)
+        resized_img = tf.image.resize(image, self.image_size, method=tf.image.ResizeMethod.BILINEAR)
 
         return (resized_img, targets)
 

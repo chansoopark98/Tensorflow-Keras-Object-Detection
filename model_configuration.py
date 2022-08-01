@@ -10,7 +10,7 @@ from utils.priors import *
 from utils.load_datasets import GenerateDatasets
 from utils.metrics import CreateMetrics
 from model.model_builder import ModelBuilder
-from model.loss import Total_loss
+from model.loss import DetectionLoss
 
 
 class ModelConfiguration(GenerateDatasets):
@@ -168,9 +168,9 @@ class ModelConfiguration(GenerateDatasets):
         self.__set_callbacks()
         self.__configuration_model()
 
-        self.loss = Total_loss(num_classes=self.num_classes,
+        self.loss = DetectionLoss(num_classes=self.num_classes,
                                global_batch_size=self.batch_size,
-                               use_multi_gpu=self.DISTRIBUTION_MODE).total_loss
+                               use_multi_gpu=self.DISTRIBUTION_MODE)
 
         self.model.compile(optimizer=self.optimizer,
                            loss=self.loss,
