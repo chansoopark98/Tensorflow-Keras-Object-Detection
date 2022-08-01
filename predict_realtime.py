@@ -21,7 +21,7 @@ parser.add_argument("--threshold",     type=float,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='0729/_0729_Test_efficientnet_v2_b0_best_loss.h5')
+                    help="Saved model weights directory", default='0801/_0801_EFFV2B0_B16_E200_LR0.001_Input_torch_best_loss.h5')
 
 args = parser.parse_args()
 
@@ -56,7 +56,7 @@ if __name__ == '__main__':
         img = tf.image.resize(img, size=args.image_size,
                 method=tf.image.ResizeMethod.BILINEAR)
         img = tf.cast(img, tf.float32)
-        img = preprocess_input(x=img, mode='tf')
+        img = preprocess_input(x=img, mode='torch')
         
         img = tf.expand_dims(img, axis=0)
 

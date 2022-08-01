@@ -2,6 +2,7 @@
 coco/
 datasets/
 dataset/
+data_generate/data
 inputs/
 outputs/
 checkpoints/

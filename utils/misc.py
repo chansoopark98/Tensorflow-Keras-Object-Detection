@@ -5,6 +5,10 @@ import numpy as np
 import cv2
 from collections import namedtuple
 
+
+
+TEST_CLASSES = ['0', '1', '2']
+
 CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog',
            'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
 

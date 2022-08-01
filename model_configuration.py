@@ -31,7 +31,8 @@ class ModelConfiguration(GenerateDatasets):
                          image_size=self.IMAGE_SIZE,
                          batch_size=self.BATCH_SIZE,
                          image_norm_type=args.image_norm_type,
-                         target_transform=self.target_transform)
+                         target_transform=self.target_transform,
+                         dataset_name=args.dataset_name)
 
 
     def check_directory(self, dataset_dir: str, checkpoint_dir: str, model_name: str) -> None:
@@ -90,7 +91,6 @@ class ModelConfiguration(GenerateDatasets):
     def configuration_transforms(self) -> object:
         spec_list = convert_spec_list()
         priors = create_priors_boxes(specs=spec_list, image_size=self.IMAGE_SIZE[0], clamp=True)
-
         target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
         return target_transform

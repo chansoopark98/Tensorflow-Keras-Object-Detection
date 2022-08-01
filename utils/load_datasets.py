@@ -35,6 +35,13 @@ class DataLoadHandler:
                 self.image_key = 'image'
                 self.label_key = 'label'
                 self.bbox_key = 'bbox'
+
+            elif self.dataset_name == 'display_detection':
+                self.num_classes = 3
+                self.dataset_list = self.__load_custom_dataset()
+                self.image_key = 'image'
+                self.label_key = 'label'
+                self.bbox_key = 'bbox'
             else:
                 raise Exception('Cannot find dataset_name! \n your dataset is {0}. \
                                  Currently available default dataset types are: \
@@ -115,6 +122,28 @@ class DataLoadHandler:
         return (train_data, number_train, valid_data, number_valid, test_data, number_test)
 
 
+    def __load_custom_dataset(self):
+        
+        if os.path.isdir(self.data_dir + 'display_detection') == False:
+            raise Exception(
+                'Cannot find PASCAL VOC Tensorflow Datasets. Please download VOC data. \
+                 You can download use dataset_download.py')
+
+
+        train_data = tfds.load('display_detection', data_dir=self.data_dir, split='train[10%:]')
+        valid_data = tfds.load('display_detection', data_dir=self.data_dir, split='train[:10%]')
+    
+
+        number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
+        number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
+
+        print("Nuber of train dataset = {0}".format(number_train))
+        print("Nuber of validation dataset = {0}".format(number_valid))
+
+        return (train_data, number_train, valid_data, number_valid, 0, 0)
+
+
+
 class GenerateDatasets(DataLoadHandler):
     def __init__(self, data_dir: str, image_size: tuple, batch_size: int, image_norm_type: str,
                  target_transform: object,
@@ -139,8 +168,10 @@ class GenerateDatasets(DataLoadHandler):
     @tf.function    
     def preprocess_test(self, sample: dict) -> Union[tf.Tensor, tf.Tensor, tf.Tensor]:
         image = tf.cast(sample[self.image_key], dtype=tf.float32)
-        labels = sample['objects'][self.label_key] + 1
-        boxes = sample['objects'][self.bbox_key]
+        # labels = sample['objects'][self.label_key] + 1
+        # boxes = sample['objects'][self.bbox_key]
+        labels = sample[self.label_key] + 1
+        boxes = sample[self.bbox_key]
         
         image = preprocess_input(image, mode=self.image_norm_type)
         
@@ -150,8 +181,10 @@ class GenerateDatasets(DataLoadHandler):
     @tf.function
     def preprocess(self, sample: dict, clip_bbox: bool = True) -> Union[tf.Tensor, tf.Tensor, tf.Tensor]:
         image = tf.cast(sample[self.image_key], dtype=tf.float32)
-        labels = sample['objects'][self.label_key] + 1
-        boxes = sample['objects'][self.bbox_key]
+        # labels = sample['objects'][self.label_key] + 1
+        # boxes = sample['objects'][self.bbox_key]
+        labels = sample[self.label_key] + 1
+        boxes = sample[self.bbox_key]
         
         if clip_bbox:
             x_min = tf.where(tf.greater_equal(boxes[:,1], boxes[:,3]), tf.cast(0, dtype=tf.float32), boxes[:,1])
