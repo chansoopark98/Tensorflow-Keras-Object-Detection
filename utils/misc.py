@@ -204,15 +204,14 @@ def coco_color_map(index):
         Label('train', rgb2bgr((0, 0, 230))),
         Label('tvmonitor', rgb2bgr((119, 11, 32)))
     ]
-
     return label_defs[index]
 
 def draw_bounding(img , bboxes, labels, img_size, label_list):
     # resizing 작업
     if np.max(bboxes) < 10:
-
         bboxes[:, [0,2]] = bboxes[:, [0,2]]*img_size[1]
         bboxes[:, [1,3]] = bboxes[:, [1,3]]*img_size[0]
+    
 
     for i, bbox in enumerate(bboxes):
         xmin = int(bbox[0])

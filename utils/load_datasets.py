@@ -131,6 +131,7 @@ class GenerateDatasets(DataLoadHandler):
         self.data_dir = data_dir
         self.image_size = image_size
         self.batch_size = batch_size
+        self.image_norm_type = image_norm_type
         self.target_transform = target_transform
         self.dataset_name = dataset_name
         super().__init__(data_dir=self.data_dir, dataset_name=self.dataset_name)
@@ -141,7 +142,7 @@ class GenerateDatasets(DataLoadHandler):
         labels = sample['objects'][self.label_key] + 1
         boxes = sample['objects'][self.bbox_key]
         
-        image = preprocess_input(image, mode='torch')
+        image = preprocess_input(image, mode=self.image_norm_type)
         
         return (image, boxes, labels)    
 
@@ -159,7 +160,7 @@ class GenerateDatasets(DataLoadHandler):
             y_max = tf.where(tf.greater_equal(y_min, boxes[:,2]), tf.cast(y_min+0.1, dtype=tf.float32), boxes[:,2])
             boxes = tf.stack([x_min, y_min, x_max, y_max], axis=1)
 
-        image = preprocess_input(image, mode='torch')
+        image = preprocess_input(image, mode=self.image_norm_type)
 
         return (image, boxes, labels)
     
