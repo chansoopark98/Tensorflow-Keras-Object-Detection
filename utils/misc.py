@@ -7,7 +7,7 @@ from collections import namedtuple
 
 
 
-TEST_CLASSES = ['0', '1', '2']
+TEST_CLASSES = ['outdoor', 'indoor']
 
 CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog',
            'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
@@ -210,7 +210,7 @@ def coco_color_map(index):
     ]
     return label_defs[index]
 
-def draw_bounding(img , bboxes, labels, img_size, label_list):
+def draw_bounding(img , bboxes, labels, scores, img_size, label_list):
     # resizing 작업
     if np.max(bboxes) < 10:
         bboxes[:, [0,2]] = bboxes[:, [0,2]]*img_size[1]
@@ -227,8 +227,12 @@ def draw_bounding(img , bboxes, labels, img_size, label_list):
         cv2.rectangle(img_box, (xmin, ymin), (xmax, ymax), color, 2)
         cv2.rectangle(img_box, (xmin - 1, ymin), (xmax + 1, ymin - 20), color, cv2.FILLED)
         font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(img_box, label_list[int(labels[i]-1)], (xmin + 5, ymin - 5), font, 0.5,
-                    (255, 255, 255), 1, cv2.LINE_AA)
+        if scores is not None:
+            cv2.putText(img_box, label_list[int(labels[i]-1)] + '_' + str(scores[i]), (xmin + 5, ymin - 5), font, 0.5,
+                        (255, 255, 255), 1, cv2.LINE_AA)
+        else:
+            cv2.putText(img_box, label_list[int(labels[i]-1)], (xmin + 5, ymin - 5), font, 0.5,
+                        (255, 255, 255), 1, cv2.LINE_AA)
         alpha = 0.8
         cv2.addWeighted(img_box, alpha, img, 1. - alpha, 0, img)
 

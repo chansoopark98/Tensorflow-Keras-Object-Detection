@@ -5,11 +5,11 @@ from tensorflow.keras.applications.imagenet_utils import preprocess_input
 from utils.priors import *
 from utils.model_post_processing import post_process
 from model.model_builder import ModelBuilder
-from utils.misc import draw_bounding, CLASSES, COCO_CLASSES
+from utils.misc import draw_bounding, CLASSES, COCO_CLASSES, TEST_CLASSES
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--backbone_name",     type=str,    help="Pretrained backbone name",
-                    default='efficientv2b0')
+                    default='efficientv2b3')
 parser.add_argument("--batch_size",     type=int,
                     help="Evaluation batch size", default=1)
 parser.add_argument("--train_dataset_type",     type=str,
@@ -21,16 +21,16 @@ parser.add_argument("--threshold",     type=float,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='0801/_0801_EFFV2B0_B16_E200_LR0.001_Input_torch_best_loss.h5')
+                    help="Saved model weights directory", default='0802/_0802_efficientv2b3_new_display_dataset_remove_rotation_best_loss.h5')
 
 args = parser.parse_args()
 
 
 if __name__ == '__main__':
     # Set num classes and label list by args.train_dataset_type
-    if args.train_dataset_type == 'voc':
-        NUM_CLASSES = 21
-        label_list = CLASSES
+    
+    NUM_CLASSES = 3
+    label_list = TEST_CLASSES
 
     # Set target transforms
     spec_list = convert_spec_list()
@@ -67,7 +67,7 @@ if __name__ == '__main__':
         pred_boxes, pred_scores, pred_labels = predictions[0]
 
         if pred_boxes.size > 0:
-            draw_bounding(frame, pred_boxes,  labels=pred_labels, img_size=frame.shape[:2], label_list=label_list)
+            draw_bounding(frame, pred_boxes,  labels=pred_labels,  scores=pred_scores, img_size=frame.shape[:2], label_list=label_list)
         
 
         cv2.imshow("VideoFrame", frame)

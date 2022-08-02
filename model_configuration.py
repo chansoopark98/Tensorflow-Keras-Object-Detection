@@ -1,4 +1,3 @@
-from statistics import mode
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, TensorBoard, LearningRateScheduler
 from tensorflow.keras.optimizers.schedules import PolynomialDecay
 from tensorflow.keras import mixed_precision
@@ -155,6 +154,7 @@ class ModelConfiguration(GenerateDatasets):
         """
         self.model = ModelBuilder(image_size=self.IMAGE_SIZE,
                                   num_classes=self.num_classes).build_model(model_name=self.BACKBONE_NAME)
+        # self.model.load_weights('./checkpoints/0802/_0802_efficientv2b3_new_display_dataset_remove_rotation_best_loss.h5', by_name=True, skip_mismatch=True)
 
     
     def train(self):

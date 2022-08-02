@@ -130,8 +130,8 @@ class DataLoadHandler:
                  You can download use dataset_download.py')
 
 
-        train_data = tfds.load('display_detection', data_dir=self.data_dir, split='train[10%:]')
-        valid_data = tfds.load('display_detection', data_dir=self.data_dir, split='train[:10%]')
+        train_data = tfds.load('display_detection', data_dir=self.data_dir, split='train[5%:]')
+        valid_data = tfds.load('display_detection', data_dir=self.data_dir, split='train[:5%]')
     
 
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
@@ -168,10 +168,12 @@ class GenerateDatasets(DataLoadHandler):
     @tf.function    
     def preprocess_test(self, sample: dict) -> Union[tf.Tensor, tf.Tensor, tf.Tensor]:
         image = tf.cast(sample[self.image_key], dtype=tf.float32)
-        # labels = sample['objects'][self.label_key] + 1
-        # boxes = sample['objects'][self.bbox_key]
-        labels = sample[self.label_key] + 1
-        boxes = sample[self.bbox_key]
+        if self.dataset_name == 'display_detection':
+            labels = sample[self.label_key] + 1
+            boxes = sample[self.bbox_key]
+        else:
+            labels = sample['objects'][self.label_key] + 1
+            boxes = sample['objects'][self.bbox_key]
         
         image = preprocess_input(image, mode=self.image_norm_type)
         
@@ -181,10 +183,13 @@ class GenerateDatasets(DataLoadHandler):
     @tf.function
     def preprocess(self, sample: dict, clip_bbox: bool = True) -> Union[tf.Tensor, tf.Tensor, tf.Tensor]:
         image = tf.cast(sample[self.image_key], dtype=tf.float32)
-        # labels = sample['objects'][self.label_key] + 1
-        # boxes = sample['objects'][self.bbox_key]
-        labels = sample[self.label_key] + 1
-        boxes = sample[self.bbox_key]
+        
+        if self.dataset_name == 'display_detection':
+            labels = sample[self.label_key] + 1
+            boxes = sample[self.bbox_key]
+        else:
+            labels = sample['objects'][self.label_key] + 1
+            boxes = sample['objects'][self.bbox_key]
         
         if clip_bbox:
             x_min = tf.where(tf.greater_equal(boxes[:,1], boxes[:,3]), tf.cast(0, dtype=tf.float32), boxes[:,1])

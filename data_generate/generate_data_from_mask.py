@@ -6,8 +6,10 @@ import os
 import argparse
 import natsort
 import tensorflow as tf
+import tensorflow_addons as tfa
 import matplotlib.pyplot as plt
 import random
+import math
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--rgb_path",        type=str,   help="raw image path", 
@@ -241,16 +243,16 @@ class MaskDataGenerator():
         """
         rot = random.randint(rot_min, rot_max)
         reverse = random.randint(1, 2)
-
+        
+        
         if reverse == 2:
             rot *= -1
+        radian = rot * math.pi / 180.0 
 
-        h, w = rgb.shape[:2]
-        rot_mat = cv2.getRotationMatrix2D((w/2, h/2), rot, 1)
-        rgb = cv2.warpAffine(rgb, rot_mat, (w, h))
-        mask = cv2.warpAffine(mask, rot_mat, (w, h))
-        obj_mask = cv2.warpAffine(obj_mask, rot_mat, (w, h))
-        
+        rgb = tfa.image.rotate(images=rgb, angles=radian).numpy()
+        mask = tfa.image.rotate(images=mask, angles=radian).numpy()
+        obj_mask = tfa.image.rotate(images=obj_mask, angles=radian).numpy()
+
         return rgb, mask, obj_mask
 
 
@@ -266,11 +268,29 @@ class MaskDataGenerator():
         sample_bboxes = []
 
         shape_h, shape_w = rgb.shape[:2]
+        
+        obj_mask = cv2.cvtColor(obj_mask, cv2.COLOR_RGB2GRAY)
+        obj_mask = obj_mask.astype(np.uint8)
 
-        for label_batch in self.label_list:  # 1 ~ obj nums
-            rgb_idx = label_batch['rgb'][2]
-            
-            binary_mask = np.where(mask == rgb_idx, 255, 0)
+        obj_idx = np.unique(obj_mask)
+        obj_idx = np.delete(obj_idx, 0)
+        
+        target_pixel = []
+        for obj_value in obj_idx:
+            # TODO
+            """
+                3000 이하일 때 해당되는 픽셀값들을 0으로 변환
+                그 후 컨투어마스크를 이용해서 처리할 것
+            """
+            if obj_mask[(obj_mask == obj_value)].size <= 2000:
+                # print(obj_value, obj_mask[(obj_mask == obj_value)].size)
+                obj_mask = np.where(obj_mask==obj_value, 0, obj_mask) 
+
+            else:
+                target_pixel.append(obj_value)
+
+        for target_value in target_pixel:  # 1 ~ obj nums
+            binary_mask = np.where(obj_mask==target_value, 255, 0)
 
             binary_mask = binary_mask.astype(np.uint8)
             contours, _ = cv2.findContours(
@@ -301,17 +321,8 @@ class MaskDataGenerator():
                     if np.max(mask[y:y+h, x:x+w]) == pixel_value:
                         # 'idx-1' is ignore background class
                         # only use foreground class (0: foreground 1: foreground_2 ..)
-                        sample_labels.append(idx-1)
+                        sample_labels.append(idx)
         
-        # if len(sample_bboxes) >= 5:
-            
-            
-        #     print(sample_bboxes)
-
-            
-        #     plt.imshow(mask)
-        #     plt.show()
-
         return rgb, sample_bboxes, sample_labels
 
 
@@ -324,16 +335,24 @@ class MaskDataGenerator():
                 labels  (list)       : List type Integer labels.
                 prefix  (str)        : The name of the image to be saved.
         """
+        bbox_len = len(bbox)
+        labels_len = len(labels)
+        if bbox_len == 0:
+            print('bbox len is 0', bbox_len)
+        elif labels_len == 0:
+            print('labels len is 0', labels_len)
+        elif bbox_len != labels_len:
+            print('bbox and label size does not match')
+        else:
+            cv2.imwrite(self.OUT_RGB_PATH + prefix +'_.png', rgb)
 
-        cv2.imwrite(self.OUT_RGB_PATH + prefix +'_.png', rgb)
+            with open(self.OUT_BBOX_PATH + prefix +'_.txt', "w") as file:
+                for i in range(len(bbox)):
+                    file.writelines(str(bbox[i]) + '\n')
 
-        with open(self.OUT_BBOX_PATH + prefix +'_.txt', "w") as file:
-            for i in range(len(bbox)):
-                file.writelines(str(bbox[i]) + '\n')
-
-        with open(self.OUT_LABEL_PATH + prefix +'_.txt', "w") as file:
-            for i in range(len(labels)):
-                file.writelines(str(labels[i]) + '\n')
+            with open(self.OUT_LABEL_PATH + prefix +'_.txt', "w") as file:
+                for i in range(len(labels)):
+                    file.writelines(str(labels[i]) + '\n')
 
 
         # with open(self.OUT_BBOX_PATH + prefix +'_.txt', "r") as file:
@@ -459,6 +478,7 @@ if __name__ == '__main__':
         if np.max(original_mask) == 0:
             print('no labels')
             continue
+
         print(idx)
         original_mask = original_mask[:, :, :1]
         
@@ -476,9 +496,9 @@ if __name__ == '__main__':
         blur_rgb, blur_bbox, blur_label = image_loader.get_coords_from_mask(rgb=blur_rgb, mask=mask.copy(), obj_mask=obj_mask.copy())
         image_loader.save_samples(rgb=blur_rgb, bbox=blur_bbox, labels=blur_label, prefix='blur_{0}'.format(idx))
 
-        rot_rgb, rot_mask, rot_obj_mask = image_loader.image_random_rotation(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy())
-        rot_rgb, rot_bbox, rot_label = image_loader.get_coords_from_mask(rgb=rot_rgb, mask=rot_mask, obj_mask=rot_obj_mask)
-        image_loader.save_samples(rgb=rot_rgb, bbox=rot_bbox, labels=rot_label, prefix='rot_{0}'.format(idx))
+        # rot_rgb, rot_mask, rot_obj_mask = image_loader.image_random_rotation(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy())
+        # rot_rgb, rot_bbox, rot_label = image_loader.get_coords_from_mask(rgb=rot_rgb, mask=rot_mask, obj_mask=rot_obj_mask)
+        # image_loader.save_samples(rgb=rot_rgb, bbox=rot_bbox, labels=rot_label, prefix='rot_{0}'.format(idx))
 
         trans_rgb, trans_mask, trans_obj_mask = image_loader.image_random_translation(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy(), min_dx=10, min_dy=20, max_dx=100, max_dy=200)
         trans_rgb, trans_bbox, trans_label = image_loader.get_coords_from_mask(rgb=trans_rgb, mask=trans_mask, obj_mask=trans_obj_mask)

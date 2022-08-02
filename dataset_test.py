@@ -46,7 +46,7 @@ for sample in test_data.take(100):
     # y_max = tf.where(tf.greater_equal(y_min, boxes[:,2]), tf.cast(y_min+0.1, dtype=tf.float32), boxes[:,2])
     # boxes = tf.stack([x_min, y_min, x_max, y_max], axis=1)
     print(convert_boxes.shape)
-    draw_bounding(img = image, bboxes=convert_boxes, labels=labels, img_size=image.shape[:2], label_list=CLASSES)
+    draw_bounding(img = image, bboxes=convert_boxes, labels=labels, scores=None, img_size=image.shape[:2], label_list=CLASSES)
 
     print('Image {0} \n  Labels {1} \n Bbox {2}'.format(image.shape, labels, boxes))
     cv2.imshow('test', image)

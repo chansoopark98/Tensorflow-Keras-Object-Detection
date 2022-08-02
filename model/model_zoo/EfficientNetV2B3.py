@@ -1,14 +1,13 @@
-from tensorflow.keras import  Input
-from .EfficientNetV2 import EfficientNetV2B0 as EffV2B0
+from .EfficientNetV2 import EfficientNetV2B3 as EffV2B3
 from tensorflow.keras.layers import Conv2D, BatchNormalization, ReLU, SeparableConv2D, Activation
 
-class EfficientNetV2B0():
+class EfficientNetV2B3():
     def __init__(self, image_size: tuple, pretrained: str = "imagenet"):
         self.image_size = image_size
         self.pretrained = pretrained
     
     def build_backbone(self):
-        base = EffV2B0(input_shape=(*self.image_size, 3), first_strides=2, num_classes=0, pretrained=self.pretrained)
+        base = EffV2B3(input_shape=(*self.image_size, 3), first_strides=2, num_classes=0, pretrained=self.pretrained)
         # base = efficientnet_v2.EfficientNetV2B0(weights=self.pretrained, include_top=False,
         #                                 input_shape=[*self.image_size, 3], input_tensor=input_tensor,
         #                                  include_preprocessing=False)
@@ -18,11 +17,11 @@ class EfficientNetV2B0():
         base = self.build_backbone()
         model_input = base.input
 
-        base_channel = 64
+        base_channel = 128
 
-        x2 = base.get_layer('add_1').output # 38x38 @ 48
-        x3 = base.get_layer('add_7').output # 19x19 @ 112
-        x4 = base.get_layer('add_14').output # 10x10 192
+        x2 = base.get_layer('add_4').output # 38x38 @ 48
+        x3 = base.get_layer('add_14').output # 19x19 @ 112
+        x4 = base.get_layer('add_25').output # 10x10 192
         
         # 5, 5
         x5 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=False)(x4)
@@ -60,6 +59,6 @@ class EfficientNetV2B0():
 
 
 if __name__ == '__main__':
-    base = EfficientNetV2B0(image_size=(300, 300))
+    base = EfficientNetV2B3(image_size=(300, 300))
     model = base.build_backbone()
     model.summary()

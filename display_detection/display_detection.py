@@ -51,7 +51,8 @@ class DisplayDetection(tfds.core.GeneratorBasedBuilder):
   def _split_generators(self, dl_manager: tfds.download.DownloadManager):
     """Returns SplitGenerators."""
     # TODO(cornell_grasp): Downloads the data and defines the splits
-    archive_path = dl_manager.manual_dir / 'display_detection.zip'
+    # archive_path = dl_manager.manual_dir / 'display_detection.zip'
+    archive_path = '../data_generate/data/augment/display_detection.zip'
     extracted_path = dl_manager.extract(archive_path)
 
     # TODO(cornell_grasp): Returns the Dict[split names, Iterator[Key, Example]]
@@ -81,7 +82,10 @@ class DisplayDetection(tfds.core.GeneratorBasedBuilder):
             
       with open(str(label_files[idx]), "r") as file:
           read_label_list = file.readlines()
-        
+      
+      print('len box', len(read_bbox_list))
+      print('len label', len(read_label_list))
+
       try:  
         for i in range(len(read_bbox_list)):
             read_bbox_list[i] = read_bbox_list[i].replace('\n', '')
@@ -99,15 +103,19 @@ class DisplayDetection(tfds.core.GeneratorBasedBuilder):
                 bbox_batch[j] = bbox_batch[j].replace(' ', '')    
                 batch_box_out.append(float(bbox_batch[j]))
             
+            
             read_bbox_list[i] = batch_box_out
+
+          
+        read_bbox_list = np.array(read_bbox_list).astype(np.float32)
+        read_label_list = np.array(read_label_list).astype(np.int64)
+
       except Exception as e:
         print('error', e)
         print('bbox_files', bbox_files[idx])
         print('label_files', label_files[idx])
-          
-      read_bbox_list = np.array(read_bbox_list).astype(np.float32)
-      read_label_list = np.array(read_label_list).astype(np.int64)
-
+        print('read_bbox_list', read_bbox_list)
+        print('read_label_list', read_label_list)
       # read_bbox_list = np.squeeze(read_bbox_list, 0)
       # read_label_list = np.squeeze(read_label_list, 0)
 
@@ -116,3 +124,4 @@ class DisplayDetection(tfds.core.GeneratorBasedBuilder):
           'bbox' : read_bbox_list,
           'label': read_label_list
       }
+
