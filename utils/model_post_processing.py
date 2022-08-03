@@ -116,18 +116,23 @@ def merge_post_process(detections, target_transform, confidence_threshold=0.01, 
     scores = tf.reshape(scores, [-1])
     labels = tf.reshape(labels, [-1])
 
-    # confidence  점수가 낮은 predict bbox 제거
-    low_scoring_mask = scores > confidence_threshold
-    boxes, scores, labels = tf.boolean_mask(boxes, low_scoring_mask), tf.boolean_mask(scores, low_scoring_mask), tf.boolean_mask(labels, low_scoring_mask)
+    # # confidence  점수가 낮은 predict bbox 제거
+    # low_scoring_mask = scores > confidence_threshold
+    # boxes, scores, labels = tf.boolean_mask(boxes, low_scoring_mask), tf.boolean_mask(scores, low_scoring_mask), tf.boolean_mask(labels, low_scoring_mask)
 
-    keep  = batched_nms(boxes, scores, labels, iou_threshold, top_k)
+    # keep  = batched_nms(boxes, scores, labels, iou_threshold, top_k)
 
-    boxes, scores, labels = tf.gather(boxes, keep), tf.gather(scores, keep), tf.gather(labels, keep)
+    # boxes, scores, labels = tf.gather(boxes, keep), tf.gather(scores, keep), tf.gather(labels, keep)
 
 
-    scores = tf.expand_dims(scores, axis=1)
-    labels = tf.expand_dims(labels, axis=1)
+    # scores = tf.expand_dims(scores, axis=1)
+    # labels = tf.expand_dims(labels, axis=1)
 
-    output = tf.concat([boxes, scores, labels], axis=1)
+    
+
+    scores = tf.expand_dims(scores, axis=1, name='expand_scores')
+    labels = tf.expand_dims(labels, axis=1, name='expand_labels')
+    # output = tf.concat([boxes, scores, labels], axis=1)
+    output = tf.keras.layers.Concatenate(axis=1)([boxes, scores, labels])
 
     return output

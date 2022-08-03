@@ -9,8 +9,8 @@ from utils.priors import *
 from utils.load_datasets import GenerateDatasets
 from utils.metrics import CreateMetrics
 from model.model_builder import ModelBuilder
-# from model.loss import DetectionLoss
-from model.test_loss import DetectionLoss
+from model.loss import DetectionLoss
+# from model.test_loss import DetectionLoss
 
 
 class ModelConfiguration(GenerateDatasets):
@@ -171,8 +171,8 @@ class ModelConfiguration(GenerateDatasets):
         self.__configuration_model()
 
         self.loss = DetectionLoss(num_classes=self.num_classes,
-                               global_batch_size=self.batch_size,
-                               use_multi_gpu=self.DISTRIBUTION_MODE)
+                                  global_batch_size=self.batch_size,
+                                  use_multi_gpu=self.DISTRIBUTION_MODE)
 
         self.model.compile(optimizer=self.optimizer,
                            loss=self.loss,
@@ -186,37 +186,6 @@ class ModelConfiguration(GenerateDatasets):
                        validation_steps=self.validation_steps,
                        epochs=self.EPOCHS,
                        callbacks=self.callback)
-
-
-    def build_model_with_post_process(self):
-        from utils.model_post_processing import merge_post_process
-        from tensorflow.keras.models import Model
-
-        self.__configuration_model()
-        self.model.load_weights(self.args.saved_model_path)
-
-        post_output = merge_post_process(detections=self.model.output, target_transform=self.target_transform, confidence_threshold=0.5, classes=self.num_classes)
-
-        merge_model = Model(inputs=self.model.input, outputs=post_output)
-
-        merge_model.summary()
-        
-        export_path = os.path.join(self.CHECKPOINT_DIR, 'export_path', '1')
-        os.makedirs(export_path, exist_ok=True)
-        self.export_path = export_path
-
-        self.model.summary()
-
-        tf.keras.models.save_model(
-            self.model,
-            self.export_path,
-            overwrite=True,
-            include_optimizer=False,
-            save_format=None,
-            signatures=None,
-            options=None
-        )
-        print("save model clear")
 
 
 

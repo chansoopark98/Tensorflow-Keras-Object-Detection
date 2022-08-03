@@ -62,7 +62,10 @@ class ModelBuilder():
         model_output = self.create_classifier(source_layers=detector_output,
                                num_priors=self.num_priors, normalizations=self.normalize)
 
-        model = Model(inputs=model_input, outputs=model_output)
+        if self.build_post_process:
+            return model_input, model_output
+        else:
+            model = Model(inputs=model_input, outputs=model_output)
 
         return model
 

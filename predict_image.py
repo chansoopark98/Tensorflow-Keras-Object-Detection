@@ -25,7 +25,7 @@ parser.add_argument("--threshold",     type=float,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='0803/_0803_efficientv2b3_voc_best_loss.h5')
+                    help="Saved model weights directory", default='0803/_0803_efficientv2b0_voc_E100_B32_MultiGPU_focal_test_best_loss.h5')
 
 args = parser.parse_args()
 
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     priors = create_priors_boxes(specs=spec_list, image_size=args.image_size[0], clamp=True)
     target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
-    model = ModelBuilder(image_size=args.image_size, num_classes=args.num_classes).build_model('efficientv2b3')
+    model = ModelBuilder(image_size=args.image_size, num_classes=args.num_classes).build_model('efficientv2b0')
     model.load_weights(args.checkpoint_dir + args.weight_name)
     model.summary()
 
@@ -66,34 +66,14 @@ if __name__ == '__main__':
 
         pred = model.predict(img)
 
-        # predictions = post_process(pred, target_transform, classes=args.num_classes, confidence_threshold=args.threshold, iou_threshold=0.5, top_k=100)
+        predictions = post_process(pred, target_transform, classes=args.num_classes, confidence_threshold=args.threshold, iou_threshold=0.5, top_k=100)
 
-        # pred_boxes, pred_scores, pred_labels = predictions[0]
+        pred_boxes, pred_scores, pred_labels = predictions[0]
         
+
+        if pred_boxes.size > 0:
+            draw_bounding(frame, pred_boxes,  labels=pred_labels,  scores=pred_scores, img_size=frame.shape[:2], label_list=CLASSES)
         
-        predictions = merge_post_process(pred, target_transform, classes=args.num_classes, confidence_threshold=args.threshold, iou_threshold=0.5, top_k=100)
-        output = predictions.numpy()
-        print('predictions', predictions)
-
-        pred_boxes = []
-        pred_scores = []
-        pred_labels = []
-
-        if output.size > 0:
-            print(output.size)
-            print(output)
-            for preds in output:
-                *boxes, scores, labels = preds
-                print(boxes)
-                pred_boxes.append(boxes)
-                pred_scores.append(scores)
-                pred_labels.append(labels)
-
-            pred_boxes = np.array(pred_boxes)
-            pred_scores = np.array(pred_scores)
-            pred_labels = np.array(pred_labels)
-
-            draw_bounding(frame, pred_boxes,  labels=pred_labels, scores=pred_scores, img_size=frame.shape[:2], label_list=CLASSES)
 
         tf.keras.preprocessing.image.save_img(result_dir + str(i)+'_.png', frame)
 
