@@ -81,3 +81,53 @@ def post_process(detections, target_transform, confidence_threshold=0.01, top_k=
         results.append(Predictions(boxes.numpy(), scores.numpy(), labels.numpy()))
 
     return results
+
+
+def merge_post_process(detections, target_transform, confidence_threshold=0.01, top_k=100, iou_threshold=0.5, classes=21):
+    batch_boxes = detections[:, :, classes:]
+    # if not tf.is_tensor(batch_boxes):
+    #     batch_boxes = tf.convert_to_tensor(batch_boxes)
+    batch_scores = tf.nn.softmax(detections[:, :, :classes], axis=2)
+
+    batch_boxes = convert_locations_to_boxes(batch_boxes, target_transform.center_form_priors,
+                                             target_transform.center_variance, target_transform.size_variance)
+    batch_boxes = center_form_to_corner_form(batch_boxes)
+
+        
+    batch_zero = 0
+    
+    scores, boxes = batch_scores[batch_zero], batch_boxes[batch_zero]  # (N, #CLS) (N, 4)
+
+    num_boxes = tf.shape(scores)[0]
+    num_classes = tf.shape(scores)[1]
+    boxes = tf.reshape(boxes, [num_boxes, 1, 4])
+    boxes = tf.broadcast_to(boxes, [num_boxes, num_classes, 4])
+    labels = tf.range(num_classes, dtype=tf.float32)
+    labels = tf.reshape(labels, [1, num_classes])
+    labels = tf.broadcast_to(labels, tf.shape(scores))
+
+    # 배경 라벨이 있는 예측값 제거
+    boxes = boxes[:, 1:]
+    scores = scores[:, 1:]
+    labels = labels[:, 1:]
+
+    # 모든 클래스 예측을 별도의 인스턴스로 만들어 모든 것을 일괄 처리 과정
+    boxes = tf.reshape(boxes, [-1, 4])
+    scores = tf.reshape(scores, [-1])
+    labels = tf.reshape(labels, [-1])
+
+    # confidence  점수가 낮은 predict bbox 제거
+    low_scoring_mask = scores > confidence_threshold
+    boxes, scores, labels = tf.boolean_mask(boxes, low_scoring_mask), tf.boolean_mask(scores, low_scoring_mask), tf.boolean_mask(labels, low_scoring_mask)
+
+    keep  = batched_nms(boxes, scores, labels, iou_threshold, top_k)
+
+    boxes, scores, labels = tf.gather(boxes, keep), tf.gather(scores, keep), tf.gather(labels, keep)
+
+
+    scores = tf.expand_dims(scores, axis=1)
+    labels = tf.expand_dims(labels, axis=1)
+
+    output = tf.concat([boxes, scores, labels], axis=1)
+
+    return output

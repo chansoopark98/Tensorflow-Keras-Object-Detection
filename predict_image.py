@@ -5,7 +5,7 @@ import argparse
 import tensorflow as tf
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 from utils.priors import *
-from utils.model_post_processing import post_process
+from utils.model_post_processing import post_process, merge_post_process
 from model.model_builder import ModelBuilder
 from utils.misc import draw_bounding, CLASSES, COCO_CLASSES, TEST_CLASSES
 
@@ -13,11 +13,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size",     type=int,
                     help="Evaluation batch size", default=1)
 parser.add_argument("--num_classes",     type=int,
-                    help="Number of classes", default=3)
+                    help="Number of classes", default=21)
 parser.add_argument("--train_dataset_type",     type=str,
                     help="Train dataset type", default='voc')
 parser.add_argument("--image_dir",    type=str,
-                    help="Image directory", default='/home/park/0708_capture/')
+                    help="Image directory", default='/home/park/park/Tensorflow-Keras-Realtime-Segmentation/data_augmentation/raw_data/bg/')
 parser.add_argument("--image_size",     type=tuple,
                     help="Model image size (input resolution)", default=(300, 300))
 parser.add_argument("--threshold",     type=float,
@@ -25,7 +25,7 @@ parser.add_argument("--threshold",     type=float,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='0802/_0802_efficientv2b3_new_display_dataset_remove_rotation_best_loss.h5')
+                    help="Saved model weights directory", default='0803/_0803_efficientv2b3_voc_best_loss.h5')
 
 args = parser.parse_args()
 
@@ -66,12 +66,34 @@ if __name__ == '__main__':
 
         pred = model.predict(img)
 
-        predictions = post_process(pred, target_transform, classes=args.num_classes, confidence_threshold=args.threshold, iou_threshold=0.5, top_k=100)
-        
-        pred_boxes, pred_scores, pred_labels = predictions[0]
+        # predictions = post_process(pred, target_transform, classes=args.num_classes, confidence_threshold=args.threshold, iou_threshold=0.5, top_k=100)
 
-        if pred_boxes.size > 0:
-            draw_bounding(frame, pred_boxes,  labels=pred_labels, scores=pred_scores, img_size=frame.shape[:2], label_list=TEST_CLASSES)
+        # pred_boxes, pred_scores, pred_labels = predictions[0]
+        
+        
+        predictions = merge_post_process(pred, target_transform, classes=args.num_classes, confidence_threshold=args.threshold, iou_threshold=0.5, top_k=100)
+        output = predictions.numpy()
+        print('predictions', predictions)
+
+        pred_boxes = []
+        pred_scores = []
+        pred_labels = []
+
+        if output.size > 0:
+            print(output.size)
+            print(output)
+            for preds in output:
+                *boxes, scores, labels = preds
+                print(boxes)
+                pred_boxes.append(boxes)
+                pred_scores.append(scores)
+                pred_labels.append(labels)
+
+            pred_boxes = np.array(pred_boxes)
+            pred_scores = np.array(pred_scores)
+            pred_labels = np.array(pred_labels)
+
+            draw_bounding(frame, pred_boxes,  labels=pred_labels, scores=pred_scores, img_size=frame.shape[:2], label_list=CLASSES)
 
         tf.keras.preprocessing.image.save_img(result_dir + str(i)+'_.png', frame)
 

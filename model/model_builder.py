@@ -1,4 +1,3 @@
-
 from tensorflow.keras.layers import Concatenate, Flatten, Reshape, SeparableConv2D
 from tensorflow.keras.layers import Layer
 from tensorflow.keras.initializers import Constant, VarianceScaling
@@ -31,15 +30,17 @@ class Normalize(Layer):
 
 
 class ModelBuilder():
-    def __init__(self, image_size: tuple = (300, 300), num_classes: int = 21):
+    def __init__(self, image_size: tuple = (300, 300), num_classes: int = 21, build_post_process: bool = False):
         """
         Args:
-            image_size  (tuple) : Model input resolution ([H, W])
-            num_classes (int)   : Number of classes to classify 
-                                  (must be equal to number of last filters in the model)
+            image_size         (tuple) : Model input resolution ([H, W])
+            num_classes        (int)   : Number of classes to classify 
+                                         (must be equal to number of last filters in the model)
+            build_post_process (bool)  : Combine post process module into model.
         """
         self.image_size = image_size
         self.num_classes = num_classes
+        self.build_post_process = build_post_process
         self.kernel_initializer = VarianceScaling(scale=2.0, mode="fan_out",
                                                   distribution="truncated_normal")
         self.normalize = [20, 20, 20, -1, -1, -1]
