@@ -15,19 +15,19 @@ tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--backbone_name",      type=str,    help="Pretrained backbone name",
-                    default='efficientv2b0')
+                    default='mobilenetv3l')
 parser.add_argument("--batch_size",         type=int,    help="Evaluation batch size",
                     default=1)
 parser.add_argument("--image_size",         type=tuple,  help="Model image size (input resolution H,W)",
                     default=(300, 300))
-parser.add_argument("--image_norm_type",    type=str,    help="Set RGB image nornalize format (tf or torch)",
-                    default='torch')
+parser.add_argument("--image_norm_type",    type=str,    help="Set RGB image nornalize format (tf or torch or no)",
+                    default='no')
 parser.add_argument("--dataset_dir",        type=str,    help="Dataset directory",
                     default='./datasets/')
 parser.add_argument("--checkpoint_dir",     type=str,    help="Setting the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--weight_path",        type=str,    help="Saved model weights directory",
-                    default='0803/_0803_efficientv2b0_voc_E200_B16_SinglePU_ce_loss_test_best_loss.h5')
+                    default='0804/_0804_mobilenetv3l_voc_test_b16_best_loss.h5')
 
 # Prediction results visualize options
 parser.add_argument("--visualize",  help="Whether to image and save inference results", action='store_true')

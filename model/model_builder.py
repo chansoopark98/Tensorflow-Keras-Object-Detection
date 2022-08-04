@@ -7,6 +7,7 @@ from .model_zoo.mobileNetV2_ssd import MobileNetV2
 from .model_zoo.EffcientNetV2B0 import EfficientNetV2B0
 from .model_zoo.EfficientNetV2B3 import EfficientNetV2B3
 from .model_zoo.mobileNetV3small import MobileNetV3S
+from .model_zoo.mobileNetV3large import MobileNetV3L
 import tensorflow.keras.backend as K
 
 # l2 normalize
@@ -52,6 +53,8 @@ class ModelBuilder():
             model = MobileNetV2(image_size=self.image_size, pretrained="imagenet")
         elif model_name == 'mobilenetv3s':
             model = MobileNetV3S(image_size=self.image_size, pretrained="imagenet")
+        elif model_name == 'mobilenetv3l':
+            model = MobileNetV3L(image_size=self.image_size, pretrained="imagenet")
         elif model_name == 'efficientv2b0':
             model = EfficientNetV2B0(image_size=self.image_size, pretrained="imagenet")
         elif model_name == 'efficientv2b3':

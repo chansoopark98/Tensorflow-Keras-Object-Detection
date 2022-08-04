@@ -175,7 +175,8 @@ class GenerateDatasets(DataLoadHandler):
             labels = sample['objects'][self.label_key] + 1
             boxes = sample['objects'][self.bbox_key]
         
-        image = preprocess_input(image, mode=self.image_norm_type)
+        if self.image_norm_type != 'no':
+            image = preprocess_input(image, mode=self.image_norm_type)
         
         return (image, boxes, labels)    
 
@@ -191,7 +192,8 @@ class GenerateDatasets(DataLoadHandler):
             labels = sample['objects'][self.label_key] + 1
             boxes = sample['objects'][self.bbox_key]
 
-        image = preprocess_input(image, mode=self.image_norm_type)
+        if self.image_norm_type != 'no':
+            image = preprocess_input(image, mode=self.image_norm_type)
 
         return (image, boxes, labels)
     

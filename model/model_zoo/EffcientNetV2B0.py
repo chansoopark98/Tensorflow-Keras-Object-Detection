@@ -10,8 +10,8 @@ class EfficientNetV2B0():
     def build_backbone(self):
         base = EffV2B0(input_shape=(*self.image_size, 3), first_strides=2, num_classes=0, pretrained=self.pretrained)
         # base = efficientnet_v2.EfficientNetV2B0(weights=self.pretrained, include_top=False,
-        #                                 input_shape=[*self.image_size, 3], input_tensor=input_tensor,
-        #                                  include_preprocessing=False)
+        #                                         input_shape=[*self.image_size, 3], input_tensor=input_tensor,
+        #                          include_preprocessing=False)
         return base
 
     def build_extra_layer(self):
@@ -26,31 +26,31 @@ class EfficientNetV2B0():
         
         # 5, 5
         x5 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=False)(x4)
-        x5 = BatchNormalization()(x5)
+        x5 = BatchNormalization(momentum=0.9)(x5)
         x5 = Activation('swish')(x5)
         
         x5 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=2, padding='same', use_bias=False)(x5)
-        x5 = BatchNormalization()(x5)
+        x5 = BatchNormalization(momentum=0.9)(x5)
         x5 = Activation('swish')(x5)
         
         # 3, 3
         x6 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=False)(x5)
-        x6 = BatchNormalization()(x6)
+        x6 = BatchNormalization(momentum=0.9)(x6)
         x6 = Activation('swish')(x6)
         
         
         x6 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=1, padding='valid', use_bias=False)(x6)
-        x6 = BatchNormalization()(x6)
+        x6 = BatchNormalization(momentum=0.9)(x6)
         x6 = Activation('swish')(x6)
         
         # 1, 1
         x7 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=False)(x6)
-        x7 = BatchNormalization()(x7)
+        x7 = BatchNormalization(momentum=0.9)(x7)
         x7 = Activation('swish')(x7)
         
         
         x7 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=1, padding='valid', use_bias=False)(x7)
-        x7 = BatchNormalization()(x7)
+        x7 = BatchNormalization(momentum=0.9)(x7)
         x7 = Activation('swish')(x7)
         
 

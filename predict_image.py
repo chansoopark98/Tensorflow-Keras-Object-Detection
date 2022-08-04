@@ -10,22 +10,24 @@ from model.model_builder import ModelBuilder
 from utils.misc import draw_bounding, CLASSES, COCO_CLASSES, TEST_CLASSES
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name",
+                    default='mobilenetv3s')
 parser.add_argument("--batch_size",     type=int,
                     help="Evaluation batch size", default=1)
 parser.add_argument("--num_classes",     type=int,
-                    help="Number of classes", default=21)
+                    help="Number of classes", default=3)
 parser.add_argument("--train_dataset_type",     type=str,
                     help="Train dataset type", default='voc')
 parser.add_argument("--image_dir",    type=str,
-                    help="Image directory", default='/home/park/park/Tensorflow-Keras-Realtime-Segmentation/data_augmentation/raw_data/bg/')
+                    help="Image directory", default='/home/park/0708_capture')
 parser.add_argument("--image_size",     type=tuple,
                     help="Model image size (input resolution)", default=(300, 300))
 parser.add_argument("--threshold",     type=float,
-                    help="Post processing confidence threshold", default=0.5)
+                    help="Post processing confidence threshold", default=0.1)
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='0803/_0803_efficientv2b0_voc_E100_B32_MultiGPU_focal_test_best_loss.h5')
+                    help="Saved model weights directory", default='/0804/_0804_mobilenetv3s_display_dataset_test_best_loss.h5')
 
 args = parser.parse_args()
 
@@ -40,14 +42,12 @@ if __name__ == '__main__':
     # Set num classes and label list by args.train_dataset_type
 
     
-
-    
     # Set target transforms
     spec_list = convert_spec_list()
     priors = create_priors_boxes(specs=spec_list, image_size=args.image_size[0], clamp=True)
     target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
-    model = ModelBuilder(image_size=args.image_size, num_classes=args.num_classes).build_model('efficientv2b0')
+    model = ModelBuilder(image_size=args.image_size, num_classes=args.num_classes).build_model(args.backbone_name)
     model.load_weights(args.checkpoint_dir + args.weight_name)
     model.summary()
 
@@ -60,7 +60,7 @@ if __name__ == '__main__':
                 method=tf.image.ResizeMethod.BILINEAR)
 
         img = tf.cast(img, tf.float32)
-        img = preprocess_input(x=img, mode='torch')
+        img = preprocess_input(x=img, mode='tf')
         
         img = tf.expand_dims(img, axis=0)
 
@@ -72,7 +72,7 @@ if __name__ == '__main__':
         
 
         if pred_boxes.size > 0:
-            draw_bounding(frame, pred_boxes,  labels=pred_labels,  scores=pred_scores, img_size=frame.shape[:2], label_list=CLASSES)
+            draw_bounding(frame, pred_boxes,  labels=pred_labels,  scores=pred_scores, img_size=frame.shape[:2], label_list=TEST_CLASSES)
         
 
         tf.keras.preprocessing.image.save_img(result_dir + str(i)+'_.png', frame)

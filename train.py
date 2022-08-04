@@ -8,6 +8,9 @@ import time
 # dpkg -L libtcmalloc-minimal4
 # 3. LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.3.0" python train.py
 
+# https://npmmirror.com/package/@tensorflow/tfjs-tflite
+# https://groups.google.com/a/tensorflow.org/g/tflite/c/Yt6-eSMn_bg -> tflite 사용법 및 -127 ~ 128 정규화
+
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
@@ -15,16 +18,16 @@ parser = argparse.ArgumentParser()
 # Set Convert to SavedMoel
 parser.add_argument("--saved_model",  help="SavedModel.pb 변환", action='store_true')
 parser.add_argument("--saved_model_path", type=str,   help="Saved model weight path",
-                    default='./checkpoints/0803/_0803_efficientv2b0_voc_E200_B16_SinglePU_ce_loss_test_best_loss.h5')
+                    default='./checkpoints/0804/_0804_mobilenetv3l_voc_test_b16_best_loss.h5')
 
 # Build with post processing
 parser.add_argument("--build_postprocess",  help="Post processing build", action='store_true')
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='mobilenetv3s_display_dataset_test')
+                    default='efficientv2b0_voc_test_b16_input-torch')
 parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name",
-                    default='mobilenetv3s')
+                    default='efficientv2b0')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
                     default=16)
 parser.add_argument("--epoch",            type=int,    help="Training epochs",
@@ -35,8 +38,8 @@ parser.add_argument("--weight_decay",     type=float,  help="Set Weight Decay",
                     default=0.0005)
 parser.add_argument("--image_size",       type=tuple,  help="Set model input size",
                     default=(300, 300))
-parser.add_argument("--image_norm_type",  type=str,    help="Set RGB image nornalize format (tf or torch)",
-                    default='tf')
+parser.add_argument("--image_norm_type",  type=str,    help="Set RGB image nornalize format (tf or torch or no)",
+                    default='torch')
 parser.add_argument("--optimizer",        type=str,    help="Set optimizer",
                     default='adam')
 parser.add_argument("--use_weightDecay",  type=bool,   help="Whether to use weightDecay",
@@ -50,7 +53,7 @@ parser.add_argument("--model_name",       type=str,    help="Set the model name 
 parser.add_argument("--dataset_dir",      type=str,    help="Set the dataset download directory",
                     default='./datasets/')
 parser.add_argument("--dataset_name",     type=str,    help="Set the dataset type (cityscapes, custom etc..)",
-                    default='display_detection')
+                    default='voc')
 parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,    help="Set tensorboard storage path",

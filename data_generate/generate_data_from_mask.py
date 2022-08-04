@@ -256,6 +256,38 @@ class MaskDataGenerator():
         return rgb, mask, obj_mask
 
 
+    def image_random_crop(self, rgb: np.ndarray, mask: np.ndarray, obj_mask: np.ndarray,
+                          ) -> Union[np.ndarray, np.ndarray, np.ndarray]:
+        """
+            Random crop function   
+            Args:
+                rgb        (np.ndarray) : (H,W,3) Image.
+                mask       (np.ndarray) : (H,W,1) Image.
+                obj_mask   (np.ndarray) : (H,W,1) Image.
+        """
+        original_h, original_w = rgb.shape[:2]
+        aspect_ratio = original_h / original_w
+
+        widht_scale = tf.random.uniform([], 0.5, 0.95)
+        
+        new_w = original_w * widht_scale
+        new_h = new_w * aspect_ratio
+        
+        if len(mask.shape) == 2:
+            mask = tf.expand_dims(mask, axis=-1)
+        if len(obj_mask.shape) == 2:
+            obj_mask = tf.expand_dims(obj_mask, axis=-1)
+        
+        concat_img = tf.concat([rgb, mask, obj_mask], axis=-1)
+        concat_img = tf.image.random_crop(concat_img, size=[new_h, new_w, 7])
+        
+        crop_img = concat_img[:, :, :3].numpy()
+        crop_mask = concat_img[:, :, 3].numpy()
+        crop_obj_mask = concat_img[:, :, 4:].numpy()
+
+        return crop_img, crop_mask, crop_obj_mask
+
+
     def get_coords_from_mask(self, rgb: np.ndarray, mask: np.ndarray, obj_mask: np.ndarray):
         """
             Returns the coordinates (x_min, y_min_, x_max, y_max) of an object in a mask image.
@@ -275,21 +307,8 @@ class MaskDataGenerator():
         obj_idx = np.unique(obj_mask)
         obj_idx = np.delete(obj_idx, 0)
         
-        target_pixel = []
-        for obj_value in obj_idx:
-            # TODO
-            """
-                3000 이하일 때 해당되는 픽셀값들을 0으로 변환
-                그 후 컨투어마스크를 이용해서 처리할 것
-            """
-            if obj_mask[(obj_mask == obj_value)].size <= 2000:
-                # print(obj_value, obj_mask[(obj_mask == obj_value)].size)
-                obj_mask = np.where(obj_mask==obj_value, 0, obj_mask) 
 
-            else:
-                target_pixel.append(obj_value)
-
-        for target_value in target_pixel:  # 1 ~ obj nums
+        for target_value in obj_idx:  # 1 ~ obj nums
             binary_mask = np.where(obj_mask==target_value, 255, 0)
 
             binary_mask = binary_mask.astype(np.uint8)
@@ -482,8 +501,17 @@ if __name__ == '__main__':
         print(idx)
         original_mask = original_mask[:, :, :1]
         
+        original_h, original_w = original_rgb.shape[:2]
+        aspect_ratio = original_h / original_w
+        original_w *= 0.6
+        original_h = original_w * aspect_ratio
+
         rgb, mask, obj_mask = image_loader.image_resize(
-            rgb=original_rgb, mask=original_mask, obj_mask=original_obj_mask, size=(1280, 720))
+            rgb=original_rgb, mask=original_mask, obj_mask=original_obj_mask, size=(int(original_h), int(original_w)))
+        # rgb = original_rgb.copy()
+        # mask = original_mask.copy()
+        # obj_mask = original_obj_mask.copy()
+        
 
         original_rgb, bbox, label = image_loader.get_coords_from_mask(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy())
         image_loader.save_samples(rgb=original_rgb, bbox=bbox, labels=label, prefix='original_{0}'.format(idx))
@@ -492,15 +520,22 @@ if __name__ == '__main__':
         equal_rgb, equal_bbox, equal_label = image_loader.get_coords_from_mask(rgb=equal_rgb, mask=mask.copy(), obj_mask=obj_mask.copy())
         image_loader.save_samples(rgb=equal_rgb, bbox=equal_bbox, labels=equal_label, prefix='histogram_equal_{0}'.format(idx))
 
-        blur_rgb = image_loader.image_random_bluring(rgb=rgb.copy())
+        blur_rgb = image_loader.image_random_bluring(rgb=rgb.copy(), gaussian_min=3, gaussian_max=21)
         blur_rgb, blur_bbox, blur_label = image_loader.get_coords_from_mask(rgb=blur_rgb, mask=mask.copy(), obj_mask=obj_mask.copy())
         image_loader.save_samples(rgb=blur_rgb, bbox=blur_bbox, labels=blur_label, prefix='blur_{0}'.format(idx))
 
-        # rot_rgb, rot_mask, rot_obj_mask = image_loader.image_random_rotation(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy())
-        # rot_rgb, rot_bbox, rot_label = image_loader.get_coords_from_mask(rgb=rot_rgb, mask=rot_mask, obj_mask=rot_obj_mask)
-        # image_loader.save_samples(rgb=rot_rgb, bbox=rot_bbox, labels=rot_label, prefix='rot_{0}'.format(idx))
+        for rotate_idx in range(2):
+            rot_rgb, rot_mask, rot_obj_mask = image_loader.image_random_rotation(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy())
+            rot_rgb, rot_bbox, rot_label = image_loader.get_coords_from_mask(rgb=rot_rgb, mask=rot_mask, obj_mask=rot_obj_mask)
+            image_loader.save_samples(rgb=rot_rgb, bbox=rot_bbox, labels=rot_label, prefix='rot_{0}_idx_{1}'.format(idx, rotate_idx))
 
         trans_rgb, trans_mask, trans_obj_mask = image_loader.image_random_translation(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy(), min_dx=10, min_dy=20, max_dx=100, max_dy=200)
         trans_rgb, trans_bbox, trans_label = image_loader.get_coords_from_mask(rgb=trans_rgb, mask=trans_mask, obj_mask=trans_obj_mask)
         image_loader.save_samples(rgb=trans_rgb, bbox=trans_bbox, labels=trans_label, prefix='trans_{0}'.format(idx))
+
+
+        for crop_idx in range(3):
+            crop_rgb, crop_mask, crop_obj_mask = image_loader.image_random_crop(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy())
+            crop_rgb, crop_bbox, crop_label = image_loader.get_coords_from_mask(rgb=crop_rgb, mask=crop_mask, obj_mask=crop_obj_mask)
+            image_loader.save_samples(rgb=crop_rgb, bbox=crop_bbox, labels=crop_label, prefix='crop_{0}_idx_{1}'.format(idx, crop_idx))
         
