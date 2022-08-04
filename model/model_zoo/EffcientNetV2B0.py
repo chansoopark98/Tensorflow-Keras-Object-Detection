@@ -20,9 +20,18 @@ class EfficientNetV2B0():
 
         base_channel = 64
 
-        x2 = base.get_layer('add_1').output # 38x38 @ 48
-        x3 = base.get_layer('add_7').output # 19x19 @ 112
-        x4 = base.get_layer('add_14').output # 10x10 192
+        
+        x2 = base.get_layer('add_7').output # 38x38 @ 112
+        x3 = base.get_layer('add_14').output # 19x19 @ 192
+
+        # 10, 10
+        x4 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=False)(x3)
+        x4 = BatchNormalization(momentum=0.9)(x4)
+        x4 = Activation('swish')(x4)
+
+        x4 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=2, padding='same', use_bias=False)(x4)
+        x4 = BatchNormalization(momentum=0.9)(x4)
+        x4 = Activation('swish')(x4)
         
         # 5, 5
         x5 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=False)(x4)

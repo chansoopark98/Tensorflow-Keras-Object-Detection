@@ -51,26 +51,14 @@ class DetectionLoss(tf.keras.losses.Loss):
         mask = tf.stop_gradient(mask) # neg sample 마스크
 
         confidence = tf.boolean_mask(confidence, mask)
-
         # calc classification loss
-        if self.use_focal:
-            classification_loss = self.sparse_categorical_focal_loss(y_true=tf.boolean_mask(labels, mask),
-                                                        y_pred=tf.reshape(
-                                                            confidence, [-1, self.num_classes]),
-                                                        gamma=2.0)
-        else:
-            ce_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=tf.reshape(confidence, [-1, self.num_classes]),
-                                                                     labels=tf.boolean_mask(labels, mask))
-            classification_loss = tf.math.reduce_sum(ce_loss)
-
+        classification_loss = tf.math.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(logits = tf.reshape(confidence, [-1, self.num_classes]), labels = tf.boolean_mask(labels, mask)))
         pos_mask = labels > 0
         predicted_locations = tf.reshape(tf.boolean_mask(predicted_locations, pos_mask), [-1, 4])
         gt_locations = tf.reshape(tf.boolean_mask(gt_locations, pos_mask), [-1, 4])
-
         # calc localization loss
         smooth_l1_loss = tf.math.reduce_sum(self.smooth_l1(scores=predicted_locations,labels=gt_locations))
         num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
-        
         # divide num_pos objects
         loc_loss = smooth_l1_loss / num_pos
         class_loss = classification_loss / num_pos

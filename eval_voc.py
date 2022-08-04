@@ -15,19 +15,19 @@ tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--backbone_name",      type=str,    help="Pretrained backbone name",
-                    default='mobilenetv3l')
+                    default='efficientv2b0')
 parser.add_argument("--batch_size",         type=int,    help="Evaluation batch size",
                     default=1)
 parser.add_argument("--image_size",         type=tuple,  help="Model image size (input resolution H,W)",
                     default=(300, 300))
 parser.add_argument("--image_norm_type",    type=str,    help="Set RGB image nornalize format (tf or torch or no)",
-                    default='no')
+                    default='torch')
 parser.add_argument("--dataset_dir",        type=str,    help="Dataset directory",
                     default='./datasets/')
 parser.add_argument("--checkpoint_dir",     type=str,    help="Setting the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--weight_path",        type=str,    help="Saved model weights directory",
-                    default='0804/_0804_mobilenetv3l_voc_test_b16_best_loss.h5')
+                    default='0804/_0804_efficientv2b0_voc_test_b16_input-torch_best_loss.h5')
 
 # Prediction results visualize options
 parser.add_argument("--visualize",  help="Whether to image and save inference results", action='store_true')
@@ -74,7 +74,7 @@ if __name__ == '__main__':
         voc_difficults.append(is_difficult)
 
     avg_duration = 0
-
+    post_avg_duration = 0
     # Eval
     print("Evaluating..")
     pred_bboxes = []
@@ -85,11 +85,15 @@ if __name__ == '__main__':
         start = time.process_time()
         pred = model.predict_on_batch(x)
         duration = (time.process_time() - start)
+        avg_duration += duration
 
+        post_start = time.process_time()
         predictions = post_process(pred,
                                    target_transform,
                                    classes=dataset_config.num_classes,
                                    confidence_threshold=0.01)
+        post_duration = (time.process_time() - post_start)
+        post_avg_duration += post_duration
 
         for prediction in predictions:
             boxes, scores, labels = prediction
@@ -105,10 +109,11 @@ if __name__ == '__main__':
                             gt_difficults=voc_difficults,
                             use_07_metric=True)
 
-    avg_duration += duration
+    
 
     print('Model FLOPs {0}'.format(get_flops(model=model, batch_size=1)))
     print('Avg inference time : {0}sec.'.format((avg_duration / dataset_config.number_test)))
+    print('Post porcessing Avg inference time : {0}sec.'.format((post_duration / dataset_config.number_test)))
     ap_dict = dict(zip(CLASSES, answer['ap']))
     print('AP per classes : {0}.'.format((ap_dict)))
     print('Image size : {0},  mAP : {1}'.format(args.image_size, answer['map']))

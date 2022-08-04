@@ -19,34 +19,34 @@ class MobileNetV2():
 
         base_channel = 128
 
-        x2 = base.get_layer('block_5_add').output # 38x38 @ 192
-        x3 = base.get_layer('block_12_add').output # 19x19 @ 576
-        x4 = base.get_layer('block_15_add').output # 10x10 @ 160
+        x2 = base.get_layer('block_5_add').output # 38x38 @ 32
+        x3 = base.get_layer('block_12_add').output # 19x19 @ 96
+        x4 = base.get_layer('block_16_project_BN').output # 10x10 @ 320
 
-        x5 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=True)(x4)
+        x5 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=False)(x4)
         x5 = BatchNormalization()(x5)
         x5 = ReLU(6.)(x5)
         
 
-        x5 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=2, padding='same', use_bias=True)(x5)
+        x5 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=2, padding='same', use_bias=False)(x5)
         x5 = BatchNormalization()(x5)
         x5 = ReLU(6.)(x5)
         
 
-        x6 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=True)(x5)
+        x6 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=False)(x5)
         x6 = BatchNormalization()(x6)
         x6 = ReLU(6.)(x6)
         
-        x6 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=1, padding='valid', use_bias=True)(x6)
+        x6 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=1, padding='valid', use_bias=False)(x6)
         x6 = BatchNormalization()(x6)
         x6 = ReLU(6.)(x6)
         
 
-        x7 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=True)(x6)
+        x7 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=False)(x6)
         x7 = BatchNormalization()(x7)
         x7 = ReLU(6.)(x7)
 
-        x7 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=1, padding='valid', use_bias=True)(x7)
+        x7 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=1, padding='valid', use_bias=False)(x7)
         x7 = BatchNormalization()(x7)
         x7 = ReLU(6.)(x7)
         
@@ -58,4 +58,4 @@ class MobileNetV2():
 
 if __name__ == '__main__':
     base = MobileNetV2(image_size=(300, 300))
-    base.build_backbone()
+    model = base.build_backbone()

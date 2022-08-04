@@ -56,6 +56,7 @@ class ModelBuilder():
         elif model_name == 'mobilenetv3l':
             model = MobileNetV3L(image_size=self.image_size, pretrained="imagenet")
         elif model_name == 'efficientv2b0':
+            self.normalize = [20, 20, -1, -1, -1, -1]
             model = EfficientNetV2B0(image_size=self.image_size, pretrained="imagenet")
         elif model_name == 'efficientv2b3':
             model = EfficientNetV2B3(image_size=self.image_size, pretrained="imagenet")
