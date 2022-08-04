@@ -190,13 +190,6 @@ class GenerateDatasets(DataLoadHandler):
         else:
             labels = sample['objects'][self.label_key] + 1
             boxes = sample['objects'][self.bbox_key]
-        
-        if clip_bbox:
-            x_min = tf.where(tf.greater_equal(boxes[:,1], boxes[:,3]), tf.cast(0, dtype=tf.float32), boxes[:,1])
-            y_min = tf.where(tf.greater_equal(boxes[:,0], boxes[:,2]), tf.cast(0, dtype=tf.float32), boxes[:,0])
-            x_max = tf.where(tf.greater_equal(x_min, boxes[:,3]), tf.cast(x_min+0.1, dtype=tf.float32), boxes[:,3])
-            y_max = tf.where(tf.greater_equal(y_min, boxes[:,2]), tf.cast(y_min+0.1, dtype=tf.float32), boxes[:,2])
-            boxes = tf.stack([x_min, y_min, x_max, y_max], axis=1)
 
         image = preprocess_input(image, mode=self.image_norm_type)
 

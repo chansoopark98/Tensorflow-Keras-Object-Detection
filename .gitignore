@@ -7,6 +7,7 @@ inputs/
 outputs/
 checkpoints/
 tensorboard/
+test/
 
 
 # Byte-compiled / optimized / DLL files

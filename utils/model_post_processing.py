@@ -24,8 +24,8 @@ def batched_nms(boxes, scores, idxs, iou_threshold, top_k=100):
          :return Tensor
      """
 
-    if tf.size(boxes) == 0:
-        return tf.convert_to_tensor([], dtype=tf.int32)
+    # if tf.size(boxes) == 0:
+    #     return tf.convert_to_tensor([], dtype=tf.int32)
 
     max_coordinate = tf.reduce_max(boxes)
     offsets = idxs * (max_coordinate + 1)
@@ -117,12 +117,12 @@ def merge_post_process(detections, target_transform, confidence_threshold=0.01, 
     labels = tf.reshape(labels, [-1])
 
     # # confidence  점수가 낮은 predict bbox 제거
-    # low_scoring_mask = scores > confidence_threshold
-    # boxes, scores, labels = tf.boolean_mask(boxes, low_scoring_mask), tf.boolean_mask(scores, low_scoring_mask), tf.boolean_mask(labels, low_scoring_mask)
+    low_scoring_mask = scores > confidence_threshold
+    boxes, scores, labels = tf.boolean_mask(boxes, low_scoring_mask), tf.boolean_mask(scores, low_scoring_mask), tf.boolean_mask(labels, low_scoring_mask)
 
-    # keep  = batched_nms(boxes, scores, labels, iou_threshold, top_k)
+    keep  = batched_nms(boxes, scores, labels, iou_threshold, top_k)
 
-    # boxes, scores, labels = tf.gather(boxes, keep), tf.gather(scores, keep), tf.gather(labels, keep)
+    boxes, scores, labels = tf.gather(boxes, keep), tf.gather(scores, keep), tf.gather(labels, keep)
 
 
     # scores = tf.expand_dims(scores, axis=1)

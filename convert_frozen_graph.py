@@ -10,22 +10,22 @@ from utils.priors import *
 
 IMAGE_SIZE = (300, 300)
 num_classes = 21
-checkpoints = './checkpoints/0803/_0803_efficientv2b0_voc_E100_B32_MultiGPU_focal_test_best_loss.h5'
+checkpoints = './checkpoints/0803/_0803_efficientv2b0_voc_E200_B16_SinglePU_ce_loss_test_best_loss.h5'
 
 spec_list = convert_spec_list()
 priors = create_priors_boxes(specs=spec_list, image_size=IMAGE_SIZE[0], clamp=True)
 target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
-model_input, model_output = ModelBuilder(image_size=IMAGE_SIZE,
-                            num_classes=num_classes, build_post_process=True).build_model('efficientv2b0')
+model = ModelBuilder(image_size=IMAGE_SIZE,
+                            num_classes=num_classes).build_model('efficientv2b0')
 
 
-post_output = merge_post_process(detections=model_output, target_transform=target_transform, confidence_threshold=0.5, classes=num_classes)
 
-merge_model = Model(inputs=model_input, outputs=post_output)
-merge_model.load_weights(checkpoints, by_name=True)
 
-merge_model.summary()
+
+model.load_weights(checkpoints, by_name=True)
+
+model.summary()
 
 # export_path = os.path.join(self.CHECKPOINT_DIR, 'export_path', '1')
 # os.makedirs(export_path, exist_ok=True)
@@ -48,9 +48,9 @@ frozen_out_path = './checkpoints/new_tfjs_frozen'
 # name of the .pb file
 frozen_graph_filename = "frozen_graph"
 # Convert Keras model to ConcreteFunction
-full_model = tf.function(lambda x: merge_model(x))
+full_model = tf.function(lambda x: model(x))
 full_model = full_model.get_concrete_function(
-    tf.TensorSpec(merge_model.inputs[0].shape, merge_model.inputs[0].dtype))
+    tf.TensorSpec(model.inputs[0].shape, model.inputs[0].dtype))
 # Get frozen ConcreteFunction
 frozen_func = convert_variables_to_constants_v2(full_model)
 frozen_func.graph.as_graph_def()

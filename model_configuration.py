@@ -194,7 +194,7 @@ class ModelConfiguration(GenerateDatasets):
             Convert it to a graph model (.pb) using the learned weights.
         """
         self.model = ModelBuilder(image_size=self.IMAGE_SIZE,
-                                  num_classes=self.num_classes).build_model()
+                                  num_classes=self.num_classes).build_model(self.args.backbone_name)
         self.model.load_weights(self.args.saved_model_path)
         export_path = os.path.join(self.CHECKPOINT_DIR, 'export_path', '1')
         

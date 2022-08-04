@@ -3,9 +3,10 @@ from tensorflow.keras.layers import Layer
 from tensorflow.keras.initializers import Constant, VarianceScaling
 import tensorflow as tf
 from tensorflow.keras.models import Model
-from .model_zoo.mobileNet_ssd import MobileNetV2
+from .model_zoo.mobileNetV2_ssd import MobileNetV2
 from .model_zoo.EffcientNetV2B0 import EfficientNetV2B0
 from .model_zoo.EfficientNetV2B3 import EfficientNetV2B3
+from .model_zoo.mobileNetV3small import MobileNetV3S
 import tensorflow.keras.backend as K
 
 # l2 normalize
@@ -30,7 +31,7 @@ class Normalize(Layer):
 
 
 class ModelBuilder():
-    def __init__(self, image_size: tuple = (300, 300), num_classes: int = 21, build_post_process: bool = False):
+    def __init__(self, image_size: tuple = (300, 300), num_classes: int = 21):
         """
         Args:
             image_size         (tuple) : Model input resolution ([H, W])
@@ -40,7 +41,6 @@ class ModelBuilder():
         """
         self.image_size = image_size
         self.num_classes = num_classes
-        self.build_post_process = build_post_process
         self.kernel_initializer = VarianceScaling(scale=2.0, mode="fan_out",
                                                   distribution="truncated_normal")
         self.normalize = [20, 20, 20, -1, -1, -1]
@@ -50,6 +50,8 @@ class ModelBuilder():
     def build_model(self, model_name: str) -> Model:
         if model_name == 'mobilenetv2':
             model = MobileNetV2(image_size=self.image_size, pretrained="imagenet")
+        elif model_name == 'mobilenetv3s':
+            model = MobileNetV3S(image_size=self.image_size, pretrained="imagenet")
         elif model_name == 'efficientv2b0':
             model = EfficientNetV2B0(image_size=self.image_size, pretrained="imagenet")
         elif model_name == 'efficientv2b3':
@@ -62,10 +64,8 @@ class ModelBuilder():
         model_output = self.create_classifier(source_layers=detector_output,
                                num_priors=self.num_priors, normalizations=self.normalize)
 
-        if self.build_post_process:
-            return model_input, model_output
-        else:
-            model = Model(inputs=model_input, outputs=model_output)
+
+        model = Model(inputs=model_input, outputs=model_output)
 
         return model
 

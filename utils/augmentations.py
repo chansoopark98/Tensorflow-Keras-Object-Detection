@@ -122,7 +122,6 @@ def get_indices_from_slice(top, left, height, width):
 @tf.function
 def expand(image, boxes, expand_prob=tf.constant(0.5)):
     if tf.random.uniform([]) > expand_prob:
-
         return image, boxes
 
     image_shape = tf.cast(tf.shape(image), tf.float32)
