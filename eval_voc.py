@@ -15,7 +15,7 @@ tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--backbone_name",      type=str,    help="Pretrained backbone name",
-                    default='mobilenetv2')
+                    default='efficient_lite_v0')
 parser.add_argument("--batch_size",         type=int,    help="Evaluation batch size",
                     default=1)
 parser.add_argument("--image_size",         type=tuple,  help="Model image size (input resolution H,W)",
@@ -27,93 +27,98 @@ parser.add_argument("--dataset_dir",        type=str,    help="Dataset directory
 parser.add_argument("--checkpoint_dir",     type=str,    help="Setting the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--weight_path",        type=str,    help="Saved model weights directory",
-                    default='0804/_0804_mobilenetv2_b32_ep200_adam_torch_best_loss.h5')
+                    default='0805/_0805_efficient_lite_v0_b16_e100_single_gpu_best_loss.h5')
 
 # Prediction results visualize options
 parser.add_argument("--visualize",  help="Whether to image and save inference results", action='store_true')
 parser.add_argument("--result_dir",         type=str,    help="Test result save directory",
                     default='./results/')
+parser.add_argument("--gpu_num",          type=int,    help="Set GPU number to use(When without distribute training)",
+                    default=0)
 
 args = parser.parse_args()
 
 if __name__ == '__main__':
     # Create result plot image path
     os.makedirs(args.result_dir, exist_ok=True)
-                
-    # Set target transforms
-    spec_list = convert_spec_list()
-    priors = create_priors_boxes(specs=spec_list, image_size=args.image_size[0], clamp=True)
-    target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
+    tf.config.set_soft_device_placement(True)
 
-    # Configuration test(valid) datasets
-    dataset_config = GenerateDatasets(data_dir=args.dataset_dir, image_size=args.image_size,
-                                      batch_size=args.batch_size, target_transform=target_transform,
-                                      image_norm_type=args.image_norm_type,
-                                      dataset_name='voc')
-    test_dataset = dataset_config.get_testData(test_data=dataset_config.test_data)
-    test_steps = dataset_config.number_test // args.batch_size
+    gpu_number = '/device:GPU:' + str(args.gpu_num)
+    with tf.device(gpu_number):
+        # Set target transforms
+        spec_list = convert_spec_list()
+        priors = create_priors_boxes(specs=spec_list, image_size=args.image_size[0], clamp=True)
+        target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
-    # Model build and load pre-trained weights
-    model = ModelBuilder(image_size=args.image_size, num_classes=dataset_config.num_classes).build_model(args.backbone_name)
-    model.load_weights(args.checkpoint_dir + args.weight_path)
-    model.summary()
+        # Configuration test(valid) datasets
+        dataset_config = GenerateDatasets(data_dir=args.dataset_dir, image_size=args.image_size,
+                                        batch_size=args.batch_size, target_transform=target_transform,
+                                        image_norm_type=args.image_norm_type,
+                                        dataset_name='voc')
+        test_dataset = dataset_config.get_testData(test_data=dataset_config.test_data)
+        test_steps = dataset_config.number_test // args.batch_size
 
-    # Model warm up
-    _ = model.predict(tf.zeros((1, args.image_size[0], args.image_size[1], 3)))
+        # Model build and load pre-trained weights
+        model = ModelBuilder(image_size=args.image_size, num_classes=dataset_config.num_classes).build_model(args.backbone_name)
+        model.load_weights(args.checkpoint_dir + args.weight_path)
+        model.summary()
 
-    # Prepare original labels
-    voc_difficults = []
-    voc_bboxes = []
-    voc_labels = []
-    for sample in dataset_config.test_data:             
-        labels = sample['objects']['label'].numpy()
-        boxes = sample['objects']['bbox'].numpy()[:, [1, 0, 3, 2]]
-        is_difficult = sample['objects']['is_difficult'].numpy()
-        voc_labels.append(labels)
-        voc_bboxes.append(boxes)
-        voc_difficults.append(is_difficult)
+        # Model warm up
+        _ = model.predict(tf.zeros((1, args.image_size[0], args.image_size[1], 3)))
 
-    avg_duration = 0
-    post_avg_duration = 0
-    # Eval
-    print("Evaluating..")
-    pred_bboxes = []
-    pred_labels = []
-    pred_scores = []
-    for x, _ in tqdm(test_dataset, total=test_steps):
-        # Check inference time
-        start = time.process_time()
-        pred = model.predict_on_batch(x)
-        duration = (time.process_time() - start)
-        avg_duration += duration
+        # Prepare original labels
+        voc_difficults = []
+        voc_bboxes = []
+        voc_labels = []
+        for sample in dataset_config.test_data:             
+            labels = sample['objects']['label'].numpy()
+            boxes = sample['objects']['bbox'].numpy()[:, [1, 0, 3, 2]]
+            is_difficult = sample['objects']['is_difficult'].numpy()
+            voc_labels.append(labels)
+            voc_bboxes.append(boxes)
+            voc_difficults.append(is_difficult)
 
-        post_start = time.process_time()
-        predictions = post_process(pred,
-                                   target_transform,
-                                   classes=dataset_config.num_classes,
-                                   confidence_threshold=0.01)
-        post_duration = (time.process_time() - post_start)
-        post_avg_duration += post_duration
+        avg_duration = 0
+        post_avg_duration = 0
+        # Eval
+        print("Evaluating..")
+        pred_bboxes = []
+        pred_labels = []
+        pred_scores = []
+        for x, _ in tqdm(test_dataset, total=test_steps):
+            # Check inference time
+            start = time.process_time()
+            pred = model.predict_on_batch(x)
+            duration = (time.process_time() - start)
+            avg_duration += duration
 
-        for prediction in predictions:
-            boxes, scores, labels = prediction
-            pred_bboxes.append(boxes)
-            pred_labels.append(labels.astype(int) - 1)
-            pred_scores.append(scores)
+            post_start = time.process_time()
+            predictions = post_process(pred,
+                                    target_transform,
+                                    classes=dataset_config.num_classes,
+                                    confidence_threshold=0.01)
+            post_duration = (time.process_time() - post_start)
+            post_avg_duration += post_duration
 
-    answer = eval_detection_voc(pred_bboxes=pred_bboxes,
-                            pred_labels=pred_labels,
-                            pred_scores=pred_scores,
-                            gt_bboxes=voc_bboxes,
-                            gt_labels=voc_labels,
-                            gt_difficults=voc_difficults,
-                            use_07_metric=True)
+            for prediction in predictions:
+                boxes, scores, labels = prediction
+                pred_bboxes.append(boxes)
+                pred_labels.append(labels.astype(int) - 1)
+                pred_scores.append(scores)
 
-    
+        answer = eval_detection_voc(pred_bboxes=pred_bboxes,
+                                pred_labels=pred_labels,
+                                pred_scores=pred_scores,
+                                gt_bboxes=voc_bboxes,
+                                gt_labels=voc_labels,
+                                gt_difficults=voc_difficults,
+                                use_07_metric=True)
 
-    print('Model FLOPs {0}'.format(get_flops(model=model, batch_size=1)))
-    print('Avg inference time : {0}sec.'.format((avg_duration / dataset_config.number_test)))
-    print('Post porcessing Avg inference time : {0}sec.'.format((post_duration / dataset_config.number_test)))
-    ap_dict = dict(zip(CLASSES, answer['ap']))
-    print('AP per classes : {0}.'.format((ap_dict)))
-    print('Image size : {0},  mAP : {1}'.format(args.image_size, answer['map']))
+        
+
+        print('Model FLOPs {0}'.format(get_flops(model=model, batch_size=1)))
+        print('Avg inference time : {0}sec.'.format((avg_duration / dataset_config.number_test)))
+        print('Post porcessing Avg inference time : {0}sec.'.format((post_duration / dataset_config.number_test)))
+        ap_dict = dict(zip(CLASSES, answer['ap']))
+        print('AP per classes : {0}.'.format((ap_dict)))
+        print('Image size : {0},  mAP : {1}'.format(args.image_size, answer['map']))

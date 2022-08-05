@@ -82,57 +82,109 @@ def post_process(detections, target_transform, confidence_threshold=0.01, top_k=
 
     return results
 
-
 def merge_post_process(detections, target_transform, confidence_threshold=0.01, top_k=100, iou_threshold=0.5, classes=21):
     batch_boxes = detections[:, :, classes:]
-    # if not tf.is_tensor(batch_boxes):
-    #     batch_boxes = tf.convert_to_tensor(batch_boxes)
+    if not tf.is_tensor(batch_boxes):
+        batch_boxes = tf.convert_to_tensor(batch_boxes)
     batch_scores = tf.nn.softmax(detections[:, :, :classes], axis=2)
 
     batch_boxes = convert_locations_to_boxes(batch_boxes, target_transform.center_form_priors,
                                              target_transform.center_variance, target_transform.size_variance)
     batch_boxes = center_form_to_corner_form(batch_boxes)
 
+    batch_size = tf.shape(batch_scores)[0]
+    results = []
+    for image_id in range(1):
+        scores, boxes = batch_scores[image_id], batch_boxes[image_id]  # (N, #CLS) (N, 4)
+
+        num_boxes = tf.shape(scores)[0]
+        num_classes = tf.shape(scores)[1]
+        boxes = tf.reshape(boxes, [num_boxes, 1, 4])
+        boxes = tf.broadcast_to(boxes, [num_boxes, num_classes, 4])
+        labels = tf.range(num_classes, dtype=tf.float32)
+        labels = tf.reshape(labels, [1, num_classes])
+        labels = tf.broadcast_to(labels, tf.shape(scores))
+
+        # 배경 라벨이 있는 예측값 제거
+        boxes = boxes[:, 1:]
+        scores = scores[:, 1:]
+        labels = labels[:, 1:]
+
+        # 모든 클래스 예측을 별도의 인스턴스로 만들어 모든 것을 일괄 처리 과정
+        boxes = tf.reshape(boxes, [-1, 4])
+        scores = tf.reshape(scores, [-1])
+        labels = tf.reshape(labels, [-1])
+
+        # confidence  점수가 낮은 predict bbox 제거
+        low_scoring_mask = scores > confidence_threshold
+        boxes, scores, labels = tf.boolean_mask(boxes, low_scoring_mask), tf.boolean_mask(scores, low_scoring_mask), tf.boolean_mask(labels, low_scoring_mask)
+
+        keep  = batched_nms(boxes, scores, labels, iou_threshold, top_k)
+
+        boxes, scores, labels = tf.gather(boxes, keep), tf.gather(scores, keep), tf.gather(labels, keep)
+
+        scores = tf.expand_dims(scores, axis=1, name='expand_scores')
+        labels = tf.expand_dims(labels, axis=1, name='expand_labels')
+    
+        output = tf.keras.layers.Concatenate(axis=1)([boxes, scores, labels])
+        results.append(output)
+    
+    results = tf.convert_to_tensor(results)
+    
+    return results
+
+
+
+
+
+# def merge_post_process(detections, target_transform, confidence_threshold=0.01, top_k=100, iou_threshold=0.5, classes=21):
+#     batch_boxes = detections[:, :, classes:]
+#     if not tf.is_tensor(batch_boxes):
+#         batch_boxes = tf.convert_to_tensor(batch_boxes)
+#     batch_scores = tf.nn.softmax(detections[:, :, :classes], axis=2)
+
+#     batch_boxes = convert_locations_to_boxes(batch_boxes, target_transform.center_form_priors,
+#                                              target_transform.center_variance, target_transform.size_variance)
+#     batch_boxes = center_form_to_corner_form(batch_boxes)
+
         
-    batch_zero = 0
+#     batch_zero = 0
     
-    scores, boxes = batch_scores[batch_zero], batch_boxes[batch_zero]  # (N, #CLS) (N, 4)
+#     scores, boxes = batch_scores[batch_zero], batch_boxes[batch_zero]  # (N, #CLS) (N, 4)
 
-    num_boxes = tf.shape(scores)[0]
-    num_classes = tf.shape(scores)[1]
-    boxes = tf.reshape(boxes, [num_boxes, 1, 4])
-    boxes = tf.broadcast_to(boxes, [num_boxes, num_classes, 4])
-    labels = tf.range(num_classes, dtype=tf.float32)
-    labels = tf.reshape(labels, [1, num_classes])
-    labels = tf.broadcast_to(labels, tf.shape(scores))
+#     num_boxes = tf.shape(scores)[0]
+#     num_classes = tf.shape(scores)[1]
+#     boxes = tf.reshape(boxes, [num_boxes, 1, 4])
+#     boxes = tf.broadcast_to(boxes, [num_boxes, num_classes, 4])
+#     labels = tf.range(num_classes, dtype=tf.float32)
+#     labels = tf.reshape(labels, [1, num_classes])
+#     labels = tf.broadcast_to(labels, tf.shape(scores))
 
-    # 배경 라벨이 있는 예측값 제거
-    boxes = boxes[:, 1:]
-    scores = scores[:, 1:]
-    labels = labels[:, 1:]
+#     # 배경 라벨이 있는 예측값 제거
+#     boxes = boxes[:, 1:]
+#     scores = scores[:, 1:]
+#     labels = labels[:, 1:]
 
-    # 모든 클래스 예측을 별도의 인스턴스로 만들어 모든 것을 일괄 처리 과정
-    boxes = tf.reshape(boxes, [-1, 4])
-    scores = tf.reshape(scores, [-1])
-    labels = tf.reshape(labels, [-1])
+#     # 모든 클래스 예측을 별도의 인스턴스로 만들어 모든 것을 일괄 처리 과정
+#     boxes = tf.reshape(boxes, [-1, 4])
+#     scores = tf.reshape(scores, [-1])
+#     labels = tf.reshape(labels, [-1])
 
-    # # confidence  점수가 낮은 predict bbox 제거
-    low_scoring_mask = scores > confidence_threshold
-    boxes, scores, labels = tf.boolean_mask(boxes, low_scoring_mask), tf.boolean_mask(scores, low_scoring_mask), tf.boolean_mask(labels, low_scoring_mask)
-
-    keep  = batched_nms(boxes, scores, labels, iou_threshold, top_k)
-
-    boxes, scores, labels = tf.gather(boxes, keep), tf.gather(scores, keep), tf.gather(labels, keep)
-
-
-    # scores = tf.expand_dims(scores, axis=1)
-    # labels = tf.expand_dims(labels, axis=1)
-
+#     # # confidence  점수가 낮은 predict bbox 제거
+#     low_scoring_mask = scores > confidence_threshold
+#     boxes, scores, labels = tf.boolean_mask(boxes, low_scoring_mask), tf.boolean_mask(scores, low_scoring_mask), tf.boolean_mask(labels, low_scoring_mask)
     
+#     # 여기서 NMS 하고
+#     # keep = NMS(boxes_for_nms)
+#     # boxes, scores, labels = tf.gather(boxes, keep), tf.gather(scores, keep), tf.gather(labels, keep)
 
-    scores = tf.expand_dims(scores, axis=1, name='expand_scores')
-    labels = tf.expand_dims(labels, axis=1, name='expand_labels')
-    # output = tf.concat([boxes, scores, labels], axis=1)
-    output = tf.keras.layers.Concatenate(axis=1)([boxes, scores, labels])
+#     keep  = batched_nms(boxes, scores, labels, iou_threshold, top_k)
 
-    return output
+#     boxes, scores, labels = tf.gather(boxes, keep), tf.gather(scores, keep), tf.gather(labels, keep)
+
+#     scores = tf.expand_dims(scores, axis=1, name='expand_scores')
+#     labels = tf.expand_dims(labels, axis=1, name='expand_labels')
+    
+#     output = tf.keras.layers.Concatenate(axis=1)([boxes, scores, labels])
+
+#     return output

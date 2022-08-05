@@ -237,7 +237,7 @@ def draw_bounding(img , bboxes, labels, scores, img_size, label_list):
         cv2.addWeighted(img_box, alpha, img, 1. - alpha, 0, img)
 
 
-@tf.function
+# @tf.function
 def convert_locations_to_boxes(locations, priors, center_variance,
                                size_variance):
     """네트워크의 회귀 위치 결과를 (center_x, center_y, h, w) 형식의 box로 변환하는 과정
@@ -254,9 +254,13 @@ def convert_locations_to_boxes(locations, priors, center_variance,
          bbox : priors : [[center_x, center_y, h, w]]
              이미지 크기에 상대적입니다.
      """
-    if tf.rank(priors) + 1 == tf.rank(locations):
-        print('bigger convert_locations_to_boxes')
-        priors = tf.expand_dims(priors, 0)
+    
+    # if tf.rank(priors) + 1 == tf.rank(locations):
+    #     # frozen graph 만들때
+    #     # priors rank = 2, locations = 3
+    #     print('bigger convert_locations_to_boxes')
+        
+    priors = tf.expand_dims(priors, 0)
     
     
     return tf.concat([
@@ -265,8 +269,12 @@ def convert_locations_to_boxes(locations, priors, center_variance,
     ], axis=tf.rank(locations) - 1)
 
 
-@tf.function
+# @tf.function
 def convert_boxes_to_locations(center_form_boxes, center_form_priors, center_variance, size_variance):
+    priors_rank = tf.rank(center_form_priors)
+    boxes_rank = tf.rank(center_form_boxes)
+    print(priors_rank)
+    print(boxes_rank)
     if tf.rank(center_form_priors) + 1 == tf.rank(center_form_boxes):
         print('bigger convert_boxes_to_locations')
         center_form_priors = tf.expand_dims(center_form_priors, 0)

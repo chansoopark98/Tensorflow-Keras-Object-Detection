@@ -19,20 +19,20 @@ parser = argparse.ArgumentParser()
 # Set Convert to SavedMoel
 parser.add_argument("--saved_model",  help="SavedModel.pb 변환", action='store_true')
 parser.add_argument("--saved_model_path", type=str,   help="Saved model weight path",
-                    default='./checkpoints/0804/_0804_mobilenetv3l_voc_test_b16_best_loss.h5')
+                    default='./checkpoints/0805/_0805_efficientv2b0_b32_e200_single_gpu_best_loss.h5')
 
 # Build with post processing
 parser.add_argument("--build_postprocess",  help="Post processing build", action='store_true')
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='efficientv2b0_b32_e200_single_gpu')
+                    default='efficient_lite_v0_b16_e100_single_gpu_bigger')
 parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name",
-                    default='efficientv2b0')
+                    default='efficient_lite_v0')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
-                    default=32)
+                    default=16)
 parser.add_argument("--epoch",            type=int,    help="Training epochs",
-                    default=200)
+                    default=100)
 parser.add_argument("--lr",               type=float,  help="Initial learning rate",
                     default=0.001)
 parser.add_argument("--weight_decay",     type=float,  help="Set Weight Decay",

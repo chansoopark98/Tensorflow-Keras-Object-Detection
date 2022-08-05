@@ -3,11 +3,12 @@ from tensorflow.keras.layers import Layer
 from tensorflow.keras.initializers import Constant, VarianceScaling
 import tensorflow as tf
 from tensorflow.keras.models import Model
-from .model_zoo.mobileNetV2_ssd import MobileNetV2
-from .model_zoo.EffcientNetV2B0 import EfficientNetV2B0
-from .model_zoo.EfficientNetV2B3 import EfficientNetV2B3
-from .model_zoo.mobileNetV3small import MobileNetV3S
-from .model_zoo.mobileNetV3large import MobileNetV3L
+
+
+
+
+
+
 import tensorflow.keras.backend as K
 
 # l2 normalize
@@ -50,15 +51,23 @@ class ModelBuilder():
 
     def build_model(self, model_name: str) -> Model:
         if model_name == 'mobilenetv2':
+            from .model_zoo.mobileNetV2_ssd import MobileNetV2
             model = MobileNetV2(image_size=self.image_size, pretrained="imagenet")
         elif model_name == 'mobilenetv3s':
+            from .model_zoo.mobileNetV3small import MobileNetV3S
             model = MobileNetV3S(image_size=self.image_size, pretrained="imagenet")
         elif model_name == 'mobilenetv3l':
+            from .model_zoo.mobileNetV3large import MobileNetV3L
             model = MobileNetV3L(image_size=self.image_size, pretrained="imagenet")
+        elif model_name == 'efficient_lite_v0':
+            from .model_zoo.EfficientNetLiteB0 import EfficientLiteB0
+            model = EfficientLiteB0(image_size=self.image_size, pretrained="imagenet")
         elif model_name == 'efficientv2b0':
+            from .model_zoo.EffcientNetV2B0 import EfficientNetV2B0
             self.normalize = [20, 20, 20, -1, -1, -1]
             model = EfficientNetV2B0(image_size=self.image_size, pretrained="imagenet")
         elif model_name == 'efficientv2b3':
+            from .model_zoo.EfficientNetV2B3 import EfficientNetV2B3
             model = EfficientNetV2B3(image_size=self.image_size, pretrained="imagenet")
         else:
             raise NotImplementedError('Your input model_name is not implemented')
