@@ -1,6 +1,7 @@
-from tensorflow.keras.layers import Concatenate, Flatten, Reshape, SeparableConv2D, Conv2D
+from tensorflow.keras.layers import Concatenate, Flatten, Reshape, SeparableConv2D, Conv2D, DepthwiseConv2D
 from tensorflow.keras.layers import Layer
 from tensorflow.keras.initializers import Constant, VarianceScaling
+from tensorflow.keras.regularizers import L2
 import tensorflow as tf
 from tensorflow.keras.models import Model
 
@@ -33,16 +34,20 @@ class Normalize(Layer):
 
 
 class ModelBuilder():
-    def __init__(self, image_size: tuple = (300, 300), num_classes: int = 21):
+    def __init__(self, image_size: tuple = (300, 300), num_classes: int = 21,
+     use_weight_decay: bool = False, weight_decay: float = 0.00001):
         """
         Args:
             image_size         (tuple) : Model input resolution ([H, W])
             num_classes        (int)   : Number of classes to classify 
                                          (must be equal to number of last filters in the model)
-            build_post_process (bool)  : Combine post process module into model.
+            use_weight_decay   (bool)  : Use weight decay.
+            weight_decay       (float) : Weight decay value.
         """
         self.image_size = image_size
         self.num_classes = num_classes
+        self.use_weight_decay = use_weight_decay
+        self.weight_decay = weight_decay
         self.kernel_initializer = VarianceScaling(scale=2.0, mode="fan_out",
                                                   distribution="truncated_normal")
         self.normalize = [20, 20, 20, -1, -1, -1]
@@ -79,6 +84,19 @@ class ModelBuilder():
 
 
         model = Model(inputs=model_input, outputs=model_output)
+
+        if self.use_weight_decay:
+            for layer in model.layers:        
+                if isinstance(layer, Conv2D):
+                    layer.add_loss(lambda layer=layer: L2(self.weight_decay)(layer.kernel))
+                elif isinstance(layer, SeparableConv2D):
+                    layer.add_loss(lambda layer=layer: L2(self.weight_decay)(layer.depthwise_kernel))
+                    layer.add_loss(lambda layer=layer: L2(self.weight_decay)(layer.pointwise_kernel))
+                elif isinstance(layer, DepthwiseConv2D):
+                    layer.add_loss(lambda layer=layer: L2(self.weight_decay)(layer.depthwise_kernel)) 
+
+                if hasattr(layer, 'bias_regularizer') and layer.use_bias:
+                    layer.add_loss(lambda layer=layer: L2(self.weight_decay)(layer.bias))
 
         return model
 

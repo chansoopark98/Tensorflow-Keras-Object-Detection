@@ -26,17 +26,17 @@ parser.add_argument("--build_postprocess",  help="Post processing build", action
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='efficient_lite_v0_b16_e100_single_gpu_bigger')
+                    default='efficient_lite_v0_b32_e300_single_gpu_bigger')
 parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name",
                     default='efficient_lite_v0')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
-                    default=16)
+                    default=32)
 parser.add_argument("--epoch",            type=int,    help="Training epochs",
-                    default=100)
+                    default=300)
 parser.add_argument("--lr",               type=float,  help="Initial learning rate",
                     default=0.001)
 parser.add_argument("--weight_decay",     type=float,  help="Set Weight Decay",
-                    default=0.0005)
+                    default=0.00001)
 parser.add_argument("--image_size",       type=tuple,  help="Set model input size",
                     default=(300, 300))
 parser.add_argument("--image_norm_type",  type=str,    help="Set RGB image nornalize format (tf or torch or no)",
