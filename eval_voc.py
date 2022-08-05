@@ -15,7 +15,7 @@ tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--backbone_name",      type=str,    help="Pretrained backbone name",
-                    default='efficientv2b0')
+                    default='mobilenetv2')
 parser.add_argument("--batch_size",         type=int,    help="Evaluation batch size",
                     default=1)
 parser.add_argument("--image_size",         type=tuple,  help="Model image size (input resolution H,W)",
@@ -27,7 +27,7 @@ parser.add_argument("--dataset_dir",        type=str,    help="Dataset directory
 parser.add_argument("--checkpoint_dir",     type=str,    help="Setting the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--weight_path",        type=str,    help="Saved model weights directory",
-                    default='0804/_0804_efficientv2b0_voc_test_b16_input-torch_best_loss.h5')
+                    default='0804/_0804_mobilenetv2_b32_ep200_adam_torch_best_loss.h5')
 
 # Prediction results visualize options
 parser.add_argument("--visualize",  help="Whether to image and save inference results", action='store_true')

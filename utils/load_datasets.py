@@ -170,14 +170,23 @@ class GenerateDatasets(DataLoadHandler):
         image = tf.cast(sample[self.image_key], dtype=tf.float32)
         if self.dataset_name == 'display_detection':
             labels = sample[self.label_key] + 1
-            boxes = sample[self.bbox_key]
+            bbox = sample[self.bbox_key]
         else:
             labels = sample['objects'][self.label_key] + 1
-            boxes = sample['objects'][self.bbox_key]
+            bbox = sample['objects'][self.bbox_key]
         
-        image = preprocess_input(image, mode=self.image_norm_type)
+        x_min = tf.where(tf.greater_equal(bbox[:,1], bbox[:,3]), tf.cast(0, dtype=tf.float32), bbox[:,1])
+        y_min = tf.where(tf.greater_equal(bbox[:,0], bbox[:,2]), tf.cast(0, dtype=tf.float32), bbox[:,0])
+        x_max = tf.where(tf.greater_equal(x_min, bbox[:,3]), tf.cast(x_min+0.1, dtype=tf.float32), bbox[:,3])
+        y_max = tf.where(tf.greater_equal(y_min, bbox[:,2]), tf.cast(y_min+0.1, dtype=tf.float32), bbox[:,2])
+        bbox = tf.stack([x_min, y_min, x_max, y_max], axis=1)
+
+        if self.image_norm_type == 'torch':
+            image = preprocess_input(image, mode=self.image_norm_type)
+        else:
+            image = preprocess_input(image, mode=self.image_norm_type)
         
-        return (image, boxes, labels)    
+        return (image, bbox, labels)    
 
 
     @tf.function
@@ -186,14 +195,24 @@ class GenerateDatasets(DataLoadHandler):
         
         if self.dataset_name == 'display_detection':
             labels = sample[self.label_key] + 1
-            boxes = sample[self.bbox_key]
+            bbox = sample[self.bbox_key]
         else:
             labels = sample['objects'][self.label_key] + 1
-            boxes = sample['objects'][self.bbox_key]
+            bbox = sample['objects'][self.bbox_key]
 
-        image = preprocess_input(image, mode=self.image_norm_type)
+        
+        x_min = tf.where(tf.greater_equal(bbox[:,1], bbox[:,3]), tf.cast(0, dtype=tf.float32), bbox[:,1])
+        y_min = tf.where(tf.greater_equal(bbox[:,0], bbox[:,2]), tf.cast(0, dtype=tf.float32), bbox[:,0])
+        x_max = tf.where(tf.greater_equal(x_min, bbox[:,3]), tf.cast(x_min+0.1, dtype=tf.float32), bbox[:,3])
+        y_max = tf.where(tf.greater_equal(y_min, bbox[:,2]), tf.cast(y_min+0.1, dtype=tf.float32), bbox[:,2])
+        bbox = tf.stack([x_min, y_min, x_max, y_max], axis=1)
+
+        if self.image_norm_type == 'torch':
+            image = preprocess_input(image, mode=self.image_norm_type)
+        else:
+            image = preprocess_input(image, mode=self.image_norm_type)
             
-        return (image, boxes, labels)
+        return (image, bbox, labels)
     
     
     @tf.function
@@ -218,7 +237,7 @@ class GenerateDatasets(DataLoadHandler):
         locations, labels = self.target_transform(tf.cast(bbox, tf.float32), labels)
         labels = tf.one_hot(labels, self.num_classes, axis=1, dtype=tf.float32)
         targets = tf.concat([labels, locations], axis=1)
-        resized_img = tf.image.resize(image, self.image_size, method=tf.image.ResizeMethod.BILINEAR)
+        resized_img = tf.image.resize(image, self.image_size)
 
         return (resized_img, targets)
 

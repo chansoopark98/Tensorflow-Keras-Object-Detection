@@ -1,6 +1,6 @@
 from tensorflow.keras import  Input
 from tensorflow.keras.applications import mobilenet_v2
-from tensorflow.keras.layers import Conv2D, BatchNormalization, ReLU, SeparableConv2D
+from tensorflow.keras.layers import Conv2D, BatchNormalization, ReLU, SeparableConv2D, ZeroPadding2D
 
 class MobileNetV2():
     def __init__(self, image_size: tuple, pretrained: str = "imagenet"):
@@ -27,8 +27,8 @@ class MobileNetV2():
         x5 = BatchNormalization()(x5)
         x5 = ReLU(6.)(x5)
         
-
-        x5 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=2, padding='same', use_bias=False)(x5)
+        x5 = ZeroPadding2D(padding=((1, 1), (1, 1)), name='x5_padding')(x5)
+        x5 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=2, padding='valid', use_bias=False)(x5)
         x5 = BatchNormalization()(x5)
         x5 = ReLU(6.)(x5)
         

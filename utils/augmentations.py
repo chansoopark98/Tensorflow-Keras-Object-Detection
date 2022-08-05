@@ -52,10 +52,10 @@ def random_crop(image, bbox, labels):
     x_max = bbox[:, 2] - clip_box[1]
 
     # exception handling
-    # x_min = tf.where(tf.greater_equal(x_min, x_max), tf.cast(0, dtype=tf.float32), x_min)
-    # y_min = tf.where(tf.greater_equal(y_min, y_max), tf.cast(0, dtype=tf.float32), y_min)
-    # x_max = tf.where(tf.greater_equal(x_min, x_max), tf.cast(x_min+0.1, dtype=tf.float32), x_max)
-    # y_max = tf.where(tf.greater_equal(y_min, y_max), tf.cast(y_min+0.1, dtype=tf.float32), y_max)
+    x_min = tf.where(tf.greater_equal(x_min, x_max), tf.cast(0, dtype=tf.float32), x_min)
+    y_min = tf.where(tf.greater_equal(y_min, y_max), tf.cast(0, dtype=tf.float32), y_min)
+    x_max = tf.where(tf.greater_equal(x_min, x_max), tf.cast(x_min+0.1, dtype=tf.float32), x_max)
+    y_max = tf.where(tf.greater_equal(y_min, y_max), tf.cast(y_min+0.1, dtype=tf.float32), y_max)
 
     new_bbox = tf.stack([x_min, y_min, x_max, y_max], axis=1)
 
@@ -140,10 +140,10 @@ def expand(image, boxes, expand_prob=tf.constant(0.5)):
     xmax = (boxes[:, 2] * image_shape[1] + left) / new_width
     ymax = (boxes[:, 3] * image_shape[0] + top) / new_height
 
-    # xmin = tf.where(tf.greater_equal(xmin, xmax), tf.cast(0, dtype=tf.float32), xmin)
-    # ymin = tf.where(tf.greater_equal(ymin, ymax), tf.cast(0, dtype=tf.float32), ymin)
-    # xmax = tf.where(tf.greater_equal(xmin, xmax), tf.cast(xmin+0.1, dtype=tf.float32), xmax)
-    # ymax = tf.where(tf.greater_equal(ymin, ymax), tf.cast(ymin+0.1, dtype=tf.float32), ymax)
+    xmin = tf.where(tf.greater_equal(xmin, xmax), tf.cast(0, dtype=tf.float32), xmin)
+    ymin = tf.where(tf.greater_equal(ymin, ymax), tf.cast(0, dtype=tf.float32), ymin)
+    xmax = tf.where(tf.greater_equal(xmin, xmax), tf.cast(xmin+0.1, dtype=tf.float32), xmax)
+    ymax = tf.where(tf.greater_equal(ymin, ymax), tf.cast(ymin+0.1, dtype=tf.float32), ymax)
 
     boxes = tf.stack([xmin, ymin, xmax, ymax], axis=1)
 

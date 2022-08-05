@@ -1,4 +1,4 @@
-from tensorflow.keras.layers import Concatenate, Flatten, Reshape, SeparableConv2D
+from tensorflow.keras.layers import Concatenate, Flatten, Reshape, SeparableConv2D, Conv2D
 from tensorflow.keras.layers import Layer
 from tensorflow.keras.initializers import Constant, VarianceScaling
 import tensorflow as tf
@@ -56,7 +56,7 @@ class ModelBuilder():
         elif model_name == 'mobilenetv3l':
             model = MobileNetV3L(image_size=self.image_size, pretrained="imagenet")
         elif model_name == 'efficientv2b0':
-            self.normalize = [20, 20, -1, -1, -1, -1]
+            self.normalize = [20, 20, 20, -1, -1, -1]
             model = EfficientNetV2B0(image_size=self.image_size, pretrained="imagenet")
         elif model_name == 'efficientv2b3':
             model = EfficientNetV2B3(image_size=self.image_size, pretrained="imagenet")
@@ -87,6 +87,9 @@ class ModelBuilder():
                                 depthwise_initializer=self.kernel_initializer,
                                 pointwise_initializer=self.kernel_initializer,
                                 name= name + '_mbox_conf_1')(x)
+            # x1 = Conv2D(num_priors[i] * self.num_classes, 3, padding='same',
+            #             kernel_initializer=self.kernel_initializer,
+            #             name=name + '_mbox_conf_1')(x)
             x1 = Flatten(name=name + '_mbox_conf_flat')(x1)
             mbox_conf.append(x1)
 
@@ -95,6 +98,9 @@ class ModelBuilder():
                                 depthwise_initializer=self.kernel_initializer,
                                 pointwise_initializer=self.kernel_initializer,
                                 name= name + '_mbox_loc_1')(x)
+            # x2 = Conv2D(num_priors[i] * 4, 3, padding='same',
+            #                     kernel_initializer=self.kernel_initializer,
+            #                     name= name + '_mbox_loc_1')(x)
             x2 = Flatten(name=name + '_mbox_loc_flat')(x2)
             mbox_loc.append(x2)
 

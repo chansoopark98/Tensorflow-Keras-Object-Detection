@@ -63,11 +63,12 @@ class DetectionLoss(tf.keras.losses.Loss):
         loc_loss = smooth_l1_loss / num_pos
         class_loss = classification_loss / num_pos
 
-        if self.use_multi_gpu:
-            loc_loss *= (1. / self.global_batch_size)
-            class_loss *= (1. / self.global_batch_size)
             
         mbox_loss = loc_loss + class_loss
+
+        # if self.use_multi_gpu:
+        #     mbox_loss *= (1. / self.global_batch_size)
+            
         return mbox_loss
 
 

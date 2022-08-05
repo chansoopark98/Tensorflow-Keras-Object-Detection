@@ -10,6 +10,7 @@ import time
 
 # https://npmmirror.com/package/@tensorflow/tfjs-tflite
 # https://groups.google.com/a/tensorflow.org/g/tflite/c/Yt6-eSMn_bg -> tflite 사용법 및 -127 ~ 128 정규화
+# https://codesandbox.io/s/kwmq4v263?file=/src/index.js 텐서플로js sample files
 
 tf.keras.backend.clear_session()
 
@@ -25,11 +26,11 @@ parser.add_argument("--build_postprocess",  help="Post processing build", action
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='mobilenetv2_b64_ep200_adam_torch')
+                    default='efficientv2b0_b32_e200_single_gpu')
 parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name",
-                    default='mobilenetv2')
+                    default='efficientv2b0')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
-                    default=64)
+                    default=32)
 parser.add_argument("--epoch",            type=int,    help="Training epochs",
                     default=200)
 parser.add_argument("--lr",               type=float,  help="Initial learning rate",
@@ -61,7 +62,7 @@ parser.add_argument("--tensorboard_dir",  type=str,    help="Set tensorboard sto
 
 # Set Distribute training (When use Single gpu)
 parser.add_argument("--gpu_num",          type=int,    help="Set GPU number to use(When without distribute training)",
-                    default=0)
+                    default=1)
 
 # Set Distribute training (When use Multi gpu)
 parser.add_argument("--multi_gpu",  help="Set up distributed learning mode", action='store_true')
