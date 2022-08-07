@@ -182,7 +182,8 @@ class GenerateDatasets(DataLoadHandler):
         bbox = tf.stack([x_min, y_min, x_max, y_max], axis=1)
 
         if self.image_norm_type == 'torch':
-            image = preprocess_input(image, mode=self.image_norm_type)
+            # image = preprocess_input(image, mode=self.image_norm_type)
+            image /= 255
         else:
             image = preprocess_input(image, mode=self.image_norm_type)
         
@@ -208,7 +209,8 @@ class GenerateDatasets(DataLoadHandler):
         bbox = tf.stack([x_min, y_min, x_max, y_max], axis=1)
 
         if self.image_norm_type == 'torch':
-            image = preprocess_input(image, mode=self.image_norm_type)
+            # image = preprocess_input(image, mode=self.image_norm_type)
+            image /= 255
         else:
             image = preprocess_input(image, mode=self.image_norm_type)
             
