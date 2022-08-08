@@ -25,14 +25,19 @@ center_variance = 0.1
 size_variance = 0.2
 
 # Original specs
-
+# Spec(38, 8, BoxSizes(30, 60), [2]),
+# Spec(19, 16, BoxSizes(60, 111), [2, 3]),
+# Spec(10, 32, BoxSizes(111, 162), [2, 3]),
+# Spec(5, 64, BoxSizes(162, 213), [2, 3]),
+# Spec(3, 100, BoxSizes(213, 264), [2]),
+# Spec(1, 300, BoxSizes(264, 315), [2])
 
 def convert_spec_list():
     spec_list = [
                     Spec(38, 8, BoxSizes(30, 60), [2]),
-                    Spec(19, 16, BoxSizes(60, 111), [2, 3]),
-                    Spec(10, 32, BoxSizes(111, 162), [2, 3]),
-                    Spec(5, 64, BoxSizes(162, 213), [2, 3]),
+                    Spec(19, 16, BoxSizes(60, 111), [2]),
+                    Spec(10, 32, BoxSizes(111, 162), [2]),
+                    Spec(5, 64, BoxSizes(162, 213), [2]),
                     Spec(3, 100, BoxSizes(213, 264), [2]),
                     Spec(1, 300, BoxSizes(264, 315), [2])
                  ]

@@ -92,7 +92,7 @@ def merge_post_process(detections, target_transform, confidence_threshold=0.01, 
                                              target_transform.center_variance, target_transform.size_variance)
     batch_boxes = center_form_to_corner_form(batch_boxes)
 
-    batch_size = tf.shape(batch_scores)[0]
+    # batch_size = tf.shape(batch_scores)[0]
     results = []
     for image_id in range(1):
         scores, boxes = batch_scores[image_id], batch_boxes[image_id]  # (N, #CLS) (N, 4)

@@ -5,9 +5,15 @@ from tensorflow.keras.models import Model
 from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2
 from utils.priors import *        
 import argparse 
+
+# ONNX Convert
+# 1. pip install tf2onnx
+# (Frozen graph)
+# 2. python -m tf2onnx.convert --input ./checkpoints/new_tfjs_frozen/frozen_graph.pb --output ./checkpoints/onnx_test.onnx --inputs x:0 --outputs Identity:0 --opset 10
+
 # quantize_uint8
 # tensorflowjs_converter ./checkpoints/new_tfjs_frozen/frozen_graph.pb ./checkpoints/converted_tfjs/ --input_format=tf_frozen_model --output_node_names='Identity' --quantize_float16 
-# tensorflowjs_converter ./checkpoints/new_tfjs_frozen/frozen_graph.pb ./checkpoints/converted_tfjs/ --input_format=tf_frozen_model --output_node_names='Identity' --quantize_uint8 
+# tensorflowjs_converter ./checkpoints/new_tfjs_frozen/frozen_graph.pb ./checkpoints/converted_tfjs/ --input_format=tf_frozen_model --output_node_names='Identity' --quantize_uint8 '*'
 # tensorflowjs_converter --input_format=tf_frozen_model --output_node_names='Identity' ./checkpoints/new_tfjs_frozen/frozen_graph.pb ./checkpoints/converted_tfjs/
 
 # Set Distribute training (When use Multi gpu)
@@ -19,7 +25,7 @@ parser.add_argument("--gpu_num",          type=int,    help="Set GPU number to u
 args = parser.parse_args()
 
 if __name__ == '__main__':
-    # tf.config.run_functions_eagerly(True)
+    
     
     tf.config.set_soft_device_placement(True)
 
@@ -27,8 +33,8 @@ if __name__ == '__main__':
     with tf.device(gpu_number):
 
         IMAGE_SIZE = (300, 300)
-        num_classes = 21
-        checkpoints = './checkpoints/0807/_0807_efficient_lite_v0_lr0.002_b32_e300_single_gpu_bigger_adam_base-64_best_loss.h5'
+        num_classes = 3
+        checkpoints = './checkpoints/0808/_0808_efficient_lite_v0_display_detection_transfer_lr0.002_b32_e200_single_gpu_bigger_adam_base-64_best_loss.h5'
 
         spec_list = convert_spec_list()
         priors = create_priors_boxes(specs=spec_list, image_size=IMAGE_SIZE[0], clamp=True)
@@ -37,7 +43,7 @@ if __name__ == '__main__':
         model = ModelBuilder(image_size=IMAGE_SIZE,
                                     num_classes=num_classes).build_model('efficient_lite_v0')
         model.load_weights(checkpoints, by_name=True)
-        detection_output = merge_post_process(detections=model.output, target_transform=target_transform, confidence_threshold=0.5)
+        detection_output = merge_post_process(detections=model.output, target_transform=target_transform, confidence_threshold=0.5, classes=num_classes)
         model = Model(inputs=model.input, outputs=detection_output)
 
         model.summary()

@@ -26,13 +26,13 @@ parser.add_argument("--build_postprocess",  help="Post processing build", action
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='efficient_lite_v0_display_detection_transfer_lr0.002_b32_e200_single_gpu_bigger_adam_base-64')
+                    default='efficient_lite_v0_voc_lr0.002_b32_e300_base64_prior(4,4,4,4,4,4)')
 parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name",
                     default='efficient_lite_v0')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
                     default=32)
 parser.add_argument("--epoch",            type=int,    help="Training epochs",
-                    default=200)
+                    default=300)
 parser.add_argument("--lr",               type=float,  help="Initial learning rate",
                     default=0.002)
 parser.add_argument("--weight_decay",     type=float,  help="Set Weight Decay",
@@ -54,7 +54,7 @@ parser.add_argument("--model_name",       type=str,    help="Set the model name 
 parser.add_argument("--dataset_dir",      type=str,    help="Set the dataset download directory",
                     default='./datasets/')
 parser.add_argument("--dataset_name",     type=str,    help="Set the dataset type (cityscapes, custom etc..)",
-                    default='display_detection')
+                    default='voc')
 parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,    help="Set tensorboard storage path",
