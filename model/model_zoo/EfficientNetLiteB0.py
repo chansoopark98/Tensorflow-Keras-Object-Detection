@@ -22,7 +22,7 @@ class EfficientLiteB0():
         base = self.build_backbone()
         model_input = base.input
 
-        base_channel = 128
+        base_channel = 64
         
         x2 = base.get_layer('block3b_add').output # 38x38 @ 48
         x3 = base.get_layer('block5c_add').output # 19x19 @ 112

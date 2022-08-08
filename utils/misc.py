@@ -287,7 +287,7 @@ def convert_boxes_to_locations(center_form_boxes, center_form_priors, center_var
 
 # experimental_relax_shapes=True인 경우 인스턴스 객체를 생성할 때 작은 graph를 생성할 수 있게 함 (XLA 타입으로 컴파일)
 # 참고 자료 : https://www.tensorflow.org/xla?hl=ko
-@tf.function(experimental_relax_shapes=True)
+# @tf.function(experimental_relax_shapes=True)
 def area_of(left_top, right_bottom):
     """bbox 좌표값 (좌상단, 우하단)으로 사각형 넓이 계산.
     Args:
@@ -301,7 +301,7 @@ def area_of(left_top, right_bottom):
     return hw[..., 0] * hw[..., 1]
 
 
-@tf.function(experimental_relax_shapes=True)
+# @tf.function(experimental_relax_shapes=True)
 def iou_of(boxes0, boxes1, eps=1e-5):
     """두 bbox간 iou 계산.
     Args:
@@ -327,7 +327,7 @@ def center_form_to_corner_form(locations):
     return output
 
 
-@tf.function
+# @tf.function
 def corner_form_to_center_form(boxes):
     return tf.concat([
         (boxes[..., :2] + boxes[..., 2:]) / 2,

@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
         IMAGE_SIZE = (300, 300)
         num_classes = 21
-        checkpoints = './checkpoints/0805/_0805_efficient_lite_v0_b16_e100_single_gpu_best_loss.h5'
+        checkpoints = './checkpoints/0807/_0807_efficient_lite_v0_lr0.002_b32_e300_single_gpu_bigger_adam_base-64_best_loss.h5'
 
         spec_list = convert_spec_list()
         priors = create_priors_boxes(specs=spec_list, image_size=IMAGE_SIZE[0], clamp=True)

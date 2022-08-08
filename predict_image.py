@@ -11,7 +11,7 @@ from utils.misc import draw_bounding, CLASSES, COCO_CLASSES, TEST_CLASSES
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name",
-                    default='mobilenetv3s')
+                    default='efficient_lite_v0')
 parser.add_argument("--batch_size",     type=int,
                     help="Evaluation batch size", default=1)
 parser.add_argument("--num_classes",     type=int,
@@ -23,11 +23,11 @@ parser.add_argument("--image_dir",    type=str,
 parser.add_argument("--image_size",     type=tuple,
                     help="Model image size (input resolution)", default=(300, 300))
 parser.add_argument("--threshold",     type=float,
-                    help="Post processing confidence threshold", default=0.1)
+                    help="Post processing confidence threshold", default=0.5)
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='/0804/_0804_mobilenetv3s_display_dataset_test_best_loss.h5')
+                    help="Saved model weights directory", default='/0808/_0808_efficient_lite_v0_display_detection_transfer_lr0.002_b32_e200_single_gpu_bigger_adam_base-64_best_loss.h5')
 
 args = parser.parse_args()
 

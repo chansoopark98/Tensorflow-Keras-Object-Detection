@@ -174,6 +174,8 @@ class ModelConfiguration(GenerateDatasets):
                                   global_batch_size=self.batch_size,
                                   use_multi_gpu=self.DISTRIBUTION_MODE)
 
+        self.model.load_weights('./checkpoints/0807/_0807_efficient_lite_v0_lr0.002_b32_e300_single_gpu_bigger_adam_base-64_best_loss.h5', by_name=True, skip_mismatch=True)
+
         self.model.compile(optimizer=self.optimizer,
                            loss=self.loss,
                            metrics=self.metrics)

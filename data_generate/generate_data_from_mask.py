@@ -503,7 +503,7 @@ if __name__ == '__main__':
         
         original_h, original_w = original_rgb.shape[:2]
         aspect_ratio = original_h / original_w
-        original_w *= 0.6
+        original_w *= 0.35
         original_h = original_w * aspect_ratio
 
         rgb, mask, obj_mask = image_loader.image_resize(
