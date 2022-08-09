@@ -54,8 +54,8 @@ class ModelBuilder():
         self.kernel_initializer = VarianceScaling(scale=2.0, mode="fan_out",
                                                   distribution="truncated_normal")
         self.normalize = [20, 20, 20, -1, -1, -1]
-        # self.num_priors = [4, 6, 6, 6, 4, 4]
-        self.num_priors = [2, 4, 4, 4, 4, 4]
+        self.num_priors = [4, 6, 6, 6, 4, 4]
+        # self.num_priors = [2, 4, 4, 4, 4, 4]
 
 
     def build_model(self, model_name: str) -> Model:
