@@ -38,7 +38,14 @@ class DataLoadHandler:
 
             elif self.dataset_name == 'display_detection':
                 self.num_classes = 3
-                self.dataset_list = self.__load_custom_dataset()
+                self.dataset_list = self.__load_custom_dataset(dataset_name=self.dataset_name)
+                self.image_key = 'image'
+                self.label_key = 'label'
+                self.bbox_key = 'bbox'
+
+            elif self.dataset_name == 'human_detection':
+                self.num_classes = 2
+                self.dataset_list = self.__load_custom_dataset(dataset_name=self.dataset_name)
                 self.image_key = 'image'
                 self.label_key = 'label'
                 self.bbox_key = 'bbox'
@@ -122,7 +129,7 @@ class DataLoadHandler:
         return (train_data, number_train, valid_data, number_valid, test_data, number_test)
 
 
-    def __load_custom_dataset(self):
+    def __load_custom_dataset(self, dataset_name):
         
         if os.path.isdir(self.data_dir + 'display_detection') == False:
             raise Exception(
@@ -130,8 +137,8 @@ class DataLoadHandler:
                  You can download use dataset_download.py')
 
 
-        train_data = tfds.load('display_detection', data_dir=self.data_dir, split='train[5%:]')
-        valid_data = tfds.load('display_detection', data_dir=self.data_dir, split='train[:5%]')
+        train_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train[5%:]')
+        valid_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train[:5%]')
     
 
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
@@ -141,6 +148,7 @@ class DataLoadHandler:
         print("Nuber of validation dataset = {0}".format(number_valid))
 
         return (train_data, number_train, valid_data, number_valid, 0, 0)
+
 
 
 
@@ -171,6 +179,10 @@ class GenerateDatasets(DataLoadHandler):
         if self.dataset_name == 'display_detection':
             labels = sample[self.label_key] + 1
             bbox = sample[self.bbox_key]
+        elif self.dataset_name == 'human_detection':
+            labels = sample[self.label_key]
+            labels = tf.where(labels>=0, 1, 0)
+            bbox = sample[self.bbox_key]
         else:
             labels = sample['objects'][self.label_key] + 1
             bbox = sample['objects'][self.bbox_key]
@@ -196,6 +208,11 @@ class GenerateDatasets(DataLoadHandler):
         
         if self.dataset_name == 'display_detection':
             labels = sample[self.label_key] + 1
+            bbox = sample[self.bbox_key]
+        elif self.dataset_name == 'human_detection':
+            labels = sample[self.label_key]
+            labels = tf.where(labels>=0, 1, 0)
+            labels = tf.cast(labels, tf.int64)
             bbox = sample[self.bbox_key]
         else:
             labels = sample['objects'][self.label_key] + 1

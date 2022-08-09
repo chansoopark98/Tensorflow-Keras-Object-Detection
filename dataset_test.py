@@ -10,10 +10,10 @@ from utils.load_datasets import GenerateDatasets
 
 
 
-test_data = tfds.load('display_detection', data_dir='./datasets', split='train')
+test_data = tfds.load('human_detection', data_dir='./datasets', split='train')
 
-CLASSES_NUM = 21
-IMAGE_SIZE = (512, 512)
+CLASSES_NUM = 81
+IMAGE_SIZE = (300, 300)
 
 specs = set_priorBox('B0')
 priors = create_priors_boxes(specs, IMAGE_SIZE[0])
@@ -22,7 +22,7 @@ target_transform = MatchingPriors(priors, center_variance, size_variance, iou_th
 dataset_config = GenerateDatasets(data_dir='./datasets/',
                     image_size=(300, 300),
                     batch_size=1, image_norm_type='torch',
-                    target_transform=target_transform, dataset_name='custom_dataset')
+                    target_transform=target_transform, dataset_name='human_detection')
 
 # test_dataset= dataset_config.get_testData(test_data=dataset_config.valid_data)
 
@@ -33,7 +33,8 @@ for sample in test_data.take(100):
     # boxes = sample['objects']['bbox'].numpy() 
 
     image = sample['image'].numpy()
-    labels = sample['label'].numpy() +1
+    labels = sample['label'].numpy()
+    labels = tf.where(labels>=0, 1, 0)
     boxes = sample['bbox'].numpy() 
     
     # y_min, x_min, y_max, y_max -> x_min, y_min, x_max, y_max
@@ -46,7 +47,7 @@ for sample in test_data.take(100):
     # y_max = tf.where(tf.greater_equal(y_min, boxes[:,2]), tf.cast(y_min+0.1, dtype=tf.float32), boxes[:,2])
     # boxes = tf.stack([x_min, y_min, x_max, y_max], axis=1)
     print(convert_boxes.shape)
-    draw_bounding(img = image, bboxes=convert_boxes, labels=labels, scores=None, img_size=image.shape[:2], label_list=CLASSES)
+    draw_bounding(img = image, bboxes=convert_boxes, labels=labels, scores=None, img_size=image.shape[:2], label_list=COCO_CLASSES)
 
     print('Image {0} \n  Labels {1} \n Bbox {2}'.format(image.shape, labels, boxes))
     cv2.imshow('test', image)

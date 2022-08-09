@@ -29,7 +29,7 @@ parser.add_argument("--transfer_learning",  help="Post processing build", action
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='efficient_lite_v0_voc_lr0.002_b32_e300_base64_prior(2,4,4,4,4,4)')
+                    default='efficient_lite_v0_human_detection_lr0.002_b32_e300_base64_prior_normal')
 parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name",
                     default='efficient_lite_v0')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
@@ -57,7 +57,7 @@ parser.add_argument("--model_name",       type=str,    help="Set the model name 
 parser.add_argument("--dataset_dir",      type=str,    help="Set the dataset download directory",
                     default='./datasets/')
 parser.add_argument("--dataset_name",     type=str,    help="Set the dataset type (cityscapes, custom etc..)",
-                    default='voc')
+                    default='human_detection')
 parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,    help="Set tensorboard storage path",
