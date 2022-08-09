@@ -202,10 +202,10 @@ def EfficientNetLite(
     if input_tensor is None:
         img_input = layers.Input(shape=input_shape)
     else:
-        if not backend.is_keras_tensor(input_tensor):
-            img_input = layers.Input(tensor=input_tensor, shape=input_shape)
-        else:
-            img_input = input_tensor
+        # if not backend.is_keras_tensor(input_tensor):
+        #     img_input = layers.Input(tensor=input_tensor, shape=input_shape)
+        # else:
+        img_input = input_tensor
 
     bn_axis = 3 if backend.image_data_format() == "channels_last" else 1
 

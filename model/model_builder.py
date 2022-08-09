@@ -35,7 +35,8 @@ class Normalize(Layer):
 
 class ModelBuilder():
     def __init__(self, image_size: tuple = (300, 300), num_classes: int = 21,
-     use_weight_decay: bool = False, weight_decay: float = 0.00001):
+                 use_weight_decay: bool = False, weight_decay: float = 0.00001,
+                 include_preprocessing: bool = False):
         """
         Args:
             image_size         (tuple) : Model input resolution ([H, W])
@@ -48,11 +49,13 @@ class ModelBuilder():
         self.num_classes = num_classes
         self.use_weight_decay = use_weight_decay
         self.weight_decay = weight_decay
+        self.include_preprocessing = include_preprocessing
+
         self.kernel_initializer = VarianceScaling(scale=2.0, mode="fan_out",
                                                   distribution="truncated_normal")
         self.normalize = [20, 20, 20, -1, -1, -1]
         # self.num_priors = [4, 6, 6, 6, 4, 4]
-        self.num_priors = [4, 4, 4, 4, 4, 4]
+        self.num_priors = [2, 4, 4, 4, 4, 4]
 
 
     def build_model(self, model_name: str) -> Model:
@@ -67,7 +70,8 @@ class ModelBuilder():
             model = MobileNetV3L(image_size=self.image_size, pretrained="imagenet")
         elif model_name == 'efficient_lite_v0':
             from .model_zoo.EfficientNetLiteB0 import EfficientLiteB0
-            model = EfficientLiteB0(image_size=self.image_size, pretrained="imagenet")
+            model = EfficientLiteB0(image_size=self.image_size, pretrained="imagenet",
+                                    include_preprocessing=self.include_preprocessing)
         elif model_name == 'efficientv2b0':
             from .model_zoo.EffcientNetV2B0 import EfficientNetV2B0
             self.normalize = [20, 20, 20, -1, -1, -1]

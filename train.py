@@ -26,7 +26,7 @@ parser.add_argument("--build_postprocess",  help="Post processing build", action
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='efficient_lite_v0_voc_lr0.002_b32_e300_base64_prior(4,4,4,4,4,4)')
+                    default='efficient_lite_v0_voc_lr0.002_b32_e300_base64_prior(2,4,4,4,4,4)')
 parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name",
                     default='efficient_lite_v0')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",

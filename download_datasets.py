@@ -1,9 +1,8 @@
 import tensorflow_datasets as tfds
 import argparse
 import os
-from preprocessing import *
 import resource
-
+import tensorflow as tf
 
 """
 https://github.com/tensorflow/datasets/issues/1441#issuecomment-581660890

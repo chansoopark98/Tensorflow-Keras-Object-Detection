@@ -116,8 +116,8 @@ def eval_detection_voc(
     np_prec = np.array(prec)
     np_rec = np.array(rec)
 
-    np.save('./prec',np_prec)
-    np.save('./rec',np_rec)
+    np.save('./experiments/prec',np_prec)
+    np.save('./experiments/rec',np_rec)
 
 
     # from matplotlib import pyplot

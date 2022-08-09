@@ -27,7 +27,7 @@ parser.add_argument("--dataset_dir",        type=str,    help="Dataset directory
 parser.add_argument("--checkpoint_dir",     type=str,    help="Setting the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--weight_path",        type=str,    help="Saved model weights directory",
-                    default='0807/_0807_efficient_lite_v0_lr0.002_b32_e300_single_gpu_bigger_adam_base-64_best_loss.h5')
+                    default='0808/_0808_efficient_lite_v0_voc_lr0.002_b32_e300_base64_prior(2,4,4,4,4,4)_best_loss.h5')
 
 # Prediction results visualize options
 parser.add_argument("--visualize",  help="Whether to image and save inference results", action='store_true')
@@ -85,6 +85,7 @@ if __name__ == '__main__':
         pred_bboxes = []
         pred_labels = []
         pred_scores = []
+        
         for x, _ in tqdm(test_dataset, total=test_steps):
             # Check inference time
             start = time.process_time()

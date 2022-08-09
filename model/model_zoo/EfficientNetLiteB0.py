@@ -1,15 +1,21 @@
 from .EfficientNet_lite import EfficientNetLiteB0
 from tensorflow.keras.layers import Conv2D, BatchNormalization, ReLU, SeparableConv2D, Activation, ZeroPadding2D
+from tensorflow.keras.layers import Input, Rescaling
 
 class EfficientLiteB0():
-    def __init__(self, image_size: tuple, pretrained: str = "imagenet"):
+    def __init__(self, image_size: tuple, pretrained: str = "imagenet", include_preprocessing: bool = False):
         self.image_size = image_size
         self.pretrained = pretrained
+        self.include_preprocessing = include_preprocessing
     
     def build_backbone(self):
-        base = EfficientNetLiteB0(include_top=False, weights=self.pretrained, input_shape=(*self.image_size, 3))
-        
-        
+        if self.include_preprocessing:
+            input_tensor = Input(shape=(*self.image_size, 3))
+            input_tensor = Rescaling(1./255, offset=0.0,)(input_tensor)
+        else:
+            input_tensor = None
+
+        base = EfficientNetLiteB0(include_top=False, weights=self.pretrained, input_shape=(*self.image_size, 3), input_tensor=input_tensor)
 
         self.kernel_initializer = {
             "class_name": "VarianceScaling",

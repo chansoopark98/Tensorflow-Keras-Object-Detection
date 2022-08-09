@@ -34,7 +34,7 @@ size_variance = 0.2
 
 def convert_spec_list():
     spec_list = [
-                    Spec(38, 8, BoxSizes(30, 60), [2]),
+                    Spec(38, 8, BoxSizes(30, 60), []),
                     Spec(19, 16, BoxSizes(60, 111), [2]),
                     Spec(10, 32, BoxSizes(111, 162), [2]),
                     Spec(5, 64, BoxSizes(162, 213), [2]),
