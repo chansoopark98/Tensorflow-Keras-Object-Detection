@@ -119,17 +119,6 @@ def eval_detection_voc(
     np.save('./experiments/prec',np_prec)
     np.save('./experiments/rec',np_rec)
 
-
-    # from matplotlib import pyplot
-    #
-    # pyplot.plot(rec[0], prec[0], linestyle='--', label='class_0')
-    # pyplot.xlabel('Recall')
-    # pyplot.ylabel('Precision')
-    # pyplot.legend()
-    # pyplot.show()
-
-
-
     return {'ap': ap, 'map': np.nanmean(ap)}
 
 

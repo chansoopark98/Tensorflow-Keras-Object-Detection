@@ -15,11 +15,11 @@ parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone
 parser.add_argument("--batch_size",     type=int,
                     help="Evaluation batch size", default=1)
 parser.add_argument("--num_classes",     type=int,
-                    help="Number of classes", default=3)
+                    help="Number of classes", default=21)
 parser.add_argument("--train_dataset_type",     type=str,
                     help="Train dataset type", default='voc')
 parser.add_argument("--image_dir",    type=str,
-                    help="Image directory", default='/home/park/0708_capture')
+                    help="Image directory", default='./inputs/')
 parser.add_argument("--image_size",     type=tuple,
                     help="Model image size (input resolution)", default=(300, 300))
 parser.add_argument("--threshold",     type=float,
@@ -27,7 +27,7 @@ parser.add_argument("--threshold",     type=float,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='/0808/_0808_efficient_lite_v0_display_detection_transfer_lr0.002_b32_e200_single_gpu_bigger_adam_base-64_best_loss.h5')
+                    help="Saved model weights directory", default='/0808/_0808_efficient_lite_v0_voc_lr0.002_b32_e300_base64_prior(2,4,4,4,4,4)_best_loss.h5')
 
 args = parser.parse_args()
 
@@ -60,7 +60,7 @@ if __name__ == '__main__':
                 method=tf.image.ResizeMethod.BILINEAR)
 
         img = tf.cast(img, tf.float32)
-        img = preprocess_input(x=img, mode='tf')
+        img /= 255
         
         img = tf.expand_dims(img, axis=0)
 
@@ -72,9 +72,10 @@ if __name__ == '__main__':
         
 
         if pred_boxes.size > 0:
-            draw_bounding(frame, pred_boxes,  labels=pred_labels,  scores=pred_scores, img_size=frame.shape[:2], label_list=TEST_CLASSES)
+            draw_bounding(frame, pred_boxes,  labels=pred_labels,  scores=pred_scores, img_size=frame.shape[:2], label_list=CLASSES)
         
 
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         tf.keras.preprocessing.image.save_img(result_dir + str(i)+'_.png', frame)
 
     cv2.destroyAllWindows()

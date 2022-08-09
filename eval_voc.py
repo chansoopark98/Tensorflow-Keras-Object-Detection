@@ -85,7 +85,7 @@ if __name__ == '__main__':
         pred_bboxes = []
         pred_labels = []
         pred_scores = []
-        
+
         for x, _ in tqdm(test_dataset, total=test_steps):
             # Check inference time
             start = time.process_time()
@@ -115,7 +115,6 @@ if __name__ == '__main__':
                                 gt_difficults=voc_difficults,
                                 use_07_metric=True)
 
-        
 
         print('Model FLOPs {0}'.format(get_flops(model=model, batch_size=1)))
         print('Avg inference time : {0}sec.'.format((avg_duration / dataset_config.number_test)))

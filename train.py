@@ -24,6 +24,9 @@ parser.add_argument("--saved_model_path", type=str,   help="Saved model weight p
 # Build with post processing
 parser.add_argument("--build_postprocess",  help="Post processing build", action='store_true')
 
+# Training use pre-trained mode (voc, coco .. etc)
+parser.add_argument("--transfer_learning",  help="Post processing build", action='store_true')
+
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
                     default='efficient_lite_v0_voc_lr0.002_b32_e300_base64_prior(2,4,4,4,4,4)')

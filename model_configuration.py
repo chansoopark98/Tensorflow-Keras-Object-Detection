@@ -144,7 +144,7 @@ class ModelConfiguration(GenerateDatasets):
 
     def __set_metrics(self):
         metric = CreateMetrics(num_classes=self.num_classes)
-        metrics = None
+        metrics = [metric.localization]
 
         return metrics
 
@@ -154,8 +154,9 @@ class ModelConfiguration(GenerateDatasets):
             Build a deep learning model.
         """
         self.model = ModelBuilder(image_size=self.IMAGE_SIZE,
-                                  num_classes=self.num_classes, use_weight_decay=self.USE_WEIGHT_DECAY, weight_decay=self.WEIGHT_DECAY).build_model(model_name=self.BACKBONE_NAME)
-        # self.model.load_weights('./checkpoints/0802/_0802_efficientv2b3_new_display_dataset_remove_rotation_best_loss.h5', by_name=True, skip_mismatch=True)
+                                  num_classes=self.num_classes,
+                                  use_weight_decay=self.USE_WEIGHT_DECAY,
+                                  weight_decay=self.WEIGHT_DECAY).build_model(model_name=self.BACKBONE_NAME)
 
     
     def train(self):
@@ -174,7 +175,8 @@ class ModelConfiguration(GenerateDatasets):
                                   global_batch_size=self.batch_size,
                                   use_multi_gpu=self.DISTRIBUTION_MODE)
 
-        self.model.load_weights('./checkpoints/0807/_0807_efficient_lite_v0_lr0.002_b32_e300_single_gpu_bigger_adam_base-64_best_loss.h5', by_name=True, skip_mismatch=True)
+        if self.args.transfer_learning:
+            self.model.load_weights(self.args.saved_model_path, by_name=True, skip_mismatch=True)
 
         self.model.compile(optimizer=self.optimizer,
                            loss=self.loss,
@@ -188,8 +190,6 @@ class ModelConfiguration(GenerateDatasets):
                        validation_steps=self.validation_steps,
                        epochs=self.EPOCHS,
                        callbacks=self.callback)
-
-
 
     def saved_model(self):
         """

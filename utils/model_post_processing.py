@@ -82,6 +82,7 @@ def post_process(detections, target_transform, confidence_threshold=0.01, top_k=
 
     return results
 
+
 def merge_post_process(detections, target_transform, confidence_threshold=0.01, top_k=100, iou_threshold=0.5, classes=21):
     batch_boxes = detections[:, :, classes:]
     if not tf.is_tensor(batch_boxes):

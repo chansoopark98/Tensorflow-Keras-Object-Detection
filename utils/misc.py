@@ -1,11 +1,7 @@
 import tensorflow as tf
-import matplotlib.patches as patches
-import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 from collections import namedtuple
-
-
 
 TEST_CLASSES = ['outdoor', 'indoor']
 
@@ -211,12 +207,10 @@ def coco_color_map(index):
     return label_defs[index]
 
 def draw_bounding(img , bboxes, labels, scores, img_size, label_list):
-    # resizing 작업
     if np.max(bboxes) < 10:
         bboxes[:, [0,2]] = bboxes[:, [0,2]]*img_size[1]
         bboxes[:, [1,3]] = bboxes[:, [1,3]]*img_size[0]
     
-
     for i, bbox in enumerate(bboxes):
         xmin = int(bbox[0])
         ymin = int(bbox[1])
@@ -323,9 +317,7 @@ def iou_of(boxes0, boxes1, eps=1e-5):
 def center_form_to_corner_form(locations):
     output = tf.concat([locations[..., :2] - locations[..., 2:] / 2,
                         locations[..., :2] + locations[..., 2:] / 2], tf.rank(locations) - 1)
-
     return output
-
 
 # @tf.function
 def corner_form_to_center_form(boxes):
