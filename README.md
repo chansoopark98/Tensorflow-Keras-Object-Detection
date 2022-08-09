@@ -33,7 +33,8 @@
 
 <!-- ![12_]() -->
 
-<center><img src="https://user-images.githubusercontent.com/60956651/183575643-7cd2957d-a701-490b-bcb3-b478e3890ede.png" width="500" height="400"/><img src="https://user-images.githubusercontent.com/60956651/183576318-c12f872c-369a-4cdd-9e1a-50f8b5ae98e7.png" width="500" height="400"/></center>
+<center><img src="https://user-images.githubusercontent.com/60956651/183575643-7cd2957d-a701-490b-bcb3-b478e3890ede.png" width="500" height="400"/></center>
+<center><img src="https://user-images.githubusercontent.com/60956651/183576318-c12f872c-369a-4cdd-9e1a-50f8b5ae98e7.png" width="500" height="400"/></center>
 
 </p>
 
