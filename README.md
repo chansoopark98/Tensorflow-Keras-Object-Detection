@@ -400,29 +400,35 @@ CUDA 및 CuDNN이 사전에 설치가 완료된 경우 생략합니다.
 
 TensorRT를 설치한 디렉토리로 이동하여 압축을 해제하고 pip를 업그레이드 합니다.
 
-    tar -xvzf TensorRT-7.2.2.3.Ubuntu-18.04.x86_64-gnu.cuda-11.1.cudnn8.0.tar.gz
-    pip3 install --upgrade pip
+```bash
+tar -xvzf TensorRT-7.2.2.3.Ubuntu-18.04.x86_64-gnu.cuda-11.1.cudnn8.0.tar.gz
+pip3 install --upgrade pip
+```
 
 편집기를 이용하여 배시 쉘에 접근하여 환경 변수를 추가합니다.
 
-    sudo gedit ~/.bashrc
-    export PATH="/usr/local/cuda-11.1/bin:$PATH"
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/park/TensorRT-7.2.2.3/onnx_graphsurgeon
-    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/cuda-11.1/lib64:/usr/local/cuda/extras/CUPTI/lib64:/home/park/TensorRT-7.2.2.3/lib"
+```bash
+sudo gedit ~/.bashrc
+export PATH="/usr/local/cuda-11.1/bin:$PATH"
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/park/TensorRT-7.2.2.3/onnx_graphsurgeon
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/cuda-11.1/lib64:/usr/local/cuda/extras/CUPTI/lib64:/home/park/TensorRT-7.2.2.3/lib"
+```
 
 TensorRT 파이썬 패키지를 설치합니다.
 
-    cd python
-    python3 -m pip install tensorrt-7.2.2.3-cp38-none-linux_x86_64.whl
+```bash
+cd python
+python3 -m pip install tensorrt-7.2.2.3-cp38-none-linux_x86_64.whl
 
-    cd ../uff/
-    python3 -m pip install uff-0.6.9-py2.py3-none-any.whl
+cd ../uff/
+python3 -m pip install uff-0.6.9-py2.py3-none-any.whl
 
-    cd ../graphsurgeon
-    python3 -m pip install graphsurgeon-0.4.5-py2.py3-none-any.whl
+cd ../graphsurgeon
+python3 -m pip install graphsurgeon-0.4.5-py2.py3-none-any.whl
 
-    cd ../onnx_graphsurgeon
-    python3 -m pip install onnx_graphsurgeon-0.2.6-py2.py3-none-any.whl
+cd ../onnx_graphsurgeon
+python3 -m pip install onnx_graphsurgeon-0.2.6-py2.py3-none-any.whl
+```
 
 terminal을 열어서 설치가 잘 되었는지 확인합니다.
 
@@ -493,6 +499,12 @@ train.py를 통해 학습된 모델 가중치가 필요합니다.
 
 </center>
 
+모델 출력에 post-processing을 추가할 경우 아래와 같은 인자를 추가해주세요.
+
+```bash
+python convert_frozen_graph.py --include_postprocess
+```
+
 <br>
 
 변환이 완료되면 아래와 같은 경로(기본 저장 경로)에 .pb 파일과 .pbtxt 파일이 생성됩니다.
@@ -508,4 +520,114 @@ train.py를 통해 학습된 모델 가중치가 필요합니다.
 
 ## 7.3 Convert to ONNX
 
-학습된 tensorflow model을
+학습된 tensorflow model을 ONNX 모델로 변환합니다.
+
+ONNX로 변환하기 위해서 7.2 step의 frozen graph 변환 과정을 수행해야 합니다.
+
+```bash
+pip install tf2onnx
+ 
+python -m tf2onnx.convert --input ./your_frozen_graph.pb --output ./frozen_to_onnx_model.onnx --inputs x:0 --outputs Identity:0 --opset 13
+```
+
+<br>
+
+제공되는 변환 옵션은 다음과 같습니다.
+<br>
+
+--input : Frozen graph model 저장 경로
+<br> 
+--output : ONNX 모델 저장 경로
+<br>
+--inputs : Frozen graph 모델 입력 namespace
+<br>
+--outputs : Frozen graph 모델 출력 namespace
+<br>
+--opset : ONNX version
+<br>
+
+아래와 같이 변환하는 경우,
+
+```bash
+python -m tf2onnx.convert --input ./checkpoints/converted_frozen_graph/frozen_graph.pb --output ./checkpoints/converted_frozen_graph/onnx_model.onnx --inputs x:0 --outputs Identity:0 --opset 13
+```
+
+<br>
+
+ONNX 모델 파일(.onnx)이 생성됩니다.
+<center>
+
+![image](https://user-images.githubusercontent.com/60956651/183800918-17c0b839-aee8-4454-a13d-0c10e904c31f.png)
+
+</center>
+
+<br>
+
+## 7.4 Convert to tensorflow_js
+
+Web (javascript)에서 추론이 가능하도록 tensorflow_js 컨버팅 기능을 제공합니다.
+
+**7.2 step의 frozen graph 변환 작업을 먼저 해야합니다.**
+
+```bash
+tensorflowjs_converter your_frozen_graph.pb ./output_dir/ --input_format=tf_frozen_model --output_node_names='Identity'
+```
+
+추가 변환 옵션은 --help로 확인할 수 있습니다.
+
+변환 시 양자화를 하는 경우 --quantize_float16 를 추가합니다.
+
+```bash
+tensorflowjs_converter ./checkpoints/converted_frozen_graph/frozen_graph.pb ./checkpoints/converted_tfjs/ --input_format=tf_frozen_model --output_node_names='Identity' --quantize_float16 
+```
+
+변환 결과는 다음과 같습니다.
+
+<center>
+
+![image](https://user-images.githubusercontent.com/60956651/183803331-0d9ed0f4-a3be-4fde-ac8c-6a2c9616a6fb.png)
+
+</center>
+
+tensorflow-js로 모델 용량에 비례하여 바이너리 파일(.bin)과 모델 정보를 포함하는 model.json 파일이 생성됩니다.
+
+실제 웹에서 추론 가능한 샘플 코드는 다음과 같습니다.
+
+HTML 페이지에서 tensorflow_js를 import 합니다.
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.19.0/dist/tf.min.js"></script>
+```
+
+입력 데이터는 video element 또는 canvas의 이미지를 입력으로 사용합니다.
+
+학습된 모델의 이미지 크기에 맞게 조정합니다.
+
+```javascript
+const model = await tf.loadGraphModel('model.json');
+const inputImageTensor = tf.expandDims(tf.cast(tf.browser.fromPixels(videoElement), 'float32'), 0);
+const resizedImage = tf.image.resizeBilinear(inputImageTensor, [300, 300]);
+const normalizedImage = tf.div(resizedImage, 255);
+
+// post-processing이 포함된 경우 모델 최종 출력의 shape은 (N, 6) 입니다.
+// N은 검출된 샘플의 개수
+// 각 샘플마다 다음과 같은 데이터[x_min, y_min, x_max, y_max, scores, labels]를 포함합니다.
+var output = await model.executeAsync(normalizedImage);
+
+output = tf.squeeze(output, 0); // [Batch, N, 6] -> [N, 6]
+    
+var boxes = output.slice([0, 0], [-1, 4]); // [N, 4]
+var scores = output.slice([0, 4], [-1, 1]); // [N, 1]
+var labels = output.slice([0, 5], [-1, 1]); // [N, 1]
+
+// 메모리 해제
+tf.dispose(output);
+tf.dispose(boxes);
+tf.dispose(scores);
+tf.dispose(labels);
+```
+
+<br>
+
+## 7.5 Convert to tensorflow_lite
+
