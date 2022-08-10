@@ -31,17 +31,17 @@
 
 <p align="center">
 
-<!-- ![12_]() -->
-
-<center><img src="https://user-images.githubusercontent.com/60956651/183575643-7cd2957d-a701-490b-bcb3-b478e3890ede.png" width="500" height="400"/></center>
-<center><img src="https://user-images.githubusercontent.com/60956651/183576318-c12f872c-369a-4cdd-9e1a-50f8b5ae98e7.png" width="500" height="400"/></center>
+<img src="https://user-images.githubusercontent.com/60956651/183575643-7cd2957d-a701-490b-bcb3-b478e3890ede.png" width="500" height="400"/>
 
 </p>
 
+<p align="center">
 
+<img src="https://user-images.githubusercontent.com/60956651/183576318-c12f872c-369a-4cdd-9e1a-50f8b5ae98e7.png" width="500" height="400"/>
+
+</p>
 
 <br>
-
 
 ### 지원하는 기능
 - 데이터 전처리
@@ -79,8 +79,7 @@
  ## 5. [Eval](#5-eval-1)
  ## 6. [Predict](#6-predict-1)
  ## 7. [Export](#7-export-1)
- ## 8. [Tensorflow serving](#8-tensorflow-serving-1)
- ## 9. [DEMO]
+ ## 8. [Demo]
 
 <br>
 <hr/>
@@ -359,8 +358,7 @@ Web-camera 또는 저장된 비디오를 실시간으로 추론할 수 있습니
 
 ## **ONNX model to tensorflow**
 
-- ### 7.6 Convert <u>**ONNX**</u> to <u>**tensorflow saved model format**</u>
-- ### 7.7 Convert <u>**ONNX**</u> to <u>**tensorflow frozen graph**</u>
+- ### 7.6 Convert <u>**ONNX**</u> to <u>**tf saved model + frozen graph**</u>
 
 <br>
 
@@ -630,4 +628,56 @@ tf.dispose(labels);
 <br>
 
 ## 7.5 Convert to tensorflow_lite
+
+모바일 Android, ios, raspberry pi와 같은 edge device에서 고속 추론이 가능하도록 tflite 변환 기능을 제공합니다.
+
+양자화를 적용하는 경우 변환 옵션은 다음과 같습니다.
+
+**GPU** : float16
+
+**CPU** : int8 (TODO)
+
+
+```bash
+python convert_to_tflite.py --checkpoint_dir='./checkpoints/' \
+                            --model_weights='your_model_weights.h5' \
+                            --model_name='efficient_lite_v0' \
+                            --num_classes=21 \
+                            --export_dir='./checkpoints/tflite_converted/' \
+                            --tflite_name='tflite.tflite'
+```
+<br>
+
+변환이 완료된 경우 저장 경로에 .tflite 파일이 생성됩니다.
+
+<br>
+<center>
+
+![image](https://user-images.githubusercontent.com/60956651/183825152-d887e0d4-b5e6-412c-b0b9-2ce3978de756.png)
+
+</center>
+
+변환 확인을 위해 스크립트를 실행합니다.
+
+```bash
+python convert_to_tflite.py --export_dir='./checkpoints/tflite_converted/' \
+                            --tflite_name='tflite.tflite' \
+                            --test
+```
+
+<br>
+
+## 7.6 Convert ONNX to tf saved model + frozen graph
+
+외부 프레임워크에서 학습된 모델 (e.g. pytorch)을 tensorflowjs, tflite 등  웹 및 엣지 디바이스에서
+쉽게 추론할 수 있도록 변환 기능을 제공합니다.
+
+<br>
+
+**ONNX로 컨버팅된 모델 파일(.onnx)이 필요합니다!**
+
+```bash
+python convert_onnx_to_tf.py --onnx_dir='your_onnx_model.onnx' \
+                             --output_dir='onnx2tf_converted'
+```
 
