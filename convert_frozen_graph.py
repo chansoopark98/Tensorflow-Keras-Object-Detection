@@ -21,25 +21,26 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--model_weights", type=str,     help="Saved model weights directory",
-                    default='your_model_weights_directory')
+                    default='0809/_0809_efficient_lite_v0_human_detection_lr0.002_b32_e300_base64_prior_normal_best_loss.h5')
 parser.add_argument("--model_name", type=str,     help="Get the model name to load",
                     default='efficient_lite_v0')
 parser.add_argument("--num_classes",          type=int,    help="Set num classes for model and post-processing",
-                    default=21)  
+                    default=2)  
 parser.add_argument("--image_size",          type=tuple,    help="Set image size for priors and post-processing",
                     default=(300, 300))
 parser.add_argument("--gpu_num",          type=int,    help="Set GPU number to use(When without distribute training)",
                     default=0)
 parser.add_argument("--frozen_dir",   type=str,    help="Path to save frozen graph transformation result",
-                    default='./checkpoints/frozen_result/')
+                    default='./checkpoints/new_tfjs_frozen/')
 parser.add_argument("--frozen_name",   type=str,    help="Frozen graph file name to save",
-                    default='./checkpoints/frozen_result/')
+                    default='frozen_graph')
             
 args = parser.parse_args()
 
 if __name__ == '__main__':
     tf.config.set_soft_device_placement(True)
-
+    tf.config.run_functions_eagerly(True)
+    
     gpu_number = '/device:GPU:' + str(args.gpu_num)
     with tf.device(gpu_number):
 
