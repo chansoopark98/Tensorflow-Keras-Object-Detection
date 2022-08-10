@@ -29,7 +29,7 @@ parser.add_argument("--transfer_learning",  help="Post processing build", action
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='kis_coex_hand_test')
+                    default='set_your_model_name')
 parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name",
                     default='efficient_lite_v0')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
