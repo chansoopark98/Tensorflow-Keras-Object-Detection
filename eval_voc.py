@@ -33,7 +33,7 @@ parser.add_argument("--weight_path",        type=str,    help="Saved model weigh
 parser.add_argument("--visualize",  help="Whether to image and save inference results", action='store_true')
 parser.add_argument("--result_dir",         type=str,    help="Test result save directory",
                     default='./results/')
-parser.add_argument("--gpu_num",          type=int,    help="Set GPU number to use(When without distribute training)",
+parser.add_argument("--gpu_num",            type=int,    help="Set GPU number to use(When without distribute training)",
                     default=0)
 
 args = parser.parse_args()

@@ -222,7 +222,7 @@ def draw_bounding(img , bboxes, labels, scores, img_size, label_list):
         cv2.rectangle(img_box, (xmin - 1, ymin), (xmax + 1, ymin - 20), color, cv2.FILLED)
         font = cv2.FONT_HERSHEY_SIMPLEX
         if scores is not None:
-            cv2.putText(img_box, label_list[int(labels[i]-1)] + '_' + str(scores[i]), (xmin + 5, ymin - 5), font, 0.5,
+            cv2.putText(img_box, label_list[int(labels[i]-1)] + '_' + str(round(scores[i],2)), (xmin + 5, ymin - 5), font, 0.5,
                         (255, 255, 255), 1, cv2.LINE_AA)
         else:
             cv2.putText(img_box, label_list[int(labels[i]-1)], (xmin + 5, ymin - 5), font, 0.5,

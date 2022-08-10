@@ -31,8 +31,10 @@ parser.add_argument("--image_size",          type=tuple,    help="Set image size
 parser.add_argument("--gpu_num",          type=int,    help="Set GPU number to use(When without distribute training)",
                     default=0)
 parser.add_argument("--frozen_dir",   type=str,    help="Path to save frozen graph transformation result",
-                    default='./checkpoints/new_tfjs_frozen/')
+                    default='./checkpoints/converted_frozen_graph/')
 parser.add_argument("--frozen_name",   type=str,    help="Frozen graph file name to save",
+                    default='frozen_graph')
+parser.add_argument("--include_postprocess",   type=bool,    help="Frozen graph file name to save",
                     default='frozen_graph')
             
 args = parser.parse_args()
