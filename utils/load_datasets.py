@@ -49,6 +49,13 @@ class DataLoadHandler:
                 self.image_key = 'image'
                 self.label_key = 'label'
                 self.bbox_key = 'bbox'
+
+            elif self.dataset_name == 'coex_hand':
+                self.num_classes = 2
+                self.dataset_list = self.__load_custom_dataset(dataset_name=self.dataset_name)
+                self.image_key = 'image'
+                self.label_key = 'label'
+                self.bbox_key = 'bbox'
             else:
                 raise Exception('Cannot find dataset_name! \n your dataset is {0}. \
                                  Currently available default dataset types are: \
@@ -137,8 +144,10 @@ class DataLoadHandler:
                  You can download use dataset_download.py')
 
 
-        train_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train[5%:]')
-        valid_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train[:5%]')
+        # train_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train[10%:]')
+        # valid_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train[:10%]')
+        train_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train')
+        valid_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train[:50%]')
     
 
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
@@ -214,15 +223,24 @@ class GenerateDatasets(DataLoadHandler):
             labels = tf.where(labels>=0, 1, 0)
             labels = tf.cast(labels, tf.int64)
             bbox = sample[self.bbox_key]
+        elif self.dataset_name == 'coex_hand':
+            labels = sample[self.label_key]
+            labels = tf.where(labels>=0, 1, 0)
+            labels = tf.cast(labels, tf.int64)
+            bbox = sample[self.bbox_key]
         else:
             labels = sample['objects'][self.label_key] + 1
             bbox = sample['objects'][self.bbox_key]
 
         
         x_min = tf.where(tf.greater_equal(bbox[:,1], bbox[:,3]), tf.cast(0, dtype=tf.float32), bbox[:,1])
+        # x_min = tf.clip_by_value(x_min, 0., 1.)
         y_min = tf.where(tf.greater_equal(bbox[:,0], bbox[:,2]), tf.cast(0, dtype=tf.float32), bbox[:,0])
+        # y_min = tf.clip_by_value(y_min, 0., 1.)
         x_max = tf.where(tf.greater_equal(x_min, bbox[:,3]), tf.cast(x_min+0.1, dtype=tf.float32), bbox[:,3])
+        # x_max = tf.clip_by_value(x_max, 0., 1.)
         y_max = tf.where(tf.greater_equal(y_min, bbox[:,2]), tf.cast(y_min+0.1, dtype=tf.float32), bbox[:,2])
+        # y_max = tf.clip_by_value(y_max, 0., 1.)
         bbox = tf.stack([x_min, y_min, x_max, y_max], axis=1)
 
         if self.image_norm_type == 'torch':

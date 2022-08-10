@@ -15,7 +15,7 @@ parser.add_argument("--backbone_name",       type=str,    help="Pretrained backb
 parser.add_argument("--batch_size",          type=int,    help="Evaluation batch size",
                     default=1)
 parser.add_argument("--num_classes",         type=int,    help="Number of classes",
-                    default=21)
+                    default=2)
 parser.add_argument("--train_dataset_type",  type=str,    help="Train dataset type",
                     default='voc')
 parser.add_argument("--image_dir",           type=str,    help="Image directory",
@@ -33,7 +33,7 @@ args = parser.parse_args()
 
 
 if __name__ == '__main__':
-    image_list = os.path.join(args.image_dir, '*.jpg')
+    image_list = os.path.join(args.image_dir, '*.png')
     image_list = glob.glob(image_list)
 
     result_dir = args.image_dir + '/results/'

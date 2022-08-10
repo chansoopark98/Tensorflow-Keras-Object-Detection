@@ -7,7 +7,7 @@ opencv-python=4.5.5.64
 matplotlib==3.5.2
 imageio==2.19.3
 aiogrpc==1.8
-
+natsort
 
 # convert options
 onnx==1.12.0

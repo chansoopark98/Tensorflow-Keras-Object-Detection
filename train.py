@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser()
 # Set Convert to SavedMoel
 parser.add_argument("--saved_model",  help="SavedModel.pb 변환", action='store_true')
 parser.add_argument("--saved_model_path", type=str,   help="Saved model weight path",
-                    default='./checkpoints/0805/_0805_efficientv2b0_b32_e200_single_gpu_best_loss.h5')
+                    default='./checkpoints/0807/_0807_efficient_lite_v0_lr0.002_b32_e300_single_gpu_bigger_adam_base-128_best_loss_73.0.h5')
 
 # Build with post processing
 parser.add_argument("--build_postprocess",  help="Post processing build", action='store_true')
@@ -29,15 +29,15 @@ parser.add_argument("--transfer_learning",  help="Post processing build", action
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='efficient_lite_v0_human_detection_lr0.002_b32_e300_base64_prior_normal')
+                    default='kis_coex_hand_test')
 parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name",
                     default='efficient_lite_v0')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
-                    default=32)
+                    default=8)
 parser.add_argument("--epoch",            type=int,    help="Training epochs",
-                    default=300)
+                    default=100)
 parser.add_argument("--lr",               type=float,  help="Initial learning rate",
-                    default=0.002)
+                    default=0.0005)
 parser.add_argument("--weight_decay",     type=float,  help="Set Weight Decay",
                     default=0.00001)
 parser.add_argument("--image_size",       type=tuple,  help="Set model input size",
@@ -57,7 +57,7 @@ parser.add_argument("--model_name",       type=str,    help="Set the model name 
 parser.add_argument("--dataset_dir",      type=str,    help="Set the dataset download directory",
                     default='./datasets/')
 parser.add_argument("--dataset_name",     type=str,    help="Set the dataset type (cityscapes, custom etc..)",
-                    default='human_detection')
+                    default='coex_hand')
 parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,    help="Set tensorboard storage path",

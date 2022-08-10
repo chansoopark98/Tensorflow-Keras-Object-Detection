@@ -90,50 +90,11 @@
  
  <br>
 
-<table border="0">
-<tr>
-    <tr>
-        <td>
-        <h3><strong>Model name</strong></h3>
-        </td>
-        <td>
-        <h3><strong>Params</strong></h3>
-        </td>
-        <td>
-        <h3><strong>Resolution(HxW)</strong></h3>
-        </td>
-        <td>
-        <h3><strong>Inference time(ms)</strong></h3>
-        </td>
-        <td>
-        <h3><strong>Pretrained weights</strong></h3>
-        </td>
-        <td>
-        <h3><strong>Pretrained datasets</strong></h3>
-        </td>
-    </tr>
-    <tr>
-        <td>
-        EfficientNetLite-SSD
-        </td>
-        <td>
-        3.16m
-        </td>
-        <td>
-        300x300
-        </td>
-        <td>
-        0.019ms
-        </td>
-        <td>
-        TODO
-        </td>
-        <td>
-        voc
-        </td>
-    </tr> 
-</tr>
-</table>
+| Model | Params | Resolution(HxW) | Inference time(ms) | Pretrained weights | Pretrained datasets | mAP |
+| :-- | :-: | :-: | :-: | :-: | :-: | :-: |
+| Efficientnet_lite_b0 | 3.01m | 300x300 | 0.019ms | [Link](https://github.com/chansoopark98/Tensorflow-Keras-Object-Detection/releases/download/untagged-b94ecf05cb81011df45c/_0807_efficient_lite_v0_lr0.002_b32_e300_single_gpu_bigger_adam_base-128_best_loss_73.0.h5) | PASCAL VOC | 73.0% |
+
+<br>
 
 ## Loss
 

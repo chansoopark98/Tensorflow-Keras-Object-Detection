@@ -6,22 +6,14 @@ from tensorflow.python.framework.convert_to_constants import convert_variables_t
 from utils.priors import *        
 import argparse 
 
-# ONNX Convert
-# 1. pip install tf2onnx
-# (Frozen graph)
-# 2. python -m tf2onnx.convert --input ./checkpoints/new_tfjs_frozen/frozen_graph.pb --output ./checkpoints/onnx_test.onnx --inputs x:0 --outputs Identity:0 --opset 10
-
-# quantize_uint8
-# tensorflowjs_converter ./checkpoints/new_tfjs_frozen/frozen_graph.pb ./checkpoints/converted_tfjs/ --input_format=tf_frozen_model --output_node_names='Identity' --quantize_float16 
-# tensorflowjs_converter ./checkpoints/new_tfjs_frozen/frozen_graph.pb ./checkpoints/converted_tfjs/ --input_format=tf_frozen_model --output_node_names='Identity' --quantize_uint8 '*'
-# tensorflowjs_converter --input_format=tf_frozen_model --output_node_names='Identity' ./checkpoints/new_tfjs_frozen/frozen_graph.pb ./checkpoints/converted_tfjs/
-
+# tensorflowjs_converter ./checkpoints/converted_frozen_graph/frozen_graph.pb ./checkpoints/converted_tfjs/ --input_format=tf_frozen_model --output_node_names='Identity' --quantize_float16
+# tensorflowjs_converter ./checkpoints/new_tfjs_frozen/frozen_graph.pb ./checkpoints/converted_tfjs_human/ --input_format=tf_frozen_model --output_node_names='Identity' --quantize_float16
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--model_weights", type=str,     help="Saved model weights directory",
-                    default='0809/_0809_efficient_lite_v0_human_detection_lr0.002_b32_e300_base64_prior_normal_best_loss.h5')
+                    default='0810/_0810_kis_coex_hand_test_best_loss.h5')
 parser.add_argument("--model_name", type=str,     help="Get the model name to load",
                     default='efficient_lite_v0')
 parser.add_argument("--num_classes",          type=int,    help="Set num classes for model and post-processing",

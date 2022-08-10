@@ -11,7 +11,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--backbone_name",       type=str,   help="Pretrained backbone name",
                     default='efficient_lite_v0')
 parser.add_argument("--num_classes",          type=int,   help="Number of classes in the pretrained model",
-                    default=21)
+                    default=2)
 parser.add_argument("--train_dataset_type",  type=str,   help="Train dataset type",
                     default='voc')
 parser.add_argument("--image_size",          type=tuple, help="Model image size (input resolution)",
@@ -21,7 +21,7 @@ parser.add_argument("--threshold",           type=float, help="Post processing c
 parser.add_argument("--checkpoint_dir",      type=str,   help="Setting the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--weight_name",         type=str,   help="Saved model weights directory",
-                    default='your_model_weight.h5')
+                    default='your_model_weights.h5')
 parser.add_argument("--gpu_num",             type=int,    help="Set GPU number to use(When without distribute training)",
                     default=0)
 args = parser.parse_args()
