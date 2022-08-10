@@ -79,7 +79,7 @@
  ## 5. [Eval](#5-eval-1)
  ## 6. [Predict](#6-predict-1)
  ## 7. [Export](#7-export-1)
- ## 8. [Demo]
+ ## 8. [Demo](#8demo)
 
 <br>
 <hr/>
@@ -366,6 +366,8 @@ Web-camera 또는 저장된 비디오를 실시간으로 추론할 수 있습니
 
 ## **7.1** Convert to tensorRT
 
+<br>
+
 tensorRT를 변환하기 위해서는 tensorRT 엔진을 빌드해야 합니다.
 
 본 레포지토리에서는 tf-trt를 이용하여 tensorRT 엔진을 빌드합니다.
@@ -387,7 +389,7 @@ CUDA 및 CuDNN이 사전에 설치가 완료된 경우 생략합니다.
 
 <br>
 
-## **7.1.1** Install TensorRT
+### **7.1.1** Install TensorRT
 <br>
 
 가상 환경을 활성화합니다. (Anaconda와 같이 가상환경을 사용하지 않은 경우 생략합니다)
@@ -477,10 +479,14 @@ tensorflow saved model이 없는 경우 **7.1.3** 절차를 따르고, 있는 �
 
     <br>
 
-<hr>
+
 <br>
 
+<hr>
+
 ## 7.2 Convert to frozen graph
+
+<br>
 
 다양한 환경에 쉽게 배포하기 위해 tensorflow-keras model을 frozen graph로 변환합니다.
 
@@ -515,12 +521,19 @@ python convert_frozen_graph.py --include_postprocess
 
 </center>
 
+<br>
+
+<hr>
 
 ## 7.3 Convert to ONNX
+
+<br>
 
 학습된 tensorflow model을 ONNX 모델로 변환합니다.
 
 ONNX로 변환하기 위해서 7.2 step의 frozen graph 변환 과정을 수행해야 합니다.
+
+<br>
 
 ```bash
 pip install tf2onnx
@@ -561,11 +574,17 @@ ONNX 모델 파일(.onnx)이 생성됩니다.
 
 <br>
 
+<hr>
+
 ## 7.4 Convert to tensorflow_js
+
+<br>
 
 Web (javascript)에서 추론이 가능하도록 tensorflow_js 컨버팅 기능을 제공합니다.
 
 **7.2 step의 frozen graph 변환 작업을 먼저 해야합니다.**
+
+<br>
 
 ```bash
 tensorflowjs_converter your_frozen_graph.pb ./output_dir/ --input_format=tf_frozen_model --output_node_names='Identity'
@@ -574,6 +593,8 @@ tensorflowjs_converter your_frozen_graph.pb ./output_dir/ --input_format=tf_froz
 추가 변환 옵션은 --help로 확인할 수 있습니다.
 
 변환 시 양자화를 하는 경우 --quantize_float16 를 추가합니다.
+
+<br>
 
 ```bash
 tensorflowjs_converter ./checkpoints/converted_frozen_graph/frozen_graph.pb ./checkpoints/converted_tfjs/ --input_format=tf_frozen_model --output_node_names='Identity' --quantize_float16 
@@ -587,11 +608,15 @@ tensorflowjs_converter ./checkpoints/converted_frozen_graph/frozen_graph.pb ./ch
 
 </center>
 
+<br>
+
 tensorflow-js로 모델 용량에 비례하여 바이너리 파일(.bin)과 모델 정보를 포함하는 model.json 파일이 생성됩니다.
 
 실제 웹에서 추론 가능한 샘플 코드는 다음과 같습니다.
 
 HTML 페이지에서 tensorflow_js를 import 합니다.
+
+<br>
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.19.0/dist/tf.min.js"></script>
@@ -627,15 +652,23 @@ tf.dispose(labels);
 
 <br>
 
+<hr>
+
 ## 7.5 Convert to tensorflow_lite
+
+<br>
 
 모바일 Android, ios, raspberry pi와 같은 edge device에서 고속 추론이 가능하도록 tflite 변환 기능을 제공합니다.
 
 양자화를 적용하는 경우 변환 옵션은 다음과 같습니다.
 
+<br>
+
 **GPU** : float16
 
 **CPU** : int8 (TODO)
+
+<br>
 
 
 ```bash
@@ -667,7 +700,11 @@ python convert_to_tflite.py --export_dir='./checkpoints/tflite_converted/' \
 
 <br>
 
+<hr>
+
 ## 7.6 Convert ONNX to tf saved model + frozen graph
+
+<br>
 
 외부 프레임워크에서 학습된 모델 (e.g. pytorch)을 tensorflowjs, tflite 등  웹 및 엣지 디바이스에서
 쉽게 추론할 수 있도록 변환 기능을 제공합니다.
@@ -681,3 +718,30 @@ python convert_onnx_to_tf.py --onnx_dir='your_onnx_model.onnx' \
                              --output_dir='onnx2tf_converted'
 ```
 
+<br>
+
+<hr>
+
+<br>
+
+# 8.Demo
+
+Single image inference test, Human detection 등 다양한 task의 detection demo를 제공합니다.
+
+<br>
+
+## 8.1 Single image inference test
+
+**업데이트 예정입니다.**
+
+<br>
+
+## 8.2 Human detection
+
+PASCAL VOC 07+12, COCO2017에서 human(person) class에 해당하는 샘플만 추출하여 학습한 모델입니다.
+
+총 클래스 수 : 2 (background + human)
+
+**업데이트 예정입니다.**
+
+    
