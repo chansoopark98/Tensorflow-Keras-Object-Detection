@@ -721,6 +721,7 @@ PASCAL VOC 07+12, COCO2017에서 human(person) class에 해당하는 샘플만 �
 총 클래스 수 : 2 (background + human)
 
 1. README.md 상단에 있는 Human detection 데이터셋으로 사전 학습된 EfficientNet-Lite-B0 모델 가중치를 다운로드 받습니다.
+
 2. 단일 이미지 추론 모드는 predict_image.py를 이용하여 추론을 수행합니다. <br>
 
 ```bash
@@ -731,5 +732,8 @@ python predict_image.py --backbone_name='efficient_lite_v0' --batch_size=1 --num
 
 ```bash
 python predict_webcam.py --backbone_name='efficient_lite_v0' --num_classes=2 --image_format='div' --weight_name='download_your_weights_name.h5'
+```
 
-    
+
+![ezgif com-gif-maker](https://user-images.githubusercontent.com/60956651/184128098-062c3b83-fd68-4cf6-950f-9143fd87b9db.gif)
+
