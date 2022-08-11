@@ -279,6 +279,27 @@ Training 이후 모델의 정확도 평가 및 추론 속도를 계산합니다.
 
 <br>
 
+PASCAL VOC의 Precision-Recall graph 시각화 기능을 제공합니다.
+
+eval_voc.py를 한 번 이상 실행해야 합니다.
+
+```bash
+cd experiemnts
+python draw_prec_rec_curve.py
+```
+
+<p align="center">
+
+![iou_50](https://user-images.githubusercontent.com/60956651/184134684-1cd5f636-8929-4fbc-9f05-d932add8d100.png)
+
+</p>
+
+
+
+<br>
+
+
+
 **2. COCO2017 EVALUATE**
 
 추가 예정입니다.
