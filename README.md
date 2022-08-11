@@ -92,7 +92,8 @@
 
 | Model | Params | Resolution(HxW) | Inference time(ms) | Pretrained weights | Pretrained datasets | mAP |
 | :-- | :-: | :-: | :-: | :-: | :-: | :-: |
-| Efficientnet_lite_b0 | 3.01m | 300x300 | 0.019ms | [Link](https://github.com/chansoopark98/Tensorflow-Keras-Object-Detection/releases/download/untagged-b94ecf05cb81011df45c/_0807_efficient_lite_v0_lr0.002_b32_e300_single_gpu_bigger_adam_base-128_best_loss_73.0.h5) | PASCAL VOC | 73.0% |
+| EfficientNet-Lite-B0 | 3.01m | 300x300 | 0.019ms | [Link](https://github.com/chansoopark98/Tensorflow-Keras-Object-Detection/releases/download/untagged-b94ecf05cb81011df45c/_0807_efficient_lite_v0_lr0.002_b32_e300_single_gpu_bigger_adam_base-128_best_loss_73.0.h5) | PASCAL VOC | 73.0% |
+| EfficientNet-Lite-B0 | 3.01m | 300x300 | 0.019ms | [Link](https://github.com/chansoopark98/Tensorflow-Keras-Object-Detection/releases/download/v1.0.0-alpha/_0809_efficient_lite_v0_human_detection_lr0.002_b32_e300_base64_prior_normal_best_loss.h5) | Human detection | - |
 
 <br>
 
@@ -693,8 +694,24 @@ Single image inference test, Human detection 등 다양한 task의 detection dem
 
 ## 8.1 Single image inference test
 
-**업데이트 예정입니다.**
+학습된 가중치를 이용하여 단일 이미지에 대한 추론 테스트를 지원합니다.
 
+데모 실행 절차는 다음과 같습니다. <br>
+
+<br>
+
+1. README.md 상단에 있는 PASCAL VOC 데이터셋으로 사전 학습된 EfficientNet-Lite-B0 모델 가중치를 다운로드 받습니다.
+
+2. 저장받은 가중치를 레포지토리의 'checkpoints/' 경로를 복사한 뒤, 파이썬 스크립트를 실행합니다. <br>
+   여기서 --weight_name을 저장받은 케라스 가중치 파일 (.h5)에 맞게 변경합니다.
+
+```bash
+python predict_image.py --backbone_name='efficient_lite_v0' --batch_size=1 --num_classes=21 --image_dir='./inputs/' --image_format='div' --weight_name='download_your_weights_name.h5'
+```
+
+### Caution : 자세한 옵션은 python predict_image.py --help를 통해 확인해주세요.
+
+<br>
 <br>
 
 ## 8.2 Human detection
@@ -703,6 +720,16 @@ PASCAL VOC 07+12, COCO2017에서 human(person) class에 해당하는 샘플만 �
 
 총 클래스 수 : 2 (background + human)
 
-**업데이트 예정입니다.**
+1. README.md 상단에 있는 Human detection 데이터셋으로 사전 학습된 EfficientNet-Lite-B0 모델 가중치를 다운로드 받습니다.
+2. 단일 이미지 추론 모드는 predict_image.py를 이용하여 추론을 수행합니다. <br>
+
+```bash
+python predict_image.py --backbone_name='efficient_lite_v0' --batch_size=1 --num_classes=2 --image_dir='./inputs/' --image_format='div' --weight_name='download_your_weights_name.h5'
+```
+
+3. 동영상 추론
+
+```bash
+python predict_webcam.py --backbone_name='efficient_lite_v0' --num_classes=2 --image_format='div' --weight_name='download_your_weights_name.h5'
 
     
