@@ -27,7 +27,7 @@ parser.add_argument("--dataset_dir",        type=str,    help="Dataset directory
 parser.add_argument("--checkpoint_dir",     type=str,    help="Setting the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--weight_path",        type=str,    help="Saved model weights directory",
-                    default='0810/_0810_efficientv2b0_epoch200_voc_b32_lr0.001_best_loss.h5')
+                    default='0811/_0811_efficientv2b0_epoch200_voc_b32_lr0.002_input-torch_std_conv_best_loss.h5')
 
 # Prediction results visualize options
 parser.add_argument("--visualize",  help="Whether to image and save inference results", action='store_true')

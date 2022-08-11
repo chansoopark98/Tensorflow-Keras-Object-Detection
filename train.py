@@ -29,21 +29,21 @@ parser.add_argument("--transfer_learning",  help="Post processing build", action
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='efficientv2b0_epoch200_voc_b32_lr0.002_input-torch_std_conv')
+                    default='efficient_lite_v0_new_display_detection_e100')
 parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name",
-                    default='efficientv2b0')
+                    default='efficient_lite_v0')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
                     default=32)
 parser.add_argument("--epoch",            type=int,    help="Training epochs",
-                    default=200)
+                    default=100)
 parser.add_argument("--lr",               type=float,  help="Initial learning rate",
-                    default=0.002)
+                    default=0.001)
 parser.add_argument("--weight_decay",     type=float,  help="Set Weight Decay",
                     default=0.00001)
 parser.add_argument("--image_size",       type=tuple,  help="Set model input size",
                     default=(300, 300))
 parser.add_argument("--image_norm_type",  type=str,    help="Set RGB image nornalize format (tf or torch or no)",
-                    default='torch')
+                    default='div')
 parser.add_argument("--optimizer",        type=str,    help="Set optimizer",
                     default='adam')
 parser.add_argument("--use_weightDecay",  type=bool,   help="Whether to use weightDecay",
@@ -57,7 +57,7 @@ parser.add_argument("--model_name",       type=str,    help="Set the model name 
 parser.add_argument("--dataset_dir",      type=str,    help="Set the dataset download directory",
                     default='./datasets/')
 parser.add_argument("--dataset_name",     type=str,    help="Set the dataset type (cityscapes, custom etc..)",
-                    default='voc')
+                    default='display_detection')
 parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,    help="Set tensorboard storage path",

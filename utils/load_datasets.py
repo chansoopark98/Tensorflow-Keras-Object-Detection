@@ -37,7 +37,7 @@ class DataLoadHandler:
                 self.bbox_key = 'bbox'
 
             elif self.dataset_name == 'display_detection':
-                self.num_classes = 3
+                self.num_classes = 4
                 self.dataset_list = self.__load_custom_dataset(dataset_name=self.dataset_name)
                 self.image_key = 'image'
                 self.label_key = 'label'
@@ -147,7 +147,7 @@ class DataLoadHandler:
         # train_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train[10%:]')
         # valid_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train[:10%]')
         train_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train')
-        valid_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train[:50%]')
+        valid_data = tfds.load(dataset_name, data_dir=self.data_dir, split='validation')
     
 
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
@@ -157,8 +157,6 @@ class DataLoadHandler:
         print("Nuber of validation dataset = {0}".format(number_valid))
 
         return (train_data, number_train, valid_data, number_valid, 0, 0)
-
-
 
 
 class GenerateDatasets(DataLoadHandler):
@@ -202,14 +200,14 @@ class GenerateDatasets(DataLoadHandler):
         y_max = tf.where(tf.greater_equal(y_min, bbox[:,2]), tf.cast(y_min+0.1, dtype=tf.float32), bbox[:,2])
         bbox = tf.stack([x_min, y_min, x_max, y_max], axis=1)
 
-        if self.image_norm_type == 'torch' or 'tf':
-            image = preprocess_input(image, mode=self.image_norm_type)
-            
+        if self.image_norm_type == 'torch':
+            image = preprocess_input(image, mode='torch')
+        elif self.image_norm_type == 'tf':
+            image = preprocess_input(image, mode='tf')
         else:
             image /= 255
-            # image = preprocess_input(image, mode=self.image_norm_type)
-        
-        return (image, bbox, labels)    
+            
+        return (image, bbox, labels) 
 
 
     @tf.function
@@ -233,22 +231,18 @@ class GenerateDatasets(DataLoadHandler):
             labels = sample['objects'][self.label_key] + 1
             bbox = sample['objects'][self.bbox_key]
 
-        
         x_min = tf.where(tf.greater_equal(bbox[:,1], bbox[:,3]), tf.cast(0, dtype=tf.float32), bbox[:,1])
-        # x_min = tf.clip_by_value(x_min, 0., 1.)
         y_min = tf.where(tf.greater_equal(bbox[:,0], bbox[:,2]), tf.cast(0, dtype=tf.float32), bbox[:,0])
-        # y_min = tf.clip_by_value(y_min, 0., 1.)
         x_max = tf.where(tf.greater_equal(x_min, bbox[:,3]), tf.cast(x_min+0.1, dtype=tf.float32), bbox[:,3])
-        # x_max = tf.clip_by_value(x_max, 0., 1.)
         y_max = tf.where(tf.greater_equal(y_min, bbox[:,2]), tf.cast(y_min+0.1, dtype=tf.float32), bbox[:,2])
-        # y_max = tf.clip_by_value(y_max, 0., 1.)
         bbox = tf.stack([x_min, y_min, x_max, y_max], axis=1)
 
         if self.image_norm_type == 'torch':
-            # image = preprocess_input(image, mode=self.image_norm_type)
-            image /= 255
+            image = preprocess_input(image, mode='torch')
+        elif self.image_norm_type == 'tf':
+            image = preprocess_input(image, mode='tf')
         else:
-            image = preprocess_input(image, mode=self.image_norm_type)
+            image /= 255
             
         return (image, bbox, labels)
     

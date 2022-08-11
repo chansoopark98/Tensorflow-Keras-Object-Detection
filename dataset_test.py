@@ -6,15 +6,15 @@ import cv2
 from config import *
 from utils.load_datasets import GenerateDatasets
 
-test_data = tfds.load('coex_hand', data_dir='./datasets/', split='train')
+test_data = tfds.load('display_detection', data_dir='./datasets/', split='train')
 
 for sample in test_data.take(1000):
     
     try:
         
         image = sample['image'].numpy()
-        labels = sample['label'].numpy()
-        labels = tf.where(labels>=0, 1, 0)
+        labels = sample['label'].numpy() + 1
+        # labels = tf.where(labels>=0, 1, 0)
         boxes = sample['bbox'].numpy() 
         
         # y_min, x_min, y_max, y_max -> x_min, y_min, x_max, y_max
@@ -36,16 +36,17 @@ for sample in test_data.take(1000):
         # print('Image {0} \n  Labels {1} \n Bbox {2}'.format(image.shape, labels, boxes))
         for i in range(len(boxes[0])):
             
-            if boxes[0][i] > 1.0 or boxes[0][i] <= 0.:
+            if boxes[0][i] > 1.0 or boxes[0][i] < 0.:
                 print(boxes[0][i])    
                 print('bbox is out of 0-1 value')
+                
                 
             elif boxes.size == 0:
                 print('size is zero')
         
-        
         cv2.imshow('test', image)
         cv2.waitKey(0)
+        
 
     except Exception as e:
         raise print('Dataset is out of range {0}'.format(e))

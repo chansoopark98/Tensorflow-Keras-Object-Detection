@@ -1,5 +1,4 @@
 """coex_hand dataset."""
-
 import tensorflow_datasets as tfds
 import os
 import glob
@@ -9,7 +8,6 @@ import tensorflow as tf
 import random
 
 
-# TODO(coex_hand): Markdown description  that will appear on the catalog page.
 _DESCRIPTION = """
 Description is **formatted** as markdown.
 
@@ -20,11 +18,9 @@ It should also contain any processing which has been applied (if any),
 # TODO(coex_hand): BibTeX citation
 _CITATION = """
 """
-
-
 class CoexHand(tfds.core.GeneratorBasedBuilder):
   """DatasetBuilder for coex_hand dataset."""
-  MANUAL_DOWNLOAD_INSTRUCTIONS = '/home/park/tensorflow_datasets/'
+  
   VERSION = tfds.core.Version('1.0.0')
   RELEASE_NOTES = {
       '1.0.0': 'Initial release.',
@@ -52,14 +48,24 @@ class CoexHand(tfds.core.GeneratorBasedBuilder):
 
   def _split_generators(self, dl_manager: tfds.download.DownloadManager):
     """Returns SplitGenerators."""
-    # TODO(cornell_grasp): Downloads the data and defines the splits
-    # archive_path = dl_manager.manual_dir / 'display_detection.zip'
+
+    # 데이터셋 구성은 다음과 같이 설정해야함.
+    """
+        └── coex_hand.zip 
+        ├── train/  
+        |   ├── image/ 
+        |   └── label/
+        └── validation/  # Semantic label.    
+            ├── image/ 
+            └── label/
+    """
+
     archive_path = '../data_generate/data/coex_hand/coex_hand.zip'
     extracted_path = dl_manager.extract(archive_path)
 
-    # TODO(cornell_grasp): Returns the Dict[split names, Iterator[Key, Example]]
     return {
-        'train': self._generate_examples(img_path=extracted_path/'image', label_path=extracted_path/'label')
+        'train': self._generate_examples(img_path=extracted_path/'train/image', label_path=extracted_path/'train/label'),
+        'validation': self._generate_examples(img_path=extracted_path/'validation/image', label_path=extracted_path/'validation/label')
     }
 
   def _generate_examples(self, img_path, label_path):
