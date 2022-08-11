@@ -12,3 +12,7 @@ natsort
 # convert options
 onnx==1.12.0
 onnx-tf==1.10.0
+
+# convert to tfjs
+# tensorflowjs_converter ./checkpoints/converted_frozen_graph/frozen_graph.pb ./checkpoints/converted_tfjs/ --input_format=tf_frozen_model --output_node_names='Identity' --quantize_float16
+# tensorflowjs_converter ./checkpoints/new_tfjs_frozen/frozen_graph.pb ./checkpoints/converted_tfjs_human/ --input_format=tf_frozen_model --output_node_names='Identity' --quantize_float16

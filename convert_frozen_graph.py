@@ -6,25 +6,29 @@ from tensorflow.python.framework.convert_to_constants import convert_variables_t
 from utils.priors import *        
 import argparse 
 
-# tensorflowjs_converter ./checkpoints/converted_frozen_graph/frozen_graph.pb ./checkpoints/converted_tfjs/ --input_format=tf_frozen_model --output_node_names='Identity' --quantize_float16
-# tensorflowjs_converter ./checkpoints/new_tfjs_frozen/frozen_graph.pb ./checkpoints/converted_tfjs_human/ --input_format=tf_frozen_model --output_node_names='Identity' --quantize_float16
-
 parser = argparse.ArgumentParser()
-parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
-                    default='./checkpoints/')
-parser.add_argument("--model_weights", type=str,     help="Saved model weights directory",
-                    default='0810/_0810_kis_coex_hand_test_best_loss.h5')
-parser.add_argument("--model_name", type=str,     help="Get the model name to load",
+parser.add_argument("--backbone_name",       type=str,    help="Pretrained backbone name\
+                                                            |   model_name    : description | \
+                                                            [ 1. mobilenetv2       : MobileNetV2 ]\
+                                                            [ 2. mobilenetv3s      : MobileNetV3-Small ] \
+                                                            [ 3. mobilenetv3l      : MobileNetV3-Large ] \
+                                                            [ 4. efficient_lite_v0 : EfficientNet-Lite-B0 ]\
+                                                            [ 5. efficientnetv2b0  : EfficientNet-V2-B0 ]\
+                                                            [ 6. efficientnetv2b3  : EfficientNet-V2-B3 ]",
                     default='efficient_lite_v0')
-parser.add_argument("--num_classes",          type=int,    help="Set num classes for model and post-processing",
-                    default=2)  
-parser.add_argument("--image_size",          type=tuple,    help="Set image size for priors and post-processing",
+parser.add_argument("--checkpoint_dir",      type=str,    help="Set the model storage directory",
+                    default='./checkpoints/')
+parser.add_argument("--model_weights",       type=str,    help="Saved model weights directory",
+                    default='your_model_weights.h5')
+parser.add_argument("--num_classes",         type=int,    help="Set num classes for model and post-processing",
+                    default=21)  
+parser.add_argument("--image_size",          type=tuple,  help="Set image size for priors and post-processing",
                     default=(300, 300))
-parser.add_argument("--gpu_num",          type=int,    help="Set GPU number to use(When without distribute training)",
+parser.add_argument("--gpu_num",             type=int,    help="Set GPU number to use(When without distribute training)",
                     default=0)
-parser.add_argument("--frozen_dir",   type=str,    help="Path to save frozen graph transformation result",
+parser.add_argument("--frozen_dir",          type=str,    help="Path to save frozen graph transformation result",
                     default='./checkpoints/converted_frozen_graph/')
-parser.add_argument("--frozen_name",   type=str,    help="Frozen graph file name to save",
+parser.add_argument("--frozen_name",         type=str,    help="Frozen graph file name to save",
                     default='frozen_graph')
 parser.add_argument("--include_postprocess",   help="Frozen graph file name to save",
                     action='store_true')
@@ -43,7 +47,7 @@ if __name__ == '__main__':
         target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
         model = ModelBuilder(image_size=args.image_size,
-                                    num_classes=args.num_classes, include_preprocessing=args.include_postprocess).build_model(args.model_name)
+                                    num_classes=args.num_classes, include_preprocessing=args.include_postprocess).build_model(args.backbone_name)
 
         model.load_weights(args.checkpoint_dir + args.model_weights, by_name=True)
 

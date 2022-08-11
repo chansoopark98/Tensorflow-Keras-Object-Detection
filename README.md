@@ -635,7 +635,7 @@ tf.dispose(labels);
 ```bash
 python convert_to_tflite.py --checkpoint_dir='./checkpoints/' \
                             --model_weights='your_model_weights.h5' \
-                            --model_name='efficient_lite_v0' \
+                            --backbone_name='efficient_lite_v0' \
                             --num_classes=21 \
                             --export_dir='./checkpoints/tflite_converted/' \
                             --tflite_name='tflite.tflite'

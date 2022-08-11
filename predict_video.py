@@ -1,13 +1,13 @@
+from tensorflow.keras.applications.imagenet_utils import preprocess_input
+from model.model_builder import ModelBuilder
+from utils.misc import draw_bounding, CLASSES, COCO_CLASSES
+from utils.model_post_processing import post_process
+from utils.priors import *
+import tensorflow as tf
+import argparse
+import glob
 import cv2
 import os
-import glob
-import argparse
-import tensorflow as tf
-from tensorflow.keras.applications.imagenet_utils import preprocess_input
-from utils.priors import *
-from utils.model_post_processing import post_process
-from model.model_builder import ModelBuilder
-from utils.misc import draw_bounding, CLASSES, COCO_CLASSES, TEST_CLASSES
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--backbone_name",       type=str,    help="Pretrained backbone name\

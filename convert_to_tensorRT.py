@@ -1,7 +1,6 @@
 from utils.convert_trt import convert_to_trt
 import argparse
 
-
 parser = argparse.ArgumentParser()
 
 # Set Convert to TensorRT
@@ -15,7 +14,6 @@ parser.add_argument("--output_saved_model_dir", type=str,
 parser.add_argument("--floating_mode", type=str,
                     help="Floating mode to be converted (FP32 or FP16)", default='FP16')
 args = parser.parse_args()
-
 
 
 if __name__ == '__main__':

@@ -10,14 +10,23 @@ from model.model_builder import ModelBuilder
 from utils.misc import draw_bounding, CLASSES, COCO_CLASSES, TEST_CLASSES
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--backbone_name",       type=str,    help="Pretrained backbone name",
+parser.add_argument("--backbone_name",       type=str,    help="Pretrained backbone name\
+                                                            |   model_name    : description | \
+                                                            [ 1. mobilenetv2       : MobileNetV2 ]\
+                                                            [ 2. mobilenetv3s      : MobileNetV3-Small ] \
+                                                            [ 3. mobilenetv3l      : MobileNetV3-Large ] \
+                                                            [ 4. efficient_lite_v0 : EfficientNet-Lite-B0 ]\
+                                                            [ 5. efficientnetv2b0  : EfficientNet-V2-B0 ]\
+                                                            [ 6. efficientnetv2b3  : EfficientNet-V2-B3 ]",
                     default='efficient_lite_v0')
 parser.add_argument("--batch_size",          type=int,    help="Evaluation batch size",
                     default=1)
-parser.add_argument("--num_classes",         type=int,    help="Number of classes",
-                    default=4)
+parser.add_argument("--num_classes",         type=int,    help="Number of classes in the pretrained model",
+                    default=2)
 parser.add_argument("--image_dir",           type=str,    help="Image directory",
                     default='./inputs/')
+parser.add_argument("--image_format",           type=str,    help="Image data format (e.g. jpg)",
+                    default='jpg')
 parser.add_argument("--image_size",          type=tuple,  help="Model image size (input resolution)",
                     default=(300, 300))
 parser.add_argument("--threshold",           type=float,  help="Post processing confidence threshold",
@@ -25,17 +34,29 @@ parser.add_argument("--threshold",           type=float,  help="Post processing 
 parser.add_argument("--checkpoint_dir",      type=str,    help="Setting the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--weight_name",         type=str,    help="Saved model weights directory",
-                    default='0811/_0811_efficient_lite_v0_new_display_detection_e100_best_loss.h5')
+                    default='your_model_weights.h5')
 
 args = parser.parse_args()
 
 
 if __name__ == '__main__':
-    image_list = os.path.join(args.image_dir, '*.jpg')
+    image_list = os.path.join(args.image_dir, '*.' + args.image_format)
     image_list = glob.glob(image_list)
 
     result_dir = args.image_dir + '/results/'
     os.makedirs(result_dir, exist_ok=True)
+
+    if args.num_classes == 21:
+        # PASCAL VOC
+        label_list = CLASSES
+
+    elif args.num_classes == 81:
+        # COCO2017
+        label_list = COCO_CLASSES
+    else:
+        # Custom dataset ('0', '1', '2', '3' ...)
+        custom_label_list = range(args.num_classes)
+        label_list = [str(label_iter) for label_iter in custom_label_list]
     
     # Set target transforms
     spec_list = convert_spec_list()
@@ -67,10 +88,10 @@ if __name__ == '__main__':
         
 
         if pred_boxes.size > 0:
-            draw_bounding(frame, pred_boxes,  labels=pred_labels,  scores=pred_scores, img_size=frame.shape[:2], label_list=CLASSES)
+            draw_bounding(frame, pred_boxes,  labels=pred_labels,  scores=pred_scores, img_size=frame.shape[:2], label_list=label_list)
         
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         tf.keras.preprocessing.image.save_img(result_dir + str(i)+'_.png', frame)
 
-    cv2.destroyAllWindows()
+    print('Predicted image is saved on {0}'.format(result_dir))

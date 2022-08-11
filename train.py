@@ -10,6 +10,8 @@ tf.keras.backend.clear_session()
 parser = argparse.ArgumentParser()
 
 # Set Convert to SavedMoel
+parser.add_argument("--saved_model",      type=str,   help="Convert to saved model format",
+                    default='pretrained_weights')
 parser.add_argument("--saved_model_path", type=str,   help="Saved model weight path",
                     default='pretrained_weights')
 
