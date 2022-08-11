@@ -6,19 +6,24 @@ class EfficientNetV2B0():
     def __init__(self, image_size: tuple, pretrained: str = "imagenet"):
         self.image_size = image_size
         self.pretrained = pretrained
+        self.use_std_conv = True
+        self.kernel_initializer = {
+            "class_name": "VarianceScaling",
+            "config": {"scale": 2.0, "mode": "fan_out", "distribution": "truncated_normal"},
+        }
+
+        self.momentum = 0.9
+        self.eps = 0.001
     
     def build_backbone(self):
-        base = EffV2B0(input_shape=(*self.image_size, 3), first_strides=2, num_classes=0, pretrained=self.pretrained)
-        # base = efficientnet_v2.EfficientNetV2B0(weights=self.pretrained, include_top=False,
-        #                                         input_shape=[*self.image_size, 3], input_tensor=input_tensor,
-        #                          include_preprocessing=False)
+        base = EffV2B0(input_shape=(*self.image_size, 3), first_strides=2, num_classes=0, pretrained=self.pretrained, include_preprocessing=False)
         return base
 
     def build_extra_layer(self):
         base = self.build_backbone()
         model_input = base.input
 
-        base_channel = 96
+        base_channel = 128
 
         
         x2 = base.get_layer('add_1').output # 38x38 @ 48
@@ -26,33 +31,55 @@ class EfficientNetV2B0():
         x4 = base.get_layer('add_14').output #10x10 @ 192
         
         # 5, 5
-        x5 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=False)(x4)
-        x5 = BatchNormalization()(x5)
+        x5 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same',
+                    kernel_initializer=self.kernel_initializer, use_bias=False)(x4)
+        x5 = BatchNormalization(momentum=self.momentum, epsilon=self.eps)(x5)
         x5 = Activation('swish')(x5)
         
         x5 = ZeroPadding2D(padding=((1, 1), (1, 1)), name='x5_padding')(x5)
-        x5 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=2, padding='valid', use_bias=False)(x5)
-        x5 = BatchNormalization()(x5)
+
+        if self.use_std_conv:
+            x5 = Conv2D(base_channel * 2, kernel_size=3, strides=2, padding='valid',
+                        use_bias=False, kernel_initializer=self.kernel_initializer)(x5)
+        else:
+            x5 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=2, padding='valid', use_bias=False,
+                                 depthwise_initializer=self.kernel_initializer,
+                                 pointwise_initializer=self.kernel_initializer)(x5)
+        
+        x5 = BatchNormalization(momentum=self.momentum, epsilon=self.eps)(x5)
         x5 = Activation('swish')(x5)
         
         # 3, 3
-        x6 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=False)(x5)
-        x6 = BatchNormalization()(x6)
+        x6 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same',
+                    kernel_initializer=self.kernel_initializer, use_bias=False)(x5)
+        x6 = BatchNormalization(momentum=self.momentum, epsilon=self.eps)(x6)
         x6 = Activation('swish')(x6)
         
-        
-        x6 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=1, padding='valid', use_bias=False)(x6)
-        x6 = BatchNormalization()(x6)
+        if self.use_std_conv:
+            x6 = Conv2D(base_channel * 2, kernel_size=3, strides=1, padding='valid',
+                        use_bias=False, kernel_initializer=self.kernel_initializer)(x6)
+        else:
+            x6 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=1, padding='valid', use_bias=False,
+                                 depthwise_initializer=self.kernel_initializer,
+                                 pointwise_initializer=self.kernel_initializer)(x6)
+
+        x6 = BatchNormalization(momentum=self.momentum, epsilon=self.eps)(x6)
         x6 = Activation('swish')(x6)
         
         # 1, 1
-        x7 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=False)(x6)
-        x7 = BatchNormalization()(x7)
+        x7 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same',
+                    kernel_initializer=self.kernel_initializer, use_bias=False, )(x6)
+        x7 = BatchNormalization(momentum=self.momentum, epsilon=self.eps)(x7)
         x7 = Activation('swish')(x7)
         
-        
-        x7 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=1, padding='valid', use_bias=False)(x7)
-        x7 = BatchNormalization()(x7)
+        if self.use_std_conv:
+            x7 = Conv2D(base_channel * 2, kernel_size=3, strides=1, padding='valid',
+                        use_bias=False, kernel_initializer=self.kernel_initializer)(x7)
+        else:    
+            x7 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=1, padding='valid', use_bias=False,
+                                depthwise_initializer=self.kernel_initializer,
+                                pointwise_initializer=self.kernel_initializer)(x7)
+        x7 = BatchNormalization(momentum=self.momentum, epsilon=self.eps)(x7)
         x7 = Activation('swish')(x7)
         
 

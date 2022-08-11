@@ -74,7 +74,6 @@ class ModelBuilder():
                                     include_preprocessing=self.include_preprocessing)
         elif model_name == 'efficientv2b0':
             from .model_zoo.EffcientNetV2B0 import EfficientNetV2B0
-            self.normalize = [20, 20, 20, -1, -1, -1]
             model = EfficientNetV2B0(image_size=self.image_size, pretrained="imagenet")
         elif model_name == 'efficientv2b3':
             from .model_zoo.EfficientNetV2B3 import EfficientNetV2B3

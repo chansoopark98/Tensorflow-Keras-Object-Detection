@@ -15,7 +15,7 @@ tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--backbone_name",      type=str,    help="Pretrained backbone name",
-                    default='efficient_lite_v0')
+                    default='efficientv2b0')
 parser.add_argument("--batch_size",         type=int,    help="Evaluation batch size",
                     default=1)
 parser.add_argument("--image_size",         type=tuple,  help="Model image size (input resolution H,W)",
@@ -27,7 +27,7 @@ parser.add_argument("--dataset_dir",        type=str,    help="Dataset directory
 parser.add_argument("--checkpoint_dir",     type=str,    help="Setting the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--weight_path",        type=str,    help="Saved model weights directory",
-                    default='0808/_0808_efficient_lite_v0_voc_lr0.002_b32_e300_base64_prior(2,4,4,4,4,4)_best_loss.h5')
+                    default='0810/_0810_efficientv2b0_epoch200_voc_b32_lr0.001_best_loss.h5')
 
 # Prediction results visualize options
 parser.add_argument("--visualize",  help="Whether to image and save inference results", action='store_true')
@@ -52,9 +52,9 @@ if __name__ == '__main__':
 
         # Configuration test(valid) datasets
         dataset_config = GenerateDatasets(data_dir=args.dataset_dir, image_size=args.image_size,
-                                        batch_size=args.batch_size, target_transform=target_transform,
-                                        image_norm_type=args.image_norm_type,
-                                        dataset_name='voc')
+                                          batch_size=args.batch_size, target_transform=target_transform,
+                                          image_norm_type=args.image_norm_type,
+                                          dataset_name='voc')
         test_dataset = dataset_config.get_testData(test_data=dataset_config.test_data)
         test_steps = dataset_config.number_test // args.batch_size
 

@@ -86,8 +86,8 @@ class DataLoadHandler:
 
         if use_train_val:
             train_data = train_pascal_07.\
-                concatenate(train_pascal_12).concatenate(valid_train_12)
-            valid_data = valid_train_07
+                concatenate(train_pascal_12).concatenate(valid_train_12).concatenate(valid_train_07)
+            valid_data = test_data
         else:
             train_data = train_pascal_07.concatenate(train_pascal_12)
             valid_data = valid_train_07.concatenate(valid_train_12)
@@ -202,11 +202,12 @@ class GenerateDatasets(DataLoadHandler):
         y_max = tf.where(tf.greater_equal(y_min, bbox[:,2]), tf.cast(y_min+0.1, dtype=tf.float32), bbox[:,2])
         bbox = tf.stack([x_min, y_min, x_max, y_max], axis=1)
 
-        if self.image_norm_type == 'torch':
-            # image = preprocess_input(image, mode=self.image_norm_type)
-            image /= 255
-        else:
+        if self.image_norm_type == 'torch' or 'tf':
             image = preprocess_input(image, mode=self.image_norm_type)
+            
+        else:
+            image /= 255
+            # image = preprocess_input(image, mode=self.image_norm_type)
         
         return (image, bbox, labels)    
 
