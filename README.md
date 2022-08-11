@@ -295,7 +295,7 @@ Web-camera 또는 저장된 비디오를 실시간으로 추론할 수 있습니
 
 **Web-cam 실시간 추론**
 
-    python predict_realtime.py
+    python predict_webcam.py
 
 
 <br>
