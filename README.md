@@ -734,8 +734,8 @@ python predict_image.py --backbone_name='efficient_lite_v0' --batch_size=1 --num
 python predict_webcam.py --backbone_name='efficient_lite_v0' --num_classes=2 --image_format='div' --weight_name='download_your_weights_name.h5'
 ```
 
-<center>
+<center></center>
 
 <img src='./experiments/human_Detection_output.gif'>
 
-</center>
+
