@@ -3,34 +3,35 @@ import tensorflow as tf
 import argparse
 import time
 
-# 1. sudo apt-get install libtcmalloc-minimal4
-# 2. check dir ! 
-# dpkg -L libtcmalloc-minimal4
-# 3. LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.3.0" python train.py
-
-# https://npmmirror.com/package/@tensorflow/tfjs-tflite
-# https://groups.google.com/a/tensorflow.org/g/tflite/c/Yt6-eSMn_bg -> tflite 사용법 및 -127 ~ 128 정규화
-# https://codesandbox.io/s/kwmq4v263?file=/src/index.js 텐서플로js sample files
+# LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.3.0" python train.py
 
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
 
 # Set Convert to SavedMoel
-parser.add_argument("--saved_model",  help="SavedModel.pb 변환", action='store_true')
 parser.add_argument("--saved_model_path", type=str,   help="Saved model weight path",
-                    default='./checkpoints/0807/_0807_efficient_lite_v0_lr0.002_b32_e300_single_gpu_bigger_adam_base-128_best_loss_73.0.h5')
+                    default='pretrained_weights')
 
 # Build with post processing
-parser.add_argument("--build_postprocess",  help="Post processing build", action='store_true')
+parser.add_argument("--build_postprocess",  help="Post processing build",
+                    action='store_true')
 
 # Training use pre-trained mode (voc, coco .. etc)
-parser.add_argument("--transfer_learning",  help="Post processing build", action='store_true')
+parser.add_argument("--transfer_learning",  help="Load the pre-trained weights and proceed with further training.",
+                    action='store_true')
 
 # Set Training Options
-parser.add_argument("--model_prefix",     type=str,    help="Model name",
+parser.add_argument("--model_prefix",     type=str,    help="Model name (logging weights name and tensorboard)",
                     default='efficient_lite_v0_new_display_detection_e100')
-parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name",
+parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name\
+                                                            |   model_name    : description |\
+                                                            mobilenetv2       : MobileNetV2\
+                                                            mobilenetv3s      : MobileNetV3-Small\
+                                                            mobilenetv3l      : MobileNetV3-Large\
+                                                            efficient_lite_v0 : EfficientNet-Lite-B0\
+                                                            efficientnetv2b0  : EfficientNet-V2-B0\
+                                                            efficientnetv2b3  : EfficientNet-V2-B3",
                     default='efficient_lite_v0')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
                     default=32)
@@ -42,7 +43,10 @@ parser.add_argument("--weight_decay",     type=float,  help="Set Weight Decay",
                     default=0.00001)
 parser.add_argument("--image_size",       type=tuple,  help="Set model input size",
                     default=(300, 300))
-parser.add_argument("--image_norm_type",  type=str,    help="Set RGB image nornalize format (tf or torch or no)",
+parser.add_argument("--image_norm_type",  type=str,    help="Set RGB image nornalize format (tf or torch or no)\
+                                                             tf    : Rescaling RGB image -1 ~ 1 from imageNet\
+                                                             torch : Rescaling RGB image 0 ~ 1 from imageNet\
+                                                             else  : Rescaling RGB image 0 ~ 1 only divide 255",
                     default='div')
 parser.add_argument("--optimizer",        type=str,    help="Set optimizer",
                     default='adam')
@@ -56,7 +60,10 @@ parser.add_argument("--model_name",       type=str,    help="Set the model name 
 # Set directory path (Dataset,  Dataset_type, Chekcpoints, Tensorboard)
 parser.add_argument("--dataset_dir",      type=str,    help="Set the dataset download directory",
                     default='./datasets/')
-parser.add_argument("--dataset_name",     type=str,    help="Set the dataset type (cityscapes, custom etc..)",
+parser.add_argument("--dataset_name",     type=str,    help="Set the dataset type. \
+                                                             voc : PASCAL VOC 07+12 dataset \
+                                                             coco : COCO2017 dataset \
+                                                             custom : Custom TFDS",
                     default='display_detection')
 parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
@@ -65,7 +72,7 @@ parser.add_argument("--tensorboard_dir",  type=str,    help="Set tensorboard sto
 
 # Set Distribute training (When use Single gpu)
 parser.add_argument("--gpu_num",          type=int,    help="Set GPU number to use(When without distribute training)",
-                    default=1)
+                    default=0)
 
 # Set Distribute training (When use Multi gpu)
 parser.add_argument("--multi_gpu",  help="Set up distributed learning mode", action='store_true')

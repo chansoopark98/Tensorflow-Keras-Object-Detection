@@ -15,9 +15,7 @@ parser.add_argument("--backbone_name",       type=str,    help="Pretrained backb
 parser.add_argument("--batch_size",          type=int,    help="Evaluation batch size",
                     default=1)
 parser.add_argument("--num_classes",         type=int,    help="Number of classes",
-                    default=2)
-parser.add_argument("--train_dataset_type",  type=str,    help="Train dataset type",
-                    default='voc')
+                    default=4)
 parser.add_argument("--image_dir",           type=str,    help="Image directory",
                     default='./inputs/')
 parser.add_argument("--image_size",          type=tuple,  help="Model image size (input resolution)",
@@ -27,20 +25,17 @@ parser.add_argument("--threshold",           type=float,  help="Post processing 
 parser.add_argument("--checkpoint_dir",      type=str,    help="Setting the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--weight_name",         type=str,    help="Saved model weights directory",
-                    default='your_model_weights.h5')
+                    default='0811/_0811_efficient_lite_v0_new_display_detection_e100_best_loss.h5')
 
 args = parser.parse_args()
 
 
 if __name__ == '__main__':
-    image_list = os.path.join(args.image_dir, '*.png')
+    image_list = os.path.join(args.image_dir, '*.jpg')
     image_list = glob.glob(image_list)
 
     result_dir = args.image_dir + '/results/'
     os.makedirs(result_dir, exist_ok=True)
-
-    # Set num classes and label list by args.train_dataset_type
-
     
     # Set target transforms
     spec_list = convert_spec_list()
