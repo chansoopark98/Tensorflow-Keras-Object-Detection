@@ -150,3 +150,4 @@ class ModelBuilder():
         predictions = Concatenate(axis=2, name='predictions', dtype=tf.float32)([mbox_loc, mbox_conf])
 
         return predictions
+        
