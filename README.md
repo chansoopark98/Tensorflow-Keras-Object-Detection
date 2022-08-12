@@ -280,7 +280,7 @@ Custom TFDS의 경우 [TFDS 변환 방법](https://github.com/chansoopark98/Tens
     2번을 통해 설치된 TCMalloc의 경로를 저장합니다
 
 
-## Training semantic segmentation
+## Training object detection
 
 **How to RUN?**
     
