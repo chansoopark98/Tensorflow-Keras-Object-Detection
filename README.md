@@ -180,6 +180,14 @@ PASCAL VOC, COCO와 같은 벤치마크 데이터셋을 기본 제공하며, 사
             OK
         </td>
     </tr>
+    <tr>
+        <td>
+            GIoU
+        </td>
+        <td>
+            OK
+        </td>
+    </tr>
 
 </tr>
 </table>
