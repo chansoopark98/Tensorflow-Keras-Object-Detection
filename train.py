@@ -10,8 +10,8 @@ tf.keras.backend.clear_session()
 parser = argparse.ArgumentParser()
 
 # Set Convert to SavedMoel
-parser.add_argument("--saved_model",      type=str,   help="Convert to saved model format",
-                    default='pretrained_weights')
+parser.add_argument("--saved_model",      help="Convert to saved model format",
+                    action='store_true')
 parser.add_argument("--saved_model_path", type=str,   help="Saved model weight path",
                     default='pretrained_weights')
 
@@ -25,15 +25,15 @@ parser.add_argument("--transfer_learning",  help="Load the pre-trained weights a
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name (logging weights name and tensorboard)",
-                    default='efficient_lite_v0_new_display_detection_e100')
+                    default='efficient_lite_v0_voc_focal_test_e100_b32_lr0.001_single')
 parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name\
                                                             |   model_name    : description | \
                                                             [ 1. mobilenetv2       : MobileNetV2 ]\
                                                             [ 2. mobilenetv3s      : MobileNetV3-Small ] \
                                                             [ 3. mobilenetv3l      : MobileNetV3-Large ] \
                                                             [ 4. efficient_lite_v0 : EfficientNet-Lite-B0 ]\
-                                                            [ 5. efficientnetv2b0  : EfficientNet-V2-B0 ]\
-                                                            [ 6. efficientnetv2b3  : EfficientNet-V2-B3 ]",
+                                                            [ 5. efficientv2b0  : EfficientNet-V2-B0 ]\
+                                                            [ 6. efficientv2b3  : EfficientNet-V2-B3 ]",
                     default='efficient_lite_v0')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
                     default=32)
@@ -66,7 +66,7 @@ parser.add_argument("--dataset_name",     type=str,    help="Set the dataset typ
                                                              [ 1. voc : PASCAL VOC 07+12 dataset ] \
                                                              [ 2. coco : COCO2017 dataset ] \
                                                              [ 3. custom : Custom TFDS ]",
-                    default='display_detection')
+                    default='voc')
 parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,    help="Set tensorboard storage path",
@@ -84,10 +84,11 @@ args = parser.parse_args()
 
 if __name__ == '__main__':
     # tf.config.run_functions_eagerly(True)
+    
     if args.saved_model:
         model = ModelConfiguration(args=args)
         model.saved_model()
-
+    
     else:
         if args.multi_gpu == False:
             tf.config.set_soft_device_placement(True)

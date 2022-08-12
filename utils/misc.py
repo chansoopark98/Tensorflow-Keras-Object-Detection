@@ -249,12 +249,12 @@ def convert_locations_to_boxes(locations, priors, center_variance,
              이미지 크기에 상대적입니다.
      """
     
-    # if tf.rank(priors) + 1 == tf.rank(locations):
-    #     # frozen graph 만들때
-    #     # priors rank = 2, locations = 3
-    #     print('bigger convert_locations_to_boxes')
+    if tf.rank(priors) + 1 == tf.rank(locations):
+        # frozen graph 만들때
+        # priors rank = 2, locations = 3
+        print('bigger convert_locations_to_boxes')
         
-    priors = tf.expand_dims(priors, 0)
+        priors = tf.expand_dims(priors, 0)
     
     
     return tf.concat([
@@ -267,8 +267,7 @@ def convert_locations_to_boxes(locations, priors, center_variance,
 def convert_boxes_to_locations(center_form_boxes, center_form_priors, center_variance, size_variance):
     priors_rank = tf.rank(center_form_priors)
     boxes_rank = tf.rank(center_form_boxes)
-    print(priors_rank)
-    print(boxes_rank)
+    
     if tf.rank(center_form_priors) + 1 == tf.rank(center_form_boxes):
         print('bigger convert_boxes_to_locations')
         center_form_priors = tf.expand_dims(center_form_priors, 0)
