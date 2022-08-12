@@ -1,14 +1,14 @@
-import sys
 from typing import List
 import itertools
 import collections
 from utils.misc import *
 
 """
-ESDet Prior Box (= Default box)
+Github : chansoopark98/Tensorflow-Keras-Object-Detection
+Set Prior Box (= Default box)
 
-Returns center, height and width values
-Returns the center, height and width of a dictionary. The value is relative to the image size.
+Implement a single shot multibox detector-based prior box (=anchor box).
+
 
  Args :
      specs : Specs for size shape of prior box
@@ -20,25 +20,11 @@ Returns the center, height and width of a dictionary. The value is relative to t
 
 BoxSizes = collections.namedtuple('Boxsizes', ['min', 'max'])
 Spec = collections.namedtuple('Spec', ['feature_map_size', 'shrinkage', 'box_sizes', 'aspect_ratios'])
+
 iou_threshold = 0.5
 center_variance = 0.1
 size_variance = 0.2
 
-# Original specs
-# Spec(38, 8, BoxSizes(30, 60), [2]),
-# Spec(19, 16, BoxSizes(60, 111), [2, 3]),
-# Spec(10, 32, BoxSizes(111, 162), [2, 3]),
-# Spec(5, 64, BoxSizes(162, 213), [2, 3]),
-# Spec(3, 100, BoxSizes(213, 264), [2]),
-# Spec(1, 300, BoxSizes(264, 315), [2])
-
-# Test specs
-# Spec(38, 8, BoxSizes(30, 60), []),
-# Spec(19, 16, BoxSizes(60, 111), [2]),
-# Spec(10, 32, BoxSizes(111, 162), [2]),
-# Spec(5, 64, BoxSizes(162, 213), [2]),
-# Spec(3, 100, BoxSizes(213, 264), [2]),
-# Spec(1, 300, BoxSizes(264, 315), [2])
 
 def convert_spec_list():
     spec_list = [
@@ -107,6 +93,7 @@ def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
     priors = np.array(priors, dtype=np.float32)
 
     if clamp:
+        # Box값 0~1 클리핑
         np.clip(priors, 0.0, 1.0, out=priors)
     return tf.convert_to_tensor(priors)
 
