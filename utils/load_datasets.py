@@ -36,37 +36,18 @@ class DataLoadHandler:
                 self.label_key = 'label'
                 self.bbox_key = 'bbox'
 
-            elif self.dataset_name == 'display_detection':
-                self.num_classes = 4
-                self.dataset_list = self.__load_custom_dataset(dataset_name=self.dataset_name)
-                self.image_key = 'image'
-                self.label_key = 'label'
-                self.bbox_key = 'bbox'
-
-            elif self.dataset_name == 'human_detection':
-                self.num_classes = 2
-                self.dataset_list = self.__load_custom_dataset(dataset_name=self.dataset_name)
-                self.image_key = 'image'
-                self.label_key = 'label'
-                self.bbox_key = 'bbox'
-
-            elif self.dataset_name == 'coex_hand':
-                self.num_classes = 2
-                self.dataset_list = self.__load_custom_dataset(dataset_name=self.dataset_name)
-                self.image_key = 'image'
-                self.label_key = 'label'
-                self.bbox_key = 'bbox'
             else:
-                raise Exception('Cannot find dataset_name! \n your dataset is {0}. \
-                                 Currently available default dataset types are: \
-                                 voc, coco'.format(self.dataset_name))
+                self.dataset_list = self.__load_custom_dataset(dataset_name=self.dataset_name)
+                self.image_key = 'image'
+                self.label_key = 'label'
+                self.bbox_key = 'bbox'
 
-            self.train_data, self.number_train, self.valid_data, self.number_valid,\
-                             self.test_data, self.number_test = self.dataset_list
-        
         except Exception as error:
-            print('Cannot select dataset. \n {0}'.format(error))
+            print('Cannot find dataset_name! \n your dataset is {0}. \
+                  Currently available default dataset types are: \
+                  voc, coco, custom_datasaet. \n Error log : {1} '.format(self.dataset_name, error))
 
+        self.train_data, self.number_train, self.valid_data, self.number_valid, self.test_data, self.number_test = self.dataset_list
 
     def __load_voc(self, use_train_val: bool = True):
         
@@ -121,8 +102,7 @@ class DataLoadHandler:
         # Remove blank label files
         valid_data = valid_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['bbox']), 0)))
         valid_data = valid_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['objects']['label']), 0)))
-        
-
+    
         test_data = tfds.load('coco/2017', data_dir=self.data_dir, split='test')
 
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
@@ -131,32 +111,53 @@ class DataLoadHandler:
 
         print("Nuber of train dataset = {0}".format(number_train))
         print("Nuber of validation dataset = {0}".format(number_valid))
-        print("Nuber of validation dataset = {0}".format(number_test))
+        print("Nuber of test dataset = {0}".format(number_test))
 
         return (train_data, number_train, valid_data, number_valid, test_data, number_test)
 
 
     def __load_custom_dataset(self, dataset_name):
+        """
+            Loads a custom dataset specified by the user.
+            For custom datasets, you don't need to specify self.num_classes directly, just count the classes yourself.
+            e.g. If the dataset has at most 2 integer labels (class 1: 0, class 2: 1, class 3: 2)
+            The output of self.num_classes is 4 (foreground class 3 + background 1)
+        """
         
-        if os.path.isdir(self.data_dir + 'display_detection') == False:
+        if os.path.isdir(self.data_dir + dataset_name) == False:
             raise Exception(
-                'Cannot find PASCAL VOC Tensorflow Datasets. Please download VOC data. \
-                 You can download use dataset_download.py')
-
+                'Cannot find your custom dataset -> {0}. Please download VOC data. \
+                 You can download use dataset_download.py'.format(dataset_name))
 
         # train_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train[10%:]')
         # valid_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train[:10%]')
         train_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train')
         valid_data = tfds.load(dataset_name, data_dir=self.data_dir, split='validation')
-    
+        test_data = valid_data    
 
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
         number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
+        number_test = number_valid
 
         print("Nuber of train dataset = {0}".format(number_train))
         print("Nuber of validation dataset = {0}".format(number_valid))
+        print("Nuber of test dataset = {0}".format(number_test))
 
-        return (train_data, number_train, valid_data, number_valid, 0, 0)
+        # calculate number of classes
+        total_data = train_data.concatenate(valid_data)
+
+        best_label_value = 0
+        for sample in total_data.take(number_train + number_valid):
+            max_label = tf.math.reduce_max(sample['label'])
+
+            if max_label >= best_label_value:
+                best_label_value = max_label
+        
+        # The maximum value of the label starts at index 0, so we need to add +1,
+        # And we add a background class to add a total of 2.
+        self.num_classes = best_label_value.numpy() + 2
+        
+        return (train_data, number_train, valid_data, number_valid, test_data, number_test)
 
 
 class GenerateDatasets(DataLoadHandler):
@@ -183,14 +184,11 @@ class GenerateDatasets(DataLoadHandler):
     @tf.function    
     def preprocess_test(self, sample: dict) -> Union[tf.Tensor, tf.Tensor, tf.Tensor]:
         image = tf.cast(sample[self.image_key], dtype=tf.float32)
-        if self.dataset_name == 'display_detection':
+        if self.dataset_name == 'custom_dataset':
             labels = sample[self.label_key] + 1
             bbox = sample[self.bbox_key]
-        elif self.dataset_name == 'human_detection':
-            labels = sample[self.label_key]
-            labels = tf.where(labels>=0, 1, 0)
-            bbox = sample[self.bbox_key]
         else:
+            # PASCAL VOC or COCO2017 dataset
             labels = sample['objects'][self.label_key] + 1
             bbox = sample['objects'][self.bbox_key]
         
@@ -214,20 +212,11 @@ class GenerateDatasets(DataLoadHandler):
     def preprocess(self, sample: dict, clip_bbox: bool = True) -> Union[tf.Tensor, tf.Tensor, tf.Tensor]:
         image = tf.cast(sample[self.image_key], dtype=tf.float32)
         
-        if self.dataset_name == 'display_detection':
+        if self.dataset_name == 'custom_dataset':
             labels = sample[self.label_key] + 1
             bbox = sample[self.bbox_key]
-        elif self.dataset_name == 'human_detection':
-            labels = sample[self.label_key]
-            labels = tf.where(labels>=0, 1, 0)
-            labels = tf.cast(labels, tf.int64)
-            bbox = sample[self.bbox_key]
-        elif self.dataset_name == 'coex_hand':
-            labels = sample[self.label_key]
-            labels = tf.where(labels>=0, 1, 0)
-            labels = tf.cast(labels, tf.int64)
-            bbox = sample[self.bbox_key]
         else:
+            # PASCAL VOC or COCO2017 dataset
             labels = sample['objects'][self.label_key] + 1
             bbox = sample['objects'][self.bbox_key]
 

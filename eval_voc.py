@@ -11,36 +11,39 @@ import tensorflow as tf
 from tqdm import tqdm
 
 tf.keras.backend.clear_session()
-# tf.config.run_functions_eagerly(True)
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--backbone_name",      type=str,    help="Pretrained backbone name",
-                    default='efficientv2b0')
+parser.add_argument("--backbone_name",      type=str,    help="Pretrained backbone name\
+                                                               |   model_name    : description | \
+                                                               [ 1. mobilenetv2       : MobileNetV2 ]\
+                                                               [ 2. mobilenetv3s      : MobileNetV3-Small ] \
+                                                               [ 3. mobilenetv3l      : MobileNetV3-Large ] \
+                                                               [ 4. efficient_lite_v0 : EfficientNet-Lite-B0 ]\
+                                                               [ 5. efficientv2b0  : EfficientNet-V2-B0 ]\
+                                                               [ 6. efficientv2b3  : EfficientNet-V2-B3 ]",
+                    default='efficient_lite_v0')
+parser.add_argument("--image_norm_type",    type=str,    help="Set RGB image nornalize format (tf or torch or no)\
+                                                               [ 1. tf    : Rescaling RGB image -1 ~ 1 from imageNet ]\
+                                                               [ 2. torch : Rescaling RGB image 0 ~ 1 from imageNet ]\
+                                                               [ 3. else  : Rescaling RGB image 0 ~ 1 only divide 255 ]",
+                    default='div')
 parser.add_argument("--batch_size",         type=int,    help="Evaluation batch size",
                     default=1)
 parser.add_argument("--image_size",         type=tuple,  help="Model image size (input resolution H,W)",
                     default=(300, 300))
-parser.add_argument("--image_norm_type",    type=str,    help="Set RGB image nornalize format (tf or torch or no)",
-                    default='torch')
 parser.add_argument("--dataset_dir",        type=str,    help="Dataset directory",
                     default='./datasets/')
 parser.add_argument("--checkpoint_dir",     type=str,    help="Setting the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--weight_path",        type=str,    help="Saved model weights directory",
-                    default='0811/_0811_efficientv2b0_epoch200_voc_b32_lr0.002_input-torch_std_conv_best_loss.h5')
+                    default='0812/_0812_efficient_lite_v0_voc_focal_test_e100_b32_lr0.001_single_best_loss.h5')
 
-# Prediction results visualize options
-parser.add_argument("--visualize",  help="Whether to image and save inference results", action='store_true')
-parser.add_argument("--result_dir",         type=str,    help="Test result save directory",
-                    default='./results/')
 parser.add_argument("--gpu_num",            type=int,    help="Set GPU number to use(When without distribute training)",
                     default=0)
 
 args = parser.parse_args()
 
 if __name__ == '__main__':
-    # Create result plot image path
-    os.makedirs(args.result_dir, exist_ok=True)
     tf.config.set_soft_device_placement(True)
 
     gpu_number = '/device:GPU:' + str(args.gpu_num)

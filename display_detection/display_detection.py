@@ -22,7 +22,7 @@ _CITATION = """
 
 class DisplayDetection(tfds.core.GeneratorBasedBuilder):
   """DatasetBuilder for display_detection dataset."""
-  MANUAL_DOWNLOAD_INSTRUCTIONS = '/home/park/tensorflow_datasets/'
+  # MANUAL_DOWNLOAD_INSTRUCTIONS = '/home/park/tensorflow_datasets/'
   VERSION = tfds.core.Version('1.0.0')
   RELEASE_NOTES = {
       '1.0.0': 'Initial release.',
@@ -57,7 +57,12 @@ class DisplayDetection(tfds.core.GeneratorBasedBuilder):
 
     # TODO(cornell_grasp): Returns the Dict[split names, Iterator[Key, Example]]
     return {
-        'train': self._generate_examples(img_path=extracted_path/'rgb', bbox_path=extracted_path/'bbox', label_path=extracted_path/'label')
+        'train': self._generate_examples(img_path=extracted_path/'train/rgb',
+                                         bbox_path=extracted_path/'train/bbox',
+                                         label_path=extracted_path/'train/label'),
+        'validation': self._generate_examples(img_path=extracted_path/'validation/rgb',
+                                              bbox_path=extracted_path/'validation/bbox',
+                                              label_path=extracted_path/'validation/label')
     }
 
   def _generate_examples(self, img_path, bbox_path, label_path):
@@ -82,9 +87,6 @@ class DisplayDetection(tfds.core.GeneratorBasedBuilder):
             
       with open(str(label_files[idx]), "r") as file:
           read_label_list = file.readlines()
-      
-      print('len box', len(read_bbox_list))
-      print('len label', len(read_label_list))
 
       try:  
         for i in range(len(read_bbox_list)):
