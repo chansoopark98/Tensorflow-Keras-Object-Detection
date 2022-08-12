@@ -290,7 +290,7 @@ python draw_prec_rec_curve.py
 
 <p align="center">
 
-![iou_50](https://user-images.githubusercontent.com/60956651/184134684-1cd5f636-8929-4fbc-9f05-d932add8d100.png)
+<img src="https://user-images.githubusercontent.com/60956651/184134684-1cd5f636-8929-4fbc-9f05-d932add8d100.png">
 
 </p>
 
