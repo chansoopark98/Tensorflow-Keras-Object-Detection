@@ -9,6 +9,7 @@ checkpoints/
 tensorboard/
 test/
 experiments/human_data
+experiments/*.npy
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

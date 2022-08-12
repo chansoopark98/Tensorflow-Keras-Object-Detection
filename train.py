@@ -50,6 +50,10 @@ parser.add_argument("--image_norm_type",  type=str,    help="Set RGB image norna
                                                              [ 2. torch : Rescaling RGB image 0 ~ 1 from imageNet ]\
                                                              [ 3. else  : Rescaling RGB image 0 ~ 1 only divide 255 ]",
                     default='div')
+parser.add_argument("--loss_type",        type=str,    help="Set the loss function for class classification.\
+                                                            [ 1. ce     : Uses cross entropy with hard negative mining ]\
+                                                            [ 2. focal  : Focal cross entropy ]",
+                    default='ce')
 parser.add_argument("--optimizer",        type=str,    help="Set optimizer",
                     default='adam')
 parser.add_argument("--use_weightDecay",  type=bool,   help="Whether to use weightDecay",
@@ -74,7 +78,7 @@ parser.add_argument("--tensorboard_dir",  type=str,    help="Set tensorboard sto
 
 # Set Distribute training (When use Single gpu)
 parser.add_argument("--gpu_num",          type=int,    help="Set GPU number to use(When without distribute training)",
-                    default=1)
+                    default=0)
 
 # Set Distribute training (When use Multi gpu)
 parser.add_argument("--multi_gpu",  help="Set up distributed learning mode", action='store_true')

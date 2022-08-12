@@ -66,6 +66,7 @@ class ModelConfiguration(GenerateDatasets):
         self.IMAGE_SIZE = self.args.image_size
         self.USE_WEIGHT_DECAY = self.args.use_weightDecay
         self.MIXED_PRECISION = self.args.mixed_precision
+        self.LOSS_TYPE = self.args.loss_type
         self.DISTRIBUTION_MODE = self.args.multi_gpu
         if self.DISTRIBUTION_MODE:
             self.BATCH_SIZE *= 2
@@ -170,10 +171,16 @@ class ModelConfiguration(GenerateDatasets):
         self.metrics = self.__set_metrics()
         self.__set_callbacks()
         self.__configuration_model()
+        
+        if self.LOSS_TYPE == 'ce':
+            use_focal = False
+        else:
+            use_focal = True
 
         self.loss = DetectionLoss(num_classes=self.num_classes,
                                   global_batch_size=self.batch_size,
-                                  use_multi_gpu=self.DISTRIBUTION_MODE)
+                                  use_multi_gpu=self.DISTRIBUTION_MODE,
+                                  use_focal=use_focal)
 
         if self.args.transfer_learning:
             self.model.load_weights(self.args.saved_model_path, by_name=True, skip_mismatch=True)
