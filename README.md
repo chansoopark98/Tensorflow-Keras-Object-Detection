@@ -5,23 +5,10 @@
 
 ## Tensorflow/Keras를 활용한 Object detection repository  [![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fchansoopark98%2FTensorflow-Keras-Object-Detection&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23C41010&title=hits&edge_flat=false)](https://hits.seeyoufarm.com)
 
+
+<hr>
+
 <br>
-
-<p align="center">
-
-다양한 환경에서 실시간 객체 검출을 위한 tensorflow-keras 오픈 소스 레포지토리입니다. 
-<br>
-MobileNet-ssd, EfficientNet-ssd와 같이 [Single Shot multibox Detector](https://arxiv.org/abs/1512.02325) 기반의 객체 검출 모델을 제공합니다.
-<br>
-PASCAL VOC, COCO와 같은 벤치마크 데이터셋을 기본 제공하며, 사용자 설정에 따라 custom dataaset을 사용할 수 있습니다.
-<br>
-학습된 모델을 다양한 프레임워크 및 환경에서 추론할 수 있도록 export 기능을 제공합니다.
-
-레포지토리 개선에 기여할 수 있도록 Pull-request 및 issue를 남겨주세요.
-
-</p>
-
-<br><br>
 
 <p align="center">
  <img src="https://img.shields.io/github/issues/chansoopark98/Tensorflow-Keras-Object-Detection">
@@ -47,6 +34,26 @@ PASCAL VOC, COCO와 같은 벤치마크 데이터셋을 기본 제공하며, 사
  <img src ="https://img.shields.io/badge/JavaScript-F7DF1E.svg?&style=for-the-badge&logo=JavaScript&logoColor=white"/>
 </p>
 
+<br>
+
+<center>
+
+다양한 환경에서 실시간 객체 검출을 위한 tensorflow-keras 오픈 소스 레포지토리입니다. 
+<br>
+MobileNet-ssd, EfficientNet-ssd와 같이 [Single Shot multibox Detector](https://arxiv.org/abs/1512.02325) 기반의 객체 검출 모델을 제공합니다.
+<br>
+PASCAL VOC, COCO와 같은 벤치마크 데이터셋을 기본 제공하며, 사용자 설정에 따라 custom dataaset을 사용할 수 있습니다.
+<br>
+학습된 모델을 다양한 프레임워크 및 환경에서 추론할 수 있도록 export 기능을 제공합니다.
+
+레포지토리 개선에 기여할 수 있도록 Pull-request 및 issue를 남겨주세요.
+
+저자 이메일 : chansoo0710@gmail.com
+
+</center>
+
+<br>
+<hr>
 <br>
 
 <p align="center">
