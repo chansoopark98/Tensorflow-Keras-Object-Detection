@@ -36,7 +36,7 @@
 
 <br>
 
-<center>
+<div style="text-align: center">  
 
 다양한 환경에서 실시간 객체 검출을 위한 tensorflow-keras 오픈 소스 레포지토리입니다. 
 <br>
@@ -50,7 +50,7 @@ PASCAL VOC, COCO와 같은 벤치마크 데이터셋을 기본 제공하며, 사
 
 저자 이메일 : chansoo0710@gmail.com
 
-</center>
+</div>
 
 <br>
 <hr>
