@@ -25,7 +25,7 @@ parser.add_argument("--transfer_learning",  help="Load the pre-trained weights a
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name (logging weights name and tensorboard)",
-                    default='efficient_lite_v0_voc_focal_test_e100_b32_lr0.001_single')
+                    default='efficient_lite_v0_voc_ce+giou_e200_b32_lr0.001_single')
 parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name\
                                                             |   model_name    : description | \
                                                             [ 1. mobilenetv2       : MobileNetV2 ]\
@@ -78,7 +78,7 @@ parser.add_argument("--tensorboard_dir",  type=str,    help="Set tensorboard sto
 
 # Set Distribute training (When use Single gpu)
 parser.add_argument("--gpu_num",          type=int,    help="Set GPU number to use(When without distribute training)",
-                    default=0)
+                    default=1)
 
 # Set Distribute training (When use Multi gpu)
 parser.add_argument("--multi_gpu",  help="Set up distributed learning mode", action='store_true')

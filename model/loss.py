@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import itertools
 from typing import Any, Optional
+import tensorflow_addons as tfa
 
 _EPSILON = tf.keras.backend.epsilon()
 
@@ -54,6 +55,13 @@ class DetectionLoss(tf.keras.losses.Loss):
         classification_loss = tf.math.reduce_sum(ce_loss)
 
         return classification_loss
+
+    def giou_loss(self, target, output):
+        giou_loss = tfa.losses.giou_loss(target, output)
+
+        return giou_loss
+
+        
         
 
     def call(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
@@ -79,16 +87,19 @@ class DetectionLoss(tf.keras.losses.Loss):
         predicted_locations = tf.reshape(tf.boolean_mask(predicted_locations, pos_mask), [-1, 4])
         gt_locations = tf.reshape(tf.boolean_mask(gt_locations, pos_mask), [-1, 4])
 
+        # Test DIoU loss
+        giou_loss = self.giou_loss(target=gt_locations, output=predicted_locations)
         # calc localization loss
         smooth_l1_loss = tf.math.reduce_sum(self.smooth_l1(scores=predicted_locations,labels=gt_locations))
         num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
 
         # divide num_pos objects
         loc_loss = smooth_l1_loss / num_pos
+        giou_loss = giou_loss / num_pos
         class_loss = classification_loss / num_pos
         
         # Add to total loss
-        mbox_loss = loc_loss + class_loss
+        mbox_loss = loc_loss + class_loss + giou_loss
 
         # If use multi gpu, divide loss value by gpu numbers
         if self.use_multi_gpu:

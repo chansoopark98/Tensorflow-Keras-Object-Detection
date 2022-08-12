@@ -265,8 +265,8 @@ def convert_locations_to_boxes(locations, priors, center_variance,
 
 @tf.function
 def convert_boxes_to_locations(center_form_boxes, center_form_priors, center_variance, size_variance):
-    priors_rank = tf.rank(center_form_priors)
-    boxes_rank = tf.rank(center_form_boxes)
+    # priors_rank = tf.rank(center_form_priors)
+    # boxes_rank = tf.rank(center_form_boxes)
     
     if tf.rank(center_form_priors) + 1 == tf.rank(center_form_boxes):
         print('bigger convert_boxes_to_locations')

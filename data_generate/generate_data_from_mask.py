@@ -41,12 +41,20 @@ class MaskDataGenerator():
         self.LABEL_MAP_PATH = args.label_map_path
         self.OUTPUT_PATH = args.output_path
 
-        self.OUT_RGB_PATH = self.OUTPUT_PATH + 'rgb/'
-        self.OUT_LABEL_PATH = self.OUTPUT_PATH + 'label/'
-        self.OUT_BBOX_PATH = self.OUTPUT_PATH + 'bbox/'
-        os.makedirs(self.OUT_RGB_PATH, exist_ok=True)
-        os.makedirs(self.OUT_LABEL_PATH, exist_ok=True)
-        os.makedirs(self.OUT_BBOX_PATH, exist_ok=True)
+        self.TRAIN_RGB_PATH = self.OUTPUT_PATH + 'train/rgb/'
+        self.TRAIN_LABEL_PATH = self.OUTPUT_PATH + 'train/label/'
+        self.TRAIN_BBOX_PATH = self.OUTPUT_PATH + 'train/bbox/'
+        os.makedirs(self.TRAIN_RGB_PATH, exist_ok=True)
+        os.makedirs(self.TRAIN_LABEL_PATH, exist_ok=True)
+        os.makedirs(self.TRAIN_BBOX_PATH, exist_ok=True)
+
+        self.VALID_RGB_PATH = self.OUTPUT_PATH + 'validation/rgb/'
+        self.VALID_LABEL_PATH = self.OUTPUT_PATH + 'validation/label/'
+        self.VALID_BBOX_PATH = self.OUTPUT_PATH + 'validation/bbox/'
+        os.makedirs(self.VALID_RGB_PATH, exist_ok=True)
+        os.makedirs(self.VALID_LABEL_PATH, exist_ok=True)
+        os.makedirs(self.VALID_BBOX_PATH, exist_ok=True)
+
 
         self.rgb_list = glob.glob(os.path.join(self.RGB_PATH+'*.jpg'))
         self.rgb_list = natsort.natsorted(self.rgb_list,reverse=True)
@@ -268,7 +276,7 @@ class MaskDataGenerator():
         original_h, original_w = rgb.shape[:2]
         aspect_ratio = original_h / original_w
 
-        widht_scale = tf.random.uniform([], 0.5, 0.95)
+        widht_scale = tf.random.uniform([], 0.7, 0.95)
         
         new_w = original_w * widht_scale
         new_h = new_w * aspect_ratio
@@ -286,6 +294,21 @@ class MaskDataGenerator():
         crop_obj_mask = concat_img[:, :, 4:].numpy()
 
         return crop_img, crop_mask, crop_obj_mask
+
+
+    def image_random_padding(self, rgb: np.ndarray, mask: np.ndarray, obj_mask: np.ndarray
+                            ) -> Union[np.ndarray, np.ndarray, np.ndarray]:
+
+        top_pad = random.randint(0, 100)
+        bottom_pad = random.randint(0, 100)
+        left_pad = random.randint(0, 100)
+        right_pad = random.randint(0, 100)
+
+        rgb = cv2.copyMakeBorder(rgb, top_pad, bottom_pad, left_pad, right_pad, cv2.BORDER_CONSTANT, value=[0,0,0])
+        mask = cv2.copyMakeBorder(mask, top_pad, bottom_pad, left_pad, right_pad, cv2.BORDER_CONSTANT, value=[0])
+        obj_mask = cv2.copyMakeBorder(obj_mask, top_pad, bottom_pad, left_pad, right_pad, cv2.BORDER_CONSTANT, value=[0])
+
+        return rgb, mask, obj_mask
 
 
     def get_coords_from_mask(self, rgb: np.ndarray, mask: np.ndarray, obj_mask: np.ndarray):
@@ -345,14 +368,15 @@ class MaskDataGenerator():
         return rgb, sample_bboxes, sample_labels
 
 
-    def save_samples(self, rgb: np.ndarray, bbox: list, labels: list, prefix: str):
+    def save_samples(self, rgb: np.ndarray, bbox: list, labels: list, prefix: str, save_mode: str = 'train'):
         """
             Save image and mask
             Args:
-                rgb     (np.ndarray) : (H,W,3) Image.
-                bbox    (list)       : List type [y_min, x_min, y_max, x_max].
-                labels  (list)       : List type Integer labels.
-                prefix  (str)        : The name of the image to be saved.
+                rgb       (np.ndarray) : (H,W,3) Image.
+                bbox      (list)       : List type [y_min, x_min, y_max, x_max].
+                labels    (list)       : List type Integer labels.
+                prefix    (str)        : The name of the image to be saved.
+                save_mode (str)        : Save mode (train or validation)
         """
         bbox_len = len(bbox)
         labels_len = len(labels)
@@ -363,45 +387,24 @@ class MaskDataGenerator():
         elif bbox_len != labels_len:
             print('bbox and label size does not match')
         else:
-            cv2.imwrite(self.OUT_RGB_PATH + prefix +'_.png', rgb)
+            if save_mode == 'train':
+                save_rgb_path = self.TRAIN_RGB_PATH
+                save_label_path = self.TRAIN_LABEL_PATH
+                save_bbox_path = self.TRAIN_BBOX_PATH
+            else:
+                save_rgb_path = self.VALID_RGB_PATH
+                save_label_path = self.VALID_LABEL_PATH
+                save_bbox_path = self.VALID_BBOX_PATH
 
-            with open(self.OUT_BBOX_PATH + prefix +'_.txt', "w") as file:
+            cv2.imwrite(save_rgb_path + prefix +'_.png', rgb)
+
+            with open(save_bbox_path + prefix +'_.txt', "w") as file:
                 for i in range(len(bbox)):
                     file.writelines(str(bbox[i]) + '\n')
 
-            with open(self.OUT_LABEL_PATH + prefix +'_.txt', "w") as file:
+            with open(save_label_path + prefix +'_.txt', "w") as file:
                 for i in range(len(labels)):
                     file.writelines(str(labels[i]) + '\n')
-
-
-        # with open(self.OUT_BBOX_PATH + prefix +'_.txt', "r") as file:
-        #     bbox_list = file.readlines()
-            
-        # with open(self.OUT_LABEL_PATH + prefix +'_.txt', "r") as file:
-        #     label_list = file.readlines()
-        
-        
-        # for i in range(len(label_list)):
-        #     bbox_list[i] = bbox_list[i].replace('\n', '')
-        #     label_list[i] = label_list[i].replace('\n', '')
-
-        #     label_list[i] = int(label_list[i])
-
-        #     # bbox_list[i] # str, x1, y1, x2, y2
-        #     bbox_list[i] = bbox_list[i].replace('[', '')
-        #     bbox_list[i] = bbox_list[i].replace(']', '')
-        #     bbox_batch = bbox_list[i].split(',')
-
-        #     batch_box_out = []
-        #     for j in range(len(bbox_batch)):
-        #         bbox_batch[j] = bbox_batch[j].replace(' ', '')    
-        #         batch_box_out.append(float(bbox_batch[j]))
-            
-        #     bbox_list[i] = batch_box_out
-            
-        # bbox_list = np.array(bbox_list)
-        # label_list = np.array(label_list)
-        
 
     def plot_images(self, rgb: np.ndarray, mask: np.ndarray):
         """
@@ -486,13 +489,39 @@ if __name__ == '__main__':
     mask_list = image_loader.get_mask_list()
     obj_mask_list = image_loader.get_obj_mask_list()
     
-        
+    # 같은 index로 랜덤 셔플링
+    data_len = len(rgb_list)
+    print(data_len)
+    key = np.arange(data_len)
+    np.random.shuffle(key)
+    print(key)
+    rgb_list = np.array(rgb_list)[key]
+    rgb_list = list(rgb_list)
+    
+    mask_list = np.array(mask_list)[key]
+    mask_list = list(mask_list)
 
-    for idx in range(len(rgb_list)):
+    obj_mask_list = np.array(obj_mask_list)[key]
+    obj_mask_list = list(obj_mask_list)
+
+
+    validation_split = int(data_len * 0.1)
+    
+    train_rgb_list = rgb_list[validation_split:]
+    valid_rgb_list = rgb_list[:validation_split]
+
+    train_mask_list = mask_list[validation_split:]
+    valid_mask_list = mask_list[:validation_split]
+
+    train_obj_mask_list = obj_mask_list[validation_split:]
+    valid_obj_mask_list = obj_mask_list[:validation_split]
+
+
+    for idx in range(len(train_rgb_list)):
         
-        original_rgb = cv2.imread(rgb_list[idx])
-        original_mask = cv2.imread(mask_list[idx])
-        original_obj_mask = cv2.imread(obj_mask_list[idx])
+        original_rgb = cv2.imread(train_rgb_list[idx])
+        original_mask = cv2.imread(train_mask_list[idx])
+        original_obj_mask = cv2.imread(train_obj_mask_list[idx])
 
         if np.max(original_mask) == 0:
             print('no labels')
@@ -505,16 +534,22 @@ if __name__ == '__main__':
         aspect_ratio = original_h / original_w
         original_w *= 0.35
         original_h = original_w * aspect_ratio
-
-        rgb, mask, obj_mask = image_loader.image_resize(
-            rgb=original_rgb, mask=original_mask, obj_mask=original_obj_mask, size=(int(original_h), int(original_w)))
+        
         # rgb = original_rgb.copy()
         # mask = original_mask.copy()
         # obj_mask = original_obj_mask.copy()
-        
 
+
+
+        rgb, mask, obj_mask = image_loader.image_resize(
+            rgb=original_rgb, mask=original_mask, obj_mask=original_obj_mask, size=(640, 360))
         original_rgb, bbox, label = image_loader.get_coords_from_mask(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy())
         image_loader.save_samples(rgb=original_rgb, bbox=bbox, labels=label, prefix='original_{0}'.format(idx))
+
+        for pad_idx in range(2):
+            pad_rgb, pad_mask, pad_obj_mask = image_loader.image_random_padding(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy())
+            pad_rgb, pad_box, pad_label = image_loader.get_coords_from_mask(rgb=pad_rgb, mask=pad_mask, obj_mask=pad_obj_mask)
+            image_loader.save_samples(rgb=pad_rgb, bbox=pad_box, labels=pad_label, prefix='pad_{0}_{1}'.format(idx, pad_idx))
 
         equal_rgb = image_loader.image_histogram_equalization(rgb=rgb.copy())
         equal_rgb, equal_bbox, equal_label = image_loader.get_coords_from_mask(rgb=equal_rgb, mask=mask.copy(), obj_mask=obj_mask.copy())
@@ -529,7 +564,7 @@ if __name__ == '__main__':
             rot_rgb, rot_bbox, rot_label = image_loader.get_coords_from_mask(rgb=rot_rgb, mask=rot_mask, obj_mask=rot_obj_mask)
             image_loader.save_samples(rgb=rot_rgb, bbox=rot_bbox, labels=rot_label, prefix='rot_{0}_idx_{1}'.format(idx, rotate_idx))
 
-        trans_rgb, trans_mask, trans_obj_mask = image_loader.image_random_translation(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy(), min_dx=10, min_dy=20, max_dx=100, max_dy=200)
+        trans_rgb, trans_mask, trans_obj_mask = image_loader.image_random_translation(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy(), min_dx=10, min_dy=20, max_dx=50, max_dy=100)
         trans_rgb, trans_bbox, trans_label = image_loader.get_coords_from_mask(rgb=trans_rgb, mask=trans_mask, obj_mask=trans_obj_mask)
         image_loader.save_samples(rgb=trans_rgb, bbox=trans_bbox, labels=trans_label, prefix='trans_{0}'.format(idx))
 
@@ -538,4 +573,48 @@ if __name__ == '__main__':
             crop_rgb, crop_mask, crop_obj_mask = image_loader.image_random_crop(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy())
             crop_rgb, crop_bbox, crop_label = image_loader.get_coords_from_mask(rgb=crop_rgb, mask=crop_mask, obj_mask=crop_obj_mask)
             image_loader.save_samples(rgb=crop_rgb, bbox=crop_bbox, labels=crop_label, prefix='crop_{0}_idx_{1}'.format(idx, crop_idx))
+    
+
+    for idx in range(len(valid_rgb_list)):
         
+        original_rgb = cv2.imread(valid_rgb_list[idx])
+        original_mask = cv2.imread(valid_mask_list[idx])
+        original_obj_mask = cv2.imread(valid_obj_mask_list[idx])
+
+        if np.max(original_mask) == 0:
+            print('no labels')
+            continue
+
+        print(idx)
+        original_mask = original_mask[:, :, :1]
+        
+        original_h, original_w = original_rgb.shape[:2]
+        aspect_ratio = original_h / original_w
+        original_w *= 0.35
+        original_h = original_w * aspect_ratio        
+        
+        rgb, mask, obj_mask = image_loader.image_resize(
+            rgb=original_rgb, mask=original_mask, obj_mask=original_obj_mask, size=(640, 360))
+
+        pad_rgb, pad_mask, pad_obj_mask = image_loader.image_random_padding(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy())
+        pad_rgb, pad_box, pad_label = image_loader.get_coords_from_mask(rgb=pad_rgb, mask=pad_mask, obj_mask=pad_obj_mask)
+        image_loader.save_samples(rgb=pad_rgb, bbox=pad_box, labels=pad_label, prefix='valid_pad_{0}_'.format(idx), save_mode='valid')
+        
+
+        original_rgb, bbox, label = image_loader.get_coords_from_mask(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy())
+        image_loader.save_samples(rgb=original_rgb, bbox=bbox, labels=label, prefix='original_{0}'.format(idx), save_mode='valid')
+
+
+        rot_rgb, rot_mask, rot_obj_mask = image_loader.image_random_rotation(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy())
+        rot_rgb, rot_bbox, rot_label = image_loader.get_coords_from_mask(rgb=rot_rgb, mask=rot_mask, obj_mask=rot_obj_mask)
+        image_loader.save_samples(rgb=rot_rgb, bbox=rot_bbox, labels=rot_label, prefix='valid_rot_{0}_'.format(idx), save_mode='valid')
+
+        trans_rgb, trans_mask, trans_obj_mask = image_loader.image_random_translation(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy(), min_dx=10, min_dy=20, max_dx=50, max_dy=100)
+        trans_rgb, trans_bbox, trans_label = image_loader.get_coords_from_mask(rgb=trans_rgb, mask=trans_mask, obj_mask=trans_obj_mask)
+        image_loader.save_samples(rgb=trans_rgb, bbox=trans_bbox, labels=trans_label, prefix='valid_trans_{0}'.format(idx), save_mode='valid')
+
+
+    
+        crop_rgb, crop_mask, crop_obj_mask = image_loader.image_random_crop(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy())
+        crop_rgb, crop_bbox, crop_label = image_loader.get_coords_from_mask(rgb=crop_rgb, mask=crop_mask, obj_mask=crop_obj_mask)
+        image_loader.save_samples(rgb=crop_rgb, bbox=crop_bbox, labels=crop_label, prefix='valid_crop_{0}'.format(idx), save_mode='valid')

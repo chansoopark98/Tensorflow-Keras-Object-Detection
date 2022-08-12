@@ -184,13 +184,14 @@ class GenerateDatasets(DataLoadHandler):
     @tf.function    
     def preprocess_test(self, sample: dict) -> Union[tf.Tensor, tf.Tensor, tf.Tensor]:
         image = tf.cast(sample[self.image_key], dtype=tf.float32)
-        if self.dataset_name == 'custom_dataset':
-            labels = sample[self.label_key] + 1
-            bbox = sample[self.bbox_key]
-        else:
+        if self.dataset_name == 'voc' or self.dataset_name == 'coco':
             # PASCAL VOC or COCO2017 dataset
             labels = sample['objects'][self.label_key] + 1
             bbox = sample['objects'][self.bbox_key]
+        else:
+            # Load Custom dataset
+            labels = sample[self.label_key] + 1
+            bbox = sample[self.bbox_key]
         
         x_min = tf.where(tf.greater_equal(bbox[:,1], bbox[:,3]), tf.cast(0, dtype=tf.float32), bbox[:,1])
         y_min = tf.where(tf.greater_equal(bbox[:,0], bbox[:,2]), tf.cast(0, dtype=tf.float32), bbox[:,0])
@@ -212,13 +213,14 @@ class GenerateDatasets(DataLoadHandler):
     def preprocess(self, sample: dict, clip_bbox: bool = True) -> Union[tf.Tensor, tf.Tensor, tf.Tensor]:
         image = tf.cast(sample[self.image_key], dtype=tf.float32)
         
-        if self.dataset_name == 'custom_dataset':
-            labels = sample[self.label_key] + 1
-            bbox = sample[self.bbox_key]
-        else:
+        if self.dataset_name == 'voc' or self.dataset_name == 'coco':
             # PASCAL VOC or COCO2017 dataset
             labels = sample['objects'][self.label_key] + 1
             bbox = sample['objects'][self.bbox_key]
+        else:
+            # Load Custom dataset
+            labels = sample[self.label_key] + 1
+            bbox = sample[self.bbox_key]
 
         x_min = tf.where(tf.greater_equal(bbox[:,1], bbox[:,3]), tf.cast(0, dtype=tf.float32), bbox[:,1])
         y_min = tf.where(tf.greater_equal(bbox[:,0], bbox[:,2]), tf.cast(0, dtype=tf.float32), bbox[:,0])
@@ -238,6 +240,8 @@ class GenerateDatasets(DataLoadHandler):
     
     @tf.function
     def augmentation(self, image: tf.Tensor, boxes: tf.Tensor, labels: tf.Tensor)-> Union[tf.Tensor, tf.Tensor, tf.Tensor]:
+        if tf.random.uniform([]) > 0.5:
+            image = tf.image.random_jpeg_quality(image, 30, 99)
         if tf.random.uniform([]) > 0.5:
             image = tf.image.random_saturation(image, lower=0.5, upper=1.5) # 랜덤 채도
         if tf.random.uniform([]) > 0.5:
