@@ -25,7 +25,7 @@ parser.add_argument("--transfer_learning",  help="Load the pre-trained weights a
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name (logging weights name and tensorboard)",
-                    default='efficient_lite_v0_voc_ce+giou_e200_b32_lr0.001_single')
+                    default='efficientv2b0_v0_voc_ce_giou_e300_b32_lr0.002_single')
 parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name\
                                                             |   model_name    : description | \
                                                             [ 1. mobilenetv2       : MobileNetV2 ]\
@@ -34,13 +34,13 @@ parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone
                                                             [ 4. efficient_lite_v0 : EfficientNet-Lite-B0 ]\
                                                             [ 5. efficientv2b0  : EfficientNet-V2-B0 ]\
                                                             [ 6. efficientv2b3  : EfficientNet-V2-B3 ]",
-                    default='efficient_lite_v0')
+                    default='efficientv2b0')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
                     default=32)
 parser.add_argument("--epoch",            type=int,    help="Training epochs",
-                    default=100)
+                    default=300)
 parser.add_argument("--lr",               type=float,  help="Initial learning rate",
-                    default=0.001)
+                    default=0.002)
 parser.add_argument("--weight_decay",     type=float,  help="Set Weight Decay",
                     default=0.00001)
 parser.add_argument("--image_size",       type=tuple,  help="Set model input size",
