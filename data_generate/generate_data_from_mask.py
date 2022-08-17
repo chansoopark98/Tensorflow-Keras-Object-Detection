@@ -342,7 +342,6 @@ class MaskDataGenerator():
                 # Calculate the bounding box of the area to be synthesized using the contour of the mask.
                 x, y, w, h = cv2.boundingRect(contour)
                 
-                # convert y_min, x_min, y_max, x_max
                 x_min = x
                 y_min = y
                 x_max = x + w

@@ -35,6 +35,11 @@ class DataLoadHandler:
                 self.image_key = 'image'
                 self.label_key = 'label'
                 self.bbox_key = 'bbox'
+            
+            elif self.dataset_name == 'wider_face':
+                self.num_classes = 2
+                self.image_key = 'image'
+                self.dataset_list = self.__load_wider_face_dataset()
 
             else:
                 self.dataset_list = self.__load_custom_dataset(dataset_name=self.dataset_name)
@@ -116,6 +121,31 @@ class DataLoadHandler:
         return (train_data, number_train, valid_data, number_valid, test_data, number_test)
 
 
+    def __load_wider_face_dataset(self):
+        if os.path.isdir(self.data_dir + 'wider_face') == False:
+            raise Exception(
+                'Cannot find your wider_face dataset. Please download wider_face data. \
+                 You can download use dataset_download.py')
+
+        train_data = tfds.load('wider_face', data_dir=self.data_dir, split='train')
+        train_data = train_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['faces']['bbox']), 0)))
+        
+        # train_data = train_data.filter(lambda x: tf.reduce_all(tf.less(tf.size(x['faces']['bbox']), 4*11)))
+        valid_data = tfds.load('wider_face', data_dir=self.data_dir, split='validation')
+        test_data = valid_data    
+
+        number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
+        number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
+        number_test = number_valid
+
+        print("Nuber of train dataset = {0}".format(number_train))
+        print("Nuber of validation dataset = {0}".format(number_valid))
+        print("Nuber of test dataset = {0}".format(number_test))
+
+        self.num_classes = 2
+        
+        return (train_data, number_train, valid_data, number_valid, test_data, number_test)
+
     def __load_custom_dataset(self, dataset_name):
         """
             Loads a custom dataset specified by the user.
@@ -126,8 +156,7 @@ class DataLoadHandler:
         
         if os.path.isdir(self.data_dir + dataset_name) == False:
             raise Exception(
-                'Cannot find your custom dataset -> {0}. Please download VOC data. \
-                 You can download use dataset_download.py'.format(dataset_name))
+                'Cannot find your custom dataset -> {0}.'.format(dataset_name))
 
         # train_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train[10%:]')
         # valid_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train[:10%]')
@@ -188,6 +217,11 @@ class GenerateDatasets(DataLoadHandler):
             # PASCAL VOC or COCO2017 dataset
             labels = sample['objects'][self.label_key] + 1
             bbox = sample['objects'][self.bbox_key]
+        elif self.dataset_name == 'wider_face':
+            # Wider Face face detection dataset
+            image = sample['image']
+            bbox = sample['faces']['bbox']
+            labels = tf.cast(tf.ones(tf.shape(bbox)[0]), tf.int64)
         else:
             # Load Custom dataset
             labels = sample[self.label_key] + 1
@@ -217,6 +251,11 @@ class GenerateDatasets(DataLoadHandler):
             # PASCAL VOC or COCO2017 dataset
             labels = sample['objects'][self.label_key] + 1
             bbox = sample['objects'][self.bbox_key]
+        elif self.dataset_name == 'wider_face':
+            # Wider Face face detection dataset
+            image = sample['image']
+            bbox = sample['faces']['bbox']
+            labels = tf.cast(tf.ones(tf.shape(bbox)[0]), tf.int64)
         else:
             # Load Custom dataset
             labels = sample[self.label_key] + 1
@@ -268,6 +307,7 @@ class GenerateDatasets(DataLoadHandler):
 
 
     def get_trainData(self, train_data):
+        
         train_data = train_data.shuffle(256)
         train_data = train_data.map(self.preprocess, num_parallel_calls=AUTO)
         train_data = train_data.map(self.augmentation, num_parallel_calls=AUTO)
@@ -293,6 +333,3 @@ class GenerateDatasets(DataLoadHandler):
         test_data = test_data.batch(self.batch_size).prefetch(AUTO)
 
         return test_data
-
-
-

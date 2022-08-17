@@ -19,9 +19,9 @@ parser.add_argument("--backbone_name",       type=str,    help="Pretrained backb
 parser.add_argument("--checkpoint_dir",      type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--model_weights",       type=str,    help="Saved model weights directory",
-                    default='your_model_weights.h5')
+                    default='0812/_0812_efficient_lite_v0_display-detection_ce_e200_b32_lr0.001_single_best_loss.h5')
 parser.add_argument("--num_classes",         type=int,    help="Set num classes for model and post-processing",
-                    default=21)  
+                    default=4)  
 parser.add_argument("--image_size",          type=tuple,  help="Set image size for priors and post-processing",
                     default=(300, 300))
 parser.add_argument("--gpu_num",             type=int,    help="Set GPU number to use(When without distribute training)",

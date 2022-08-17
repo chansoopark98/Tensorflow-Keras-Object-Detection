@@ -15,38 +15,40 @@ class MobileNetV3S():
         base = self.build_backbone()
         model_input = base.input
 
-        base_channel = 64
+        base_channel = 128
 
         x2 = base.get_layer('expanded_conv_2/Add').output # 38x38 @ 192
         x3 = base.get_layer('expanded_conv_7/Add').output # 19x19 @ 576
         x4 = base.get_layer('expanded_conv_10/Add').output # 10x10 @ 160
 
-        x5 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=True)(x4)
+       # 5, 5
+        x5 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same',
+                    use_bias=False)(x4)
         x5 = BatchNormalization()(x5)
-        x5 = ReLU(6.)(x5)
+        x5 = ReLU(max_value=6)(x5)
         
-
-        x5 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=2, padding='same', use_bias=True)(x5)
+        x5 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=2, padding='same', use_bias=False)(x5)
         x5 = BatchNormalization()(x5)
-        x5 = ReLU(6.)(x5)
+        x5 = ReLU(max_value=6)(x5)
         
-
-        x6 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=True)(x5)
+        # 3, 3
+        x6 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=False)(x5)
         x6 = BatchNormalization()(x6)
-        x6 = ReLU(6.)(x6)
+        x6 = ReLU(max_value=6)(x6)
         
-        x6 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=1, padding='valid', use_bias=True)(x6)
+        x6 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=1, padding='valid', use_bias=False)(x6)
         x6 = BatchNormalization()(x6)
-        x6 = ReLU(6.)(x6)
+        x6 = ReLU(max_value=6)(x6)
         
-
-        x7 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same', use_bias=True)(x6)
+        # 1, 1
+        x7 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same',
+                    use_bias=False)(x6)
         x7 = BatchNormalization()(x7)
-        x7 = ReLU(6.)(x7)
-
-        x7 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=1, padding='valid', use_bias=True)(x7)
+        x7 = ReLU(max_value=6)(x7)
+        
+        x7 = SeparableConv2D(base_channel * 2, kernel_size=3, strides=1, padding='valid', use_bias=False)(x7)
         x7 = BatchNormalization()(x7)
-        x7 = ReLU(6.)(x7)
+        x7 = ReLU(max_value=6)(x7)
         
 
         features = [x2, x3, x4, x5, x6, x7]

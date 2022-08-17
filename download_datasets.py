@@ -7,7 +7,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_dir",    type=str,   help="Set the dataset download directory",
                     default='./datasets/')
 parser.add_argument("--train_dataset",  type=str,   help="Set the dataset to be used for training (voc | coco)",
-                    default='voc')
+                    default='wider_face')
 
 args = parser.parse_args()
 
@@ -42,6 +42,20 @@ if __name__ == '__main__':
         train_data = tfds.load('coco/2017', data_dir=args.dataset_dir, split='train')
         valid_data = tfds.load('coco/2017', data_dir=args.dataset_dir, split='validation')
         test_data = tfds.load('coco/2017', data_dir=args.dataset_dir, split='test')
+
+        number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
+        number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()      
+        number_test = test_data.reduce(0, lambda x, _: x + 1).numpy()
+        
+        print("Nuber of train dataset = {0}".format(number_train))
+        print("Nuber of validation dataset = {0}".format(number_valid))
+        print("Nuber of test dataset = {0}".format(number_test))
+
+
+    elif args.train_dataset == 'wider_face':
+        train_data = tfds.load('wider_face', data_dir=args.dataset_dir, split='train')
+        valid_data = tfds.load('wider_face', data_dir=args.dataset_dir, split='validation')
+        test_data = tfds.load('wider_face', data_dir=args.dataset_dir, split='test')
 
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
         number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()      

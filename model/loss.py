@@ -88,22 +88,23 @@ class DetectionLoss(tf.keras.losses.Loss):
         gt_locations = tf.reshape(tf.boolean_mask(gt_locations, pos_mask), [-1, 4])
 
         # Test DIoU loss
-        giou_loss = self.giou_loss(target=gt_locations, output=predicted_locations)
+        # giou_loss = self.giou_loss(target=gt_locations, output=predicted_locations)
+
         # calc localization loss
         smooth_l1_loss = tf.math.reduce_sum(self.smooth_l1(scores=predicted_locations,labels=gt_locations))
         num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
 
         # divide num_pos objects
         loc_loss = smooth_l1_loss / num_pos
-        giou_loss = giou_loss / num_pos
+        # giou_loss = giou_loss / num_pos
         class_loss = classification_loss / num_pos
         
         # Add to total loss
-        mbox_loss = loc_loss + class_loss + giou_loss
+        mbox_loss = loc_loss + class_loss
 
         # If use multi gpu, divide loss value by gpu numbers
-        if self.use_multi_gpu:
-            mbox_loss *= (1. / self.global_batch_size)
+        # if self.use_multi_gpu:
+        #     mbox_loss *= (1. / self.global_batch_size)
             
         return mbox_loss
 

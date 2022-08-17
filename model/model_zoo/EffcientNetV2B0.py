@@ -6,17 +6,17 @@ class EfficientNetV2B0():
     def __init__(self, image_size: tuple, pretrained: str = "imagenet"):
         self.image_size = image_size
         self.pretrained = pretrained
-        self.use_std_conv = True
+        self.use_std_conv = False
         self.kernel_initializer = {
             "class_name": "VarianceScaling",
             "config": {"scale": 2.0, "mode": "fan_out", "distribution": "truncated_normal"},
         }
 
-        self.momentum = 0.9
+        self.momentum = 0.99
         self.eps = 0.001
     
     def build_backbone(self):
-        base = EffV2B0(input_shape=(*self.image_size, 3), first_strides=2, num_classes=0, pretrained=self.pretrained, include_preprocessing=False)
+        base = EffV2B0(input_shape=(*self.image_size, 3), first_strides=2, pretrained=self.pretrained, include_preprocessing=False)
         return base
 
     def build_extra_layer(self):
@@ -34,7 +34,7 @@ class EfficientNetV2B0():
         x5 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same',
                     kernel_initializer=self.kernel_initializer, use_bias=False)(x4)
         x5 = BatchNormalization(momentum=self.momentum, epsilon=self.eps)(x5)
-        x5 = Activation('swish')(x5)
+        x5 = ReLU(max_value=6)(x5)
         
         x5 = ZeroPadding2D(padding=((1, 1), (1, 1)), name='x5_padding')(x5)
 
@@ -47,13 +47,13 @@ class EfficientNetV2B0():
                                  pointwise_initializer=self.kernel_initializer)(x5)
         
         x5 = BatchNormalization(momentum=self.momentum, epsilon=self.eps)(x5)
-        x5 = Activation('swish')(x5)
+        x5 = ReLU(max_value=6)(x5)
         
         # 3, 3
         x6 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same',
                     kernel_initializer=self.kernel_initializer, use_bias=False)(x5)
         x6 = BatchNormalization(momentum=self.momentum, epsilon=self.eps)(x6)
-        x6 = Activation('swish')(x6)
+        x6 = ReLU(max_value=6)(x6)
         
         if self.use_std_conv:
             x6 = Conv2D(base_channel * 2, kernel_size=3, strides=1, padding='valid',
@@ -64,13 +64,13 @@ class EfficientNetV2B0():
                                  pointwise_initializer=self.kernel_initializer)(x6)
 
         x6 = BatchNormalization(momentum=self.momentum, epsilon=self.eps)(x6)
-        x6 = Activation('swish')(x6)
+        x6 = ReLU(max_value=6)(x6)
         
         # 1, 1
         x7 = Conv2D(base_channel, kernel_size=1, strides=1, padding='same',
                     kernel_initializer=self.kernel_initializer, use_bias=False, )(x6)
         x7 = BatchNormalization(momentum=self.momentum, epsilon=self.eps)(x7)
-        x7 = Activation('swish')(x7)
+        x7 = ReLU(max_value=6)(x7)
         
         if self.use_std_conv:
             x7 = Conv2D(base_channel * 2, kernel_size=3, strides=1, padding='valid',
@@ -80,7 +80,7 @@ class EfficientNetV2B0():
                                 depthwise_initializer=self.kernel_initializer,
                                 pointwise_initializer=self.kernel_initializer)(x7)
         x7 = BatchNormalization(momentum=self.momentum, epsilon=self.eps)(x7)
-        x7 = Activation('swish')(x7)
+        x7 = ReLU(max_value=6)(x7)
         
 
         features = [x2, x3, x4, x5, x6, x7]
