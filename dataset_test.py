@@ -5,19 +5,23 @@ from utils.misc import draw_bounding, CLASSES
 import cv2
 from utils.load_datasets import GenerateDatasets
 
-test_data = tfds.load('wider_face', data_dir='./datasets/', split='train')
-test_data = test_data.filter(lambda x: tf.reduce_all(tf.greater(tf.size(x['faces']['bbox']), 4*11)))
+test_data = tfds.load('wider_face_dataset', data_dir='./datasets/', split='train')
+# wider_face = tfds.load('wider_face', data_dir='./datasets/', split='train')
+
+# test_data = test_data.filter(lambda x: tf.reduce_all(tf.greater(tf.size(x['faces']['bbox']), 4*11)))
 
 for sample in test_data.take(1000):
     
     try:
-        
+        # wider face
+        # image = sample['image'].numpy()
+        # boxes = sample['faces']['bbox'].numpy() 
+        # labels = tf.ones(tf.shape(boxes)[0])
+
+
         image = sample['image'].numpy()
-        
-        # labels = tf.where(labels>=0, 1, 0)
-        boxes = sample['faces']['bbox'].numpy() 
-        print(tf.shape(boxes))
-        labels = tf.ones(tf.shape(boxes)[0])
+        boxes = sample['bbox'].numpy()
+        labels = sample['label'].numpy() + 1
 
         
         
@@ -56,8 +60,8 @@ for sample in test_data.take(1000):
             elif boxes.size == 0:
                 print('size is zero')
                         
-                cv2.imshow('test', image)
-                cv2.waitKey(0)
+        cv2.imshow('test', image)
+        cv2.waitKey(0)
 
         
 

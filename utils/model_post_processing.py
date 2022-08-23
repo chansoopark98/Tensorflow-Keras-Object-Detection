@@ -43,7 +43,7 @@ def post_process(detections, target_transform, confidence_threshold=0.01, top_k=
     batch_scores = tf.nn.softmax(detections[:, :, :classes], axis=2)
 
     batch_boxes = convert_locations_to_boxes(batch_boxes, target_transform.center_form_priors,
-                                             target_transform.center_variance, target_transform.size_variance)
+                                                target_transform.center_variance, target_transform.size_variance)
     batch_boxes = center_form_to_corner_form(batch_boxes)
 
     batch_size = tf.shape(batch_scores)[0]
@@ -88,8 +88,8 @@ def merge_post_process(detections, target_transform, confidence_threshold=0.01, 
     if not tf.is_tensor(batch_boxes):
         batch_boxes = tf.convert_to_tensor(batch_boxes)
     batch_scores = tf.nn.softmax(detections[:, :, :classes], axis=2)
-
-    batch_boxes = convert_locations_to_boxes(batch_boxes, target_transform.center_form_priors,
+    
+    batch_boxes = convert_locations_to_boxes_frozen(batch_boxes, target_transform.center_form_priors,
                                              target_transform.center_variance, target_transform.size_variance)
     batch_boxes = center_form_to_corner_form(batch_boxes)
 

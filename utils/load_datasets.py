@@ -127,11 +127,16 @@ class DataLoadHandler:
                 'Cannot find your wider_face dataset. Please download wider_face data. \
                  You can download use dataset_download.py')
 
-        train_data = tfds.load('wider_face', data_dir=self.data_dir, split='train')
-        train_data = train_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['faces']['bbox']), 0)))
+        train_data = tfds.load('wider_face_dataset', data_dir=self.data_dir, split='train[10%:]')
+        ffdb_train_data = tfds.load('ffdb_dataset', data_dir=self.data_dir, split='train[10%:]')
+        train_data = train_data.concatenate(ffdb_train_data)
+        train_data = train_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['bbox']), 0)))
         
         # train_data = train_data.filter(lambda x: tf.reduce_all(tf.less(tf.size(x['faces']['bbox']), 4*11)))
-        valid_data = tfds.load('wider_face', data_dir=self.data_dir, split='validation')
+        valid_data = tfds.load('wider_face_dataset', data_dir=self.data_dir, split='train[:10%]')
+        ffdb_valid_data = tfds.load('ffdb_dataset', data_dir=self.data_dir, split='train[:10%]')
+        valid_data = valid_data.concatenate(ffdb_valid_data)
+        valid_data = valid_data.filter(lambda x: tf.reduce_all(tf.not_equal(tf.size(x['bbox']), 0)))
         test_data = valid_data    
 
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
@@ -220,7 +225,7 @@ class GenerateDatasets(DataLoadHandler):
         elif self.dataset_name == 'wider_face':
             # Wider Face face detection dataset
             image = sample['image']
-            bbox = sample['faces']['bbox']
+            bbox = sample['bbox']
             labels = tf.cast(tf.ones(tf.shape(bbox)[0]), tf.int64)
         else:
             # Load Custom dataset
@@ -254,7 +259,7 @@ class GenerateDatasets(DataLoadHandler):
         elif self.dataset_name == 'wider_face':
             # Wider Face face detection dataset
             image = sample['image']
-            bbox = sample['faces']['bbox']
+            bbox = sample['bbox']
             labels = tf.cast(tf.ones(tf.shape(bbox)[0]), tf.int64)
         else:
             # Load Custom dataset

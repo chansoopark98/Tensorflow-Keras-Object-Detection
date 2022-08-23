@@ -141,7 +141,7 @@ def assign_gt2_priors(gt_boxes, gt_labels, corner_form_priors, iou_threshold=0.4
 
 
 class MatchingPriors(object):
-    def __init__(self, center_form_priors, center_variance, size_variance, iou_threshold):
+    def __init__(self, center_form_priors, center_variance, size_variance, iou_threshold, eager_run=False):
         self.center_form_priors = center_form_priors
         self.corner_form_priors = center_form_to_corner_form(center_form_priors)
         self.center_variance = center_variance

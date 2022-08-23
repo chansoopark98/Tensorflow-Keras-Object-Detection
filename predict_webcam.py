@@ -18,7 +18,7 @@ parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone
                                                             [ 6. efficientnetv2b3  : EfficientNet-V2-B3 ]",
                     default='efficient_lite_v0')
 parser.add_argument("--num_classes",          type=int,   help="Number of classes in the pretrained model",
-                    default=4)
+                    default=2)
 parser.add_argument("--image_norm_type",  type=str,    help="Set RGB image nornalize format (tf or torch or no)\
                                                              [ 1. tf    : Rescaling RGB image -1 ~ 1 from imageNet ]\
                                                              [ 2. torch : Rescaling RGB image 0 ~ 1 from imageNet ]\
@@ -31,9 +31,9 @@ parser.add_argument("--threshold",           type=float, help="Post processing c
 parser.add_argument("--checkpoint_dir",      type=str,   help="Setting the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--weight_name",         type=str,   help="Saved model weights directory",
-                    default='0812/_0812_efficient_lite_v0_display-detection_ce_e200_b32_lr0.001_single_best_loss.h5')
+                    default='0818/_0818_efficient_lite_v0_wider+ffdb-test_e100_lr0.001_b32_best_loss.h5')
 parser.add_argument("--gpu_num",             type=int,    help="Set GPU number to use(When without distribute training)",
-                    default=0)
+                    default=1)
 args = parser.parse_args()
 
 if __name__ == '__main__':

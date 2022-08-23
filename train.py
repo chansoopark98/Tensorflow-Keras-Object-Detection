@@ -25,7 +25,7 @@ parser.add_argument("--transfer_learning",  help="Load the pre-trained weights a
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name (logging weights name and tensorboard)",
-                    default='efficient_lite_v0_wider-face-test_e100_b32')
+                    default='efficient_lite_v0_wider+ffdb-test_e100_lr0.001_b32')
 parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name\
                                                             |   model_name    : description | \
                                                             [ 1. mobilenetv2       : MobileNetV2 ]\
