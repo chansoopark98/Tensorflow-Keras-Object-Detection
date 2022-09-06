@@ -69,24 +69,24 @@ def create_priors_boxes(specs: List[Spec], image_size, clamp=True):
                 h
             ])
 
-            # 작은 bbox 높이, 너비 비율 변경
-            size = spec.box_sizes.min
-            h = w = size / image_size
-            if spec.aspect_ratios :
-                for ratio in spec.aspect_ratios:
-                    ratio = np.sqrt(ratio)
-                    priors.append([
-                        x_center,
-                        y_center,
-                        w * ratio,
-                        h / ratio
-                    ])
-                    priors.append([
-                        x_center,
-                        y_center,
-                        w / ratio,
-                        h * ratio
-                    ])
+            # # 작은 bbox 높이, 너비 비율 변경
+            # size = spec.box_sizes.min
+            # h = w = size / image_size
+            # if spec.aspect_ratios :
+            #     for ratio in spec.aspect_ratios:
+            #         ratio = np.sqrt(ratio)
+            #         priors.append([
+            #             x_center,
+            #             y_center,
+            #             w * ratio,
+            #             h / ratio
+            #         ])
+            #         priors.append([
+            #             x_center,
+            #             y_center,
+            #             w / ratio,
+            #             h * ratio
+            #         ])
 
     # priors > shape(Batch, 13792)
     # 2차원 배열이고 각 배열마다 4개씩 존재(x_center, y_center, w, h) * 13792

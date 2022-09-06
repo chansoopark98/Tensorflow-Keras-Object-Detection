@@ -19,9 +19,9 @@ parser.add_argument("--backbone_name",       type=str,    help="Pretrained backb
 parser.add_argument("--checkpoint_dir",      type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--model_weights",       type=str,    help="Saved model weights directory",
-                    default='0818/_0818_efficient_lite_v0_wider+ffdb-test_e100_lr0.001_b32_best_loss.h5')
+                    default='0906/_0906_efficient_lite_v0_display-detection_e200_lr0.001_b32_without-norm-small_prior-adam_best_loss.h5')
 parser.add_argument("--num_classes",         type=int,    help="Set num classes for model and post-processing",
-                    default=2)  
+                    default=4)  
 parser.add_argument("--image_size",          type=tuple,  help="Set image size for priors and post-processing",
                     default=(300, 300))
 parser.add_argument("--gpu_num",             type=int,    help="Set GPU number to use(When without distribute training)",
@@ -31,6 +31,8 @@ parser.add_argument("--frozen_dir",          type=str,    help="Path to save fro
 parser.add_argument("--frozen_name",         type=str,    help="Frozen graph file name to save",
                     default='frozen_graph')
 parser.add_argument("--include_postprocess",   help="Frozen graph file name to save",
+                    action='store_true')
+parser.add_argument("--load_keras_model",   help="Load model from Saved format(.pb) or Keras(.h5)",
                     action='store_true')
             
 args = parser.parse_args()
@@ -46,10 +48,16 @@ if __name__ == '__main__':
         priors = create_priors_boxes(specs=spec_list, image_size=args.image_size[0], clamp=True)
         target_transform = MatchingPriors(priors, center_variance, size_variance, iou_threshold)
 
-        model = ModelBuilder(image_size=args.image_size,
-                                    num_classes=args.num_classes, include_preprocessing=args.include_postprocess).build_model(args.backbone_name)
+        if args.load_keras_model:
+            model = tf.keras.models.load_model('./checkpoints/pruning', compile=False)    
 
-        model.load_weights(args.checkpoint_dir + args.model_weights, by_name=True)
+        else:
+            model = ModelBuilder(image_size=args.image_size,
+                                 num_classes=args.num_classes,
+                                 include_preprocessing=args.include_postprocess).build_model(args.backbone_name)
+            model.load_weights(args.checkpoint_dir + args.model_weights, by_name=True)
+
+        model.summary()
 
         if args.include_postprocess:
             detection_output = merge_post_process(detections=model.output,
@@ -58,7 +66,7 @@ if __name__ == '__main__':
                                                   classes=args.num_classes)
             model = Model(inputs=model.input, outputs=detection_output)
 
-        model.summary()
+        # model.summary()
 
         #path of the directory where you want to save your model
         frozen_out_path = args.frozen_dir
@@ -74,8 +82,8 @@ if __name__ == '__main__':
         layers = [op.name for op in frozen_func.graph.get_operations()]
         
         print("Frozen model layers: ")
-        for layer in layers:
-            print(layer)
+        # for layer in layers:
+        #     print(layer)
         
         print("Frozen model inputs: {0}".format(frozen_func.inputs))
         print("Frozen model outputs: {0}".format(frozen_func.outputs))

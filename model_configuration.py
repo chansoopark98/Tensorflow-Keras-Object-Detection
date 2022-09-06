@@ -124,7 +124,9 @@ class ModelConfiguration(GenerateDatasets):
         # If you wanna need another callbacks, please add here.
         self.callback = [checkpoint_val_loss,  tensorboard, lr_scheduler]
         if self.MODEL_PRUNING:
-            self.callback = [checkpoint_val_loss,
+            pruning_loss_save = ModelCheckpoint(self.CHECKPOINT_DIR + self.args.model_name + '/_' + self.SAVE_MODEL_NAME + '_pruning_loss.h5',
+                                                monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
+            self.callback = [pruning_loss_save,
                              tfmot.sparsity.keras.UpdatePruningStep(),
                              tfmot.sparsity.keras.PruningSummaries(
                                  log_dir=self.TENSORBOARD_DIR + 'pruning/' + self.MODEL_PREFIX),
@@ -162,16 +164,14 @@ class ModelConfiguration(GenerateDatasets):
         """
             Build a deep learning model.
         """
-        self.model = ModelBuilder(image_size=self.IMAGE_SIZE,
+        model = ModelBuilder(image_size=self.IMAGE_SIZE,
                                   num_classes=self.num_classes,
                                   use_weight_decay=self.USE_WEIGHT_DECAY,
                                   weight_decay=self.WEIGHT_DECAY).build_model(model_name=self.BACKBONE_NAME)
-        if self.args.transfer_learning:
-            self.model.load_weights(self.CHECKPOINT_DIR + self.args.saved_model_path, by_name=True, skip_mismatch=True)
+        if self.args.transfer_training:
+            model.load_weights(self.CHECKPOINT_DIR + self.args.saved_model_path, by_name=True, skip_mismatch=True)
 
         if self.MODEL_PRUNING:
-            
-            from model.model_builder import Normalize
             prune_low_magnitude = tfmot.sparsity.keras.prune_low_magnitude
             
             end_step = tf.math.ceil(self.number_train / self.BATCH_SIZE) * self.EPOCHS
@@ -182,7 +182,11 @@ class ModelConfiguration(GenerateDatasets):
                                                                     end_step=end_step.numpy())
             }
 
-            self.model = prune_low_magnitude(self.model, **pruning_params)
+            pruned_model = prune_low_magnitude(model, **pruning_params)
+            return pruned_model
+        
+        else:
+            return model
 
 
 
@@ -197,7 +201,7 @@ class ModelConfiguration(GenerateDatasets):
         self.__set_optimizer()
         self.metrics = self.__set_metrics()
         self.__set_callbacks()
-        self.__configuration_model()
+        self.model = self.__configuration_model()
         
         if self.LOSS_TYPE == 'ce':
             use_focal = False
@@ -221,6 +225,19 @@ class ModelConfiguration(GenerateDatasets):
                        validation_steps=self.validation_steps,
                        epochs=self.EPOCHS,
                        callbacks=self.callback)
+
+        if self.MODEL_PRUNING:
+            # import tempfile
+            # model_for_export = tfmot.sparsity.keras.strip_pruning(self.model)
+            # _, pruned_keras_file = tempfile.mkstemp('.h5')
+            export_path = os.path.join(self.CHECKPOINT_DIR, 'pruning')
+            tf.keras.models.save_model(self.model, export_path,
+                                       overwrite=True,
+                                       include_optimizer=False,
+                                       save_format=None,
+                                       signatures=None,
+                                       options=None)
+
 
     def saved_model(self):
         """
