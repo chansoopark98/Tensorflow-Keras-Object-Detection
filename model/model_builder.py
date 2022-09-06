@@ -111,8 +111,8 @@ class ModelBuilder():
         for i, x in enumerate(source_layers):
             name = x.name.split(':')[0] # name만 추출 (ex: block3b_add)
 
-            if normalizations is not None and normalizations[i] > 0:
-                x = Normalize(normalizations[i], name=name + '_norm')(x)
+            # if normalizations is not None and normalizations[i] > 0:
+            #     x = Normalize(normalizations[i], name=name + '_norm')(x)
 
             x1 = SeparableConv2D(num_priors[i] * self.num_classes, 3, padding='same',
                                 depthwise_initializer=self.kernel_initializer,

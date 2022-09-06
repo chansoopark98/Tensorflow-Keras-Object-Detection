@@ -5,7 +5,7 @@ from utils.misc import draw_bounding, CLASSES
 import cv2
 from utils.load_datasets import GenerateDatasets
 
-test_data = tfds.load('wider_face_dataset', data_dir='./datasets/', split='train')
+test_data = tfds.load('display_detection', data_dir='./datasets/', split='train')
 # wider_face = tfds.load('wider_face', data_dir='./datasets/', split='train')
 
 # test_data = test_data.filter(lambda x: tf.reduce_all(tf.greater(tf.size(x['faces']['bbox']), 4*11)))

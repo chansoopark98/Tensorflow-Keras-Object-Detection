@@ -226,7 +226,7 @@ class GenerateDatasets(DataLoadHandler):
             # Wider Face face detection dataset
             image = sample['image']
             bbox = sample['bbox']
-            labels = tf.cast(tf.ones(tf.shape(bbox)[0]), tf.int64)
+            labels = tf.cast(tf.ones(tf.shape(bbox)[0]), tf.int32)
         else:
             # Load Custom dataset
             labels = sample[self.label_key] + 1
@@ -244,6 +244,7 @@ class GenerateDatasets(DataLoadHandler):
             image = preprocess_input(image, mode='tf')
         else:
             image /= 255
+            image = tf.cast(image, tf.float32)
             
         return (image, bbox, labels) 
 
@@ -260,7 +261,7 @@ class GenerateDatasets(DataLoadHandler):
             # Wider Face face detection dataset
             image = sample['image']
             bbox = sample['bbox']
-            labels = tf.cast(tf.ones(tf.shape(bbox)[0]), tf.int64)
+            labels = tf.cast(tf.ones(tf.shape(bbox)[0]), tf.int32)
         else:
             # Load Custom dataset
             labels = sample[self.label_key] + 1
@@ -278,6 +279,7 @@ class GenerateDatasets(DataLoadHandler):
             image = preprocess_input(image, mode='tf')
         else:
             image /= 255
+            image = tf.cast(image, tf.float32)
             
         return (image, bbox, labels)
     

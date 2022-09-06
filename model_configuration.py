@@ -10,6 +10,7 @@ from utils.load_datasets import GenerateDatasets
 from utils.metrics import CreateMetrics
 from model.model_builder import ModelBuilder
 from model.loss import DetectionLoss
+import tensorflow_model_optimization as tfmot
 # from model.test_loss import DetectionLoss
 
 
@@ -68,6 +69,7 @@ class ModelConfiguration(GenerateDatasets):
         self.MIXED_PRECISION = self.args.mixed_precision
         self.LOSS_TYPE = self.args.loss_type
         self.DISTRIBUTION_MODE = self.args.multi_gpu
+        self.MODEL_PRUNING = self.args.pruning
         if self.DISTRIBUTION_MODE:
             self.BATCH_SIZE *= 2
 
@@ -121,6 +123,12 @@ class ModelConfiguration(GenerateDatasets):
         
         # If you wanna need another callbacks, please add here.
         self.callback = [checkpoint_val_loss,  tensorboard, lr_scheduler]
+        if self.MODEL_PRUNING:
+            self.callback = [checkpoint_val_loss,
+                             tfmot.sparsity.keras.UpdatePruningStep(),
+                             tfmot.sparsity.keras.PruningSummaries(
+                                 log_dir=self.TENSORBOARD_DIR + 'pruning/' + self.MODEL_PREFIX),
+                             ]
 
     
     def __set_optimizer(self):
@@ -158,6 +166,25 @@ class ModelConfiguration(GenerateDatasets):
                                   num_classes=self.num_classes,
                                   use_weight_decay=self.USE_WEIGHT_DECAY,
                                   weight_decay=self.WEIGHT_DECAY).build_model(model_name=self.BACKBONE_NAME)
+        if self.args.transfer_learning:
+            self.model.load_weights(self.CHECKPOINT_DIR + self.args.saved_model_path, by_name=True, skip_mismatch=True)
+
+        if self.MODEL_PRUNING:
+            
+            from model.model_builder import Normalize
+            prune_low_magnitude = tfmot.sparsity.keras.prune_low_magnitude
+            
+            end_step = tf.math.ceil(self.number_train / self.BATCH_SIZE) * self.EPOCHS
+            pruning_params = {
+            'pruning_schedule': tfmot.sparsity.keras.PolynomialDecay(initial_sparsity=0.50,
+                                                                    final_sparsity=0.80,
+                                                                    begin_step=0,
+                                                                    end_step=end_step.numpy())
+            }
+
+            self.model = prune_low_magnitude(self.model, **pruning_params)
+
+
 
     
     def train(self):
@@ -181,9 +208,6 @@ class ModelConfiguration(GenerateDatasets):
                                   global_batch_size=self.batch_size,
                                   use_multi_gpu=self.DISTRIBUTION_MODE,
                                   use_focal=use_focal)
-
-        if self.args.transfer_learning:
-            self.model.load_weights(self.args.saved_model_path, by_name=True, skip_mismatch=True)
 
         self.model.compile(optimizer=self.optimizer,
                            loss=self.loss,

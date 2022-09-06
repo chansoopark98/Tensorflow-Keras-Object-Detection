@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--saved_model",      help="Convert to saved model format",
                     action='store_true')
 parser.add_argument("--saved_model_path", type=str,   help="Saved model weight path",
-                    default='pretrained_weights')
+                    default='0905/_0905_efficient_lite_v0_display-detection_e300_lr0.005_b32_best_loss.h5')
 
 # Build with post processing
 parser.add_argument("--build_postprocess",  help="Post processing build",
@@ -22,10 +22,13 @@ parser.add_argument("--build_postprocess",  help="Post processing build",
 # Training use pre-trained mode (voc, coco .. etc)
 parser.add_argument("--transfer_learning",  help="Load the pre-trained weights and proceed with further training.",
                     action='store_true')
+# Apply model pruning when training
+parser.add_argument("--pruning",  help="Apply pruning when training",
+                    action='store_true')
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name (logging weights name and tensorboard)",
-                    default='efficient_lite_v0_wider+ffdb-test_e100_lr0.001_b32')
+                    default='efficient_lite_v0_display-detection_e100_lr0.001_b32_without-norm')
 parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name\
                                                             |   model_name    : description | \
                                                             [ 1. mobilenetv2       : MobileNetV2 ]\
@@ -55,11 +58,11 @@ parser.add_argument("--loss_type",        type=str,    help="Set the loss functi
                                                             [ 2. focal  : Focal cross entropy ]",
                     default='ce')
 parser.add_argument("--optimizer",        type=str,    help="Set optimizer",
-                    default='adam')
+                    default='sgd')
 parser.add_argument("--use_weightDecay",  type=bool,   help="Whether to use weightDecay",
                     default=False)
 parser.add_argument("--mixed_precision",  type=bool,   help="Whether to use mixed_precision",
-                    default=True)
+                    default=False)
 parser.add_argument("--model_name",       type=str,    help="Set the model name to save",
                     default=str(time.strftime('%m%d', time.localtime(time.time()))))
 
@@ -71,7 +74,7 @@ parser.add_argument("--dataset_name",     type=str,    help="Set the dataset typ
                                                              [ 2. coco : COCO2017 dataset ] \
                                                              [ 3. wider_face : Wider Face dataset ] \
                                                              [ 4. custom : Custom TFDS ]",
-                    default='wider_face')
+                    default='display_detection')
 parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,    help="Set tensorboard storage path",
