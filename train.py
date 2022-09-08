@@ -43,7 +43,7 @@ parser.add_argument("--pruning",  help="Apply pruning when training",
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name (logging weights name and tensorboard)",
-                    default='test_objectness_display_detection_switch-new_loss')
+                    default='test_objectness_display_detection_switch-new_loss-TEST_HUBER')
 parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name\
                                                             |   model_name    : description | \
                                                             [ 1. mobilenetv2       : MobileNetV2 ]\
@@ -71,7 +71,7 @@ parser.add_argument("--image_norm_type",  type=str,    help="Set RGB image norna
 parser.add_argument("--loss_type",        type=str,    help="Set the loss function for class classification.\
                                                             [ 1. ce     : Uses cross entropy with hard negative mining ]\
                                                             [ 2. focal  : Focal cross entropy ]",
-                    default='ce')
+                    default='focal')
 parser.add_argument("--optimizer",        type=str,    help="Set optimizer",
                     default='adam')
 parser.add_argument("--use_weight_decay",  type=bool,   help="Whether to use weightDecay",
@@ -106,7 +106,7 @@ args = parser.parse_args()
 
 
 if __name__ == '__main__':
-    # tf.config.run_functions_eagerly(True)
+    tf.config.run_functions_eagerly(True)
     
     if args.saved_model:
         model = ModelConfiguration(args=args)

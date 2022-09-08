@@ -9,7 +9,7 @@ from utils.priors import *
 from utils.load_datasets import GenerateDatasets
 from utils.metrics import CreateMetrics
 from model.model_builder import ModelBuilder
-from model.loss import DetectionLoss
+from model.loss_bak import DetectionLoss
 import tensorflow_model_optimization as tfmot
 # from model.test_loss import DetectionLoss
 

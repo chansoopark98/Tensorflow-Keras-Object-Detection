@@ -171,7 +171,7 @@ class DataLoadHandler:
         test_data = valid_data 
 
         # Add ignore datas
-        train_data = train_data.concatenate(voc_zero_data)   
+        # train_data = train_data.concatenate(voc_zero_data)   
         # train_data = voc_zero_data
 
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
@@ -291,20 +291,20 @@ class GenerateDatasets(DataLoadHandler):
     
     @tf.function
     def augmentation(self, image: tf.Tensor, boxes: tf.Tensor, labels: tf.Tensor)-> Union[tf.Tensor, tf.Tensor, tf.Tensor]:
-        if tf.random.uniform([]) > 0.5:
-            image = tf.image.random_jpeg_quality(image, 30, 99)
-        if tf.random.uniform([]) > 0.5:
-            image = tf.image.random_saturation(image, lower=0.5, upper=1.5) # 랜덤 채도
-        if tf.random.uniform([]) > 0.5:
-            image = tf.image.random_brightness(image, max_delta=0.15) # 랜덤 밝기
-        if tf.random.uniform([]) > 0.5:
-            image = tf.image.random_contrast(image, lower=0.5, upper=1.5) # 랜덤 대비
-        if tf.random.uniform([]) > 0.5:
-            image = tf.image.random_hue(image, max_delta=0.2) # 랜덤 휴 트랜스폼
-        image = random_lighting_noise(image)
-        image, boxes = expand(image, boxes)
-        image, boxes, labels = random_crop(image, boxes, labels) # 랜덤 자르기
-        image, boxes = random_flip(image, boxes) # 랜덤 뒤집기
+        # if tf.random.uniform([]) > 0.5:
+        #     image = tf.image.random_jpeg_quality(image, 30, 99)
+        # if tf.random.uniform([]) > 0.5:
+        #     image = tf.image.random_saturation(image, lower=0.5, upper=1.5) # 랜덤 채도
+        # if tf.random.uniform([]) > 0.5:
+        #     image = tf.image.random_brightness(image, max_delta=0.15) # 랜덤 밝기
+        # if tf.random.uniform([]) > 0.5:
+        #     image = tf.image.random_contrast(image, lower=0.5, upper=1.5) # 랜덤 대비
+        # if tf.random.uniform([]) > 0.5:
+        #     image = tf.image.random_hue(image, max_delta=0.2) # 랜덤 휴 트랜스폼
+        # image = random_lighting_noise(image)
+        # image, boxes = expand(image, boxes)
+        # image, boxes, labels = random_crop(image, boxes, labels) # 랜덤 자르기
+        # image, boxes = random_flip(image, boxes) # 랜덤 뒤집기
 
         return (image, boxes, labels)
 

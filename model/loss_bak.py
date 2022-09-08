@@ -3,7 +3,9 @@ import numpy as np
 import itertools
 from typing import Any, Optional
 import tensorflow_addons as tfa
-from tensorflow.keras.losses import BinaryCrossentropy
+import math
+import tensorflow.keras.backend as K
+from tensorflow.keras.losses import BinaryCrossentropy, Huber
 
 _EPSILON = tf.keras.backend.epsilon()
 
@@ -62,6 +64,98 @@ class DetectionLoss(tf.keras.losses.Loss):
 
         return giou_loss
 
+    
+    def ciou_loss(self, boxes1_x0y0x1y1, boxes2_x0y0x1y1):
+        eps = tf.keras.backend.epsilon()
+
+        # x,y,w,h -> x0y0x1y1
+        xywh_format = boxes1_x0y0x1y1.numpy()
+
+        boxes1_x0y0x1y1 = tf.maximum(boxes1_x0y0x1y1, eps)
+        boxes1_x0y0x1y1 = tf.stack([boxes1_x0y0x1y1[..., 0],
+                                    boxes1_x0y0x1y1[..., 1],
+                                    boxes1_x0y0x1y1[..., 0] + boxes1_x0y0x1y1[..., 2],
+                                    boxes1_x0y0x1y1[..., 1] + boxes1_x0y0x1y1[..., 3]], axis=1)
+        x1y1x2y2 = boxes1_x0y0x1y1.numpy()
+
+        boxes2_x0y0x1y1 = tf.maximum(boxes2_x0y0x1y1, eps)
+        boxes2_x0y0x1y1 = tf.stack([boxes2_x0y0x1y1[..., 0],
+                                    boxes2_x0y0x1y1[..., 1],
+                                    boxes2_x0y0x1y1[..., 0] + boxes2_x0y0x1y1[..., 2],
+                                    boxes2_x0y0x1y1[..., 1] + boxes2_x0y0x1y1[..., 3]], axis=1)
+        
+        np_boxes2 = boxes2_x0y0x1y1.numpy()
+
+        # area
+        boxes1_area = (boxes1_x0y0x1y1[..., 2] - boxes1_x0y0x1y1[..., 0]) * (
+                    boxes1_x0y0x1y1[..., 3] - boxes1_x0y0x1y1[..., 1])
+        np_boxes1_area = boxes1_area.numpy()
+        
+
+        boxes2_area = (boxes2_x0y0x1y1[..., 2] - boxes2_x0y0x1y1[..., 0]) * (
+                    boxes2_x0y0x1y1[..., 3] - boxes2_x0y0x1y1[..., 1])
+        
+        np_boxes2_area = boxes2_area.numpy()
+
+        # top-left and bottom-right coord, shape: (8, 13, 13, 3, 2)
+        left_up = tf.maximum(boxes1_x0y0x1y1[..., :2], boxes2_x0y0x1y1[..., :2])
+        right_down = tf.minimum(boxes1_x0y0x1y1[..., 2:], boxes2_x0y0x1y1[..., 2:])
+        
+
+        # intersection area and iou
+        inter_section = tf.maximum(right_down - left_up, 0.0)
+        inter_area = inter_section[..., 0] * inter_section[..., 1]
+
+        np_inter_area = inter_area.numpy()
+
+        union_area = boxes1_area + boxes2_area - inter_area
+        iou = inter_area / (union_area + 1e-9)
+        np_iou = iou.numpy()
+        iou = tf.abs(iou)
+        np_iou = iou.numpy()
+
+        # top-left and bottom-right coord of the enclosing rectangle, shape: (8, 13, 13, 3, 2)
+        enclose_left_up = tf.minimum(boxes1_x0y0x1y1[..., :2], boxes2_x0y0x1y1[..., :2])
+        enclose_right_down = tf.maximum(boxes1_x0y0x1y1[..., 2:], boxes2_x0y0x1y1[..., 2:])
+
+        # diagnal ** 2
+        enclose_wh = enclose_right_down - enclose_left_up
+        enclose_c2 = K.pow(enclose_wh[..., 0], 2) + K.pow(enclose_wh[..., 1], 2)
+        np_enclose_c2 = enclose_c2.numpy()
+
+        # center distances between two rectangles
+        x_distance = K.pow(boxes1_x0y0x1y1[..., 0] - boxes2_x0y0x1y1[..., 0], 2)
+        np_x_distance = x_distance.numpy()
+        y_distance = K.pow(boxes1_x0y0x1y1[..., 1] - boxes2_x0y0x1y1[..., 1], 2)
+        y_distance = y_distance.numpy()
+        p2 = (x_distance + y_distance) + tf.keras.backend.epsilon()
+        np_p2 = p2.numpy()
+
+        # add av
+        
+        # atan1 = tf.atan((boxes1_x0y0x1y1[..., 2] - boxes1_x0y0x1y1[..., 0]) / (boxes1_x0y0x1y1[..., 3] - boxes1_x0y0x1y1[..., 1]) + tf.keras.backend.epsilon()) # w, h
+        atan1 = tf.math.divide_no_nan((boxes1_x0y0x1y1[..., 2] - boxes1_x0y0x1y1[..., 0]), (boxes1_x0y0x1y1[..., 3] - boxes1_x0y0x1y1[..., 1])) + tf.keras.backend.epsilon() # w, h
+        np_atan1 = atan1.numpy()
+        # atan2 = tf.atan((boxes2_x0y0x1y1[..., 2] - boxes2_x0y0x1y1[..., 0]) / (boxes2_x0y0x1y1[..., 3] - boxes2_x0y0x1y1[..., 1]) + tf.keras.backend.epsilon())
+        atan2 = tf.math.divide_no_nan((boxes2_x0y0x1y1[..., 2] - boxes2_x0y0x1y1[..., 0]), (boxes2_x0y0x1y1[..., 3] - boxes2_x0y0x1y1[..., 1])) + tf.keras.backend.epsilon() # w, h
+        np_atan2 = atan2.numpy()
+        v = 4.0 * (K.pow(atan1 - atan2, 2) + tf.keras.backend.epsilon()) / (math.pi ** 2)
+        np_v = v.numpy()
+        a = v / (1 - iou + v)
+        np_a = a.numpy()
+
+        ciou = iou - 1.0 * p2 / enclose_c2 - 1.0 * a * v
+        np_ciou = ciou.numpy()
+        
+        sub_distance = p2 / enclose_c2
+        sub_distance = sub_distance.numpy()
+
+        sub_a_v = (1.0 * a * v)
+        sub_a_v = sub_a_v.numpy()
+
+        ciou = iou - sub_distance - sub_a_v
+        np_ciou = ciou.numpy()
+        return 1 - ciou
         
         
 
@@ -102,25 +196,28 @@ class DetectionLoss(tf.keras.losses.Loss):
         # giou_loss = self.giou_loss(target=gt_locations, output=predicted_locations)
 
         # calc localization loss
-        smooth_l1_loss = tf.math.reduce_sum(self.smooth_l1(scores=predicted_locations,labels=gt_locations))
+        # smooth_l1_loss = tf.math.reduce_sum(self.smooth_l1(scores=predicted_locations,labels=gt_locations))
+        smooth_l1_loss = Huber()(y_true=gt_locations, y_pred=predicted_locations)
 
+        np_gt_locations = gt_locations.numpy()
+        np_predicted_locations = predicted_locations.numpy()
+        ciou_loss = self.ciou_loss(gt_locations, predicted_locations)
         
         # num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
         num_pos = tf.cast(tf.where(tf.shape(gt_locations)[0] == 0, 1, tf.shape(gt_locations)[0]), tf.float32)
 
-        
-        
         # objectness loss
         obj_loss = BinaryCrossentropy(from_logits=False)(y_true=true_obj, y_pred=pred_obj)
-        obj_loss /= num_pos
+        obj_loss *= 0.4
 
         # divide num_pos objects
         loc_loss = smooth_l1_loss / num_pos
+        ciou_loss = ciou_loss / num_pos
         # giou_loss = giou_loss / num_pos
         class_loss = classification_loss / num_pos
         
         # Add to total loss
-        mbox_loss = loc_loss + class_loss + obj_loss
+        mbox_loss = loc_loss + class_loss + obj_loss + ciou_loss
 
         # If use multi gpu, divide loss value by gpu numbers
         # if self.use_multi_gpu:
