@@ -70,7 +70,7 @@ class ModelBuilder():
             model = MobileNetV3L(image_size=self.image_size, pretrained="imagenet")
         elif model_name == 'efficient_lite_v0':
             from .model_zoo.EfficientNetLiteB0 import EfficientLiteB0
-            model = EfficientLiteB0(image_size=self.image_size, pretrained="imagenet",
+            model = EfficientLiteB0(image_size=self.image_size, pretrained=None,
                                     include_preprocessing=self.include_preprocessing)
         elif model_name == 'efficientv2b0':
             from .model_zoo.EffcientNetV2B0 import EfficientNetV2B0
@@ -108,6 +108,7 @@ class ModelBuilder():
     def create_classifier(self, source_layers, num_priors, normalizations):
         mbox_conf = []
         mbox_loc = []
+        mbox_objectness = []
         for i, x in enumerate(source_layers):
             name = x.name.split(':')[0] # name만 추출 (ex: block3b_add)
 
@@ -135,6 +136,18 @@ class ModelBuilder():
             x2 = Flatten(name=name + '_mbox_loc_flat')(x2)
             mbox_loc.append(x2)
 
+
+            x3 = SeparableConv2D(num_priors[i], 3, padding='same',
+                                depthwise_initializer=self.kernel_initializer,
+                                pointwise_initializer=self.kernel_initializer,
+                                activation='sigmoid',
+                                name= name + '_mbox_objectness_1')(x)
+            # x2 = Conv2D(num_priors[i] * 4, 3, padding='same',
+            #                     kernel_initializer=self.kernel_initializer,
+            #                     name= name + '_mbox_loc_1')(x)
+            x3 = Flatten(name=name + '_mbox_objectness_flat')(x3)
+            mbox_objectness.append(x3)
+
         # mbox_loc/concat:0 , shape=(Batch, 34928)
         mbox_loc = Concatenate(axis=1, name='mbox_loc')(mbox_loc)
         # mbox_loc_final/Reshape:0, shape=(Batch, 8732, 4)
@@ -146,8 +159,14 @@ class ModelBuilder():
         mbox_conf = Reshape((-1, self.num_classes), name='mbox_conf_logits')(mbox_conf)
         # mbox_conf = Activation('softmax', name='mbox_conf_final')(mbox_conf)
 
+        # mbox_loc/concat:0 , shape=(Batch, 34928)
+        mbox_objectness = Concatenate(axis=1, name='mbox_objectness')(mbox_objectness)
+        # mbox_loc_final/Reshape:0, shape=(Batch, 8732, 4)
+        mbox_objectness = Reshape((-1, 1), name='mbox_objectness_final')(mbox_objectness)
+
         # predictions/concat:0, shape=(Batch, 8732, 25)
-        predictions = Concatenate(axis=2, name='predictions', dtype=tf.float32)([mbox_loc, mbox_conf])
+        # predictions = Concatenate(axis=2, name='predictions', dtype=tf.float32)([mbox_loc, mbox_conf, mbox_objectness])
+        predictions = Concatenate(axis=2, name='predictions', dtype=tf.float32)([mbox_conf, mbox_loc, mbox_objectness])
 
         return predictions
         

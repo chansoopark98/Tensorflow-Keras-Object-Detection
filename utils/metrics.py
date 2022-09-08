@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tensorflow.keras.backend as K
 from tensorflow.keras.metrics import sparse_categorical_crossentropy
-
+from tensorflow.keras.metrics import binary_crossentropy
 
 class CreateMetrics:
     def __init__(self, num_classes):
@@ -54,7 +54,7 @@ class CreateMetrics:
         return _f1score
 
     def cross_entropy(self, y_target, y_pred):
-        return sparse_categorical_crossentropy(y_pred=y_pred[:,:,:self.num_classes], y_true=tf.argmax(y_target[:,:,:self.num_classes], axis=2))
+        return sparse_categorical_crossentropy(y_pred=y_pred[:,:,:self.num_classes], y_true=tf.argmax(y_target[:,:,:self.num_classes], axis=2), from_logits=True)
 
     def smooth_l1(self, labels, scores, sigma=1.0):
         diff = scores - labels
@@ -63,8 +63,8 @@ class CreateMetrics:
 
     def localization(self, y_true, y_pred):
         labels = tf.argmax(y_true[:, :, :self.num_classes], axis=2)  # batch, 13792
-        predicted_locations = y_pred[:, :, self.num_classes:]  # None, None, 4
-        gt_locations = y_true[:, :, self.num_classes:]  # None, 13792, None
+        predicted_locations = y_pred[:, :, self.num_classes:-1]  # None, None, 4
+        gt_locations = y_true[:, :, self.num_classes:-1]  # None, 13792, None
 
         pos_mask = labels > 0
 
@@ -76,6 +76,13 @@ class CreateMetrics:
         return tf.math.reduce_sum(self.smooth_l1(scores=predicted_locations, labels=gt_locations))/num_pos
         # num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
         # loc_loss = smooth_l1_loss / num_pos
+
+    def objectness(self, y_true, y_pred):
+        pred_objectness = y_pred[:, :, -1:]  # None, None, 4
+        true_objectness = y_true[:, :, -1:]  # None, 13792, None
+        bce_loss = binary_crossentropy(y_true=true_objectness, y_pred=pred_objectness)
+        num_pos = tf.cast(tf.shape(true_objectness)[0], tf.float32)
+        return tf.math.reduce_sum(bce_loss) / num_pos
 
 class MeanIOU(tf.keras.metrics.MeanIoU):
     def update_state(self, y_true, y_pred, sample_weight=None):

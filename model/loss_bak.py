@@ -2,13 +2,15 @@ import tensorflow as tf
 import numpy as np
 import itertools
 from typing import Any, Optional
+import tensorflow_addons as tfa
+from tensorflow.keras.losses import BinaryCrossentropy
 
 _EPSILON = tf.keras.backend.epsilon()
 
 @tf.keras.utils.register_keras_serializable()
 class DetectionLoss(tf.keras.losses.Loss):
     def __init__(self, num_classes: int, global_batch_size: int,
-                 use_multi_gpu: bool = False, use_focal: bool = False,
+                 use_multi_gpu: bool = False, use_focal: bool = True,
                  **kwargs):
         """
         Args:
@@ -26,7 +28,6 @@ class DetectionLoss(tf.keras.losses.Loss):
         self.use_multi_gpu = use_multi_gpu
         self.use_focal = use_focal
 
-
     def get_config(self):
         """
             Returns the config dictionary for a Loss instance.
@@ -37,35 +38,91 @@ class DetectionLoss(tf.keras.losses.Loss):
                       global_batch_size=self.global_batch_size, num_classes=self.num_classes)
         return config
 
-
-    def call(self, y_true: tf.Tensor, y_pred: tf.Tensor):
-        labels = tf.math.argmax(y_true[:,:,:self.num_classes], axis=2)
-        confidence = y_pred[:,:,:self.num_classes]
-        predicted_locations = y_pred[:,:,self.num_classes:]
-        gt_locations = y_true[:,:,self.num_classes:]
-        neg_pos_ratio = 3.0
+    def ce_with_hard_negaitve_mining(self, confidence: tf.Tensor, labels: tf.Tensor):
         loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]
         loss = tf.stop_gradient(loss)
 
-        mask = self.hard_negative_mining(loss, labels, neg_pos_ratio)
+        mask = self.hard_negative_mining(loss, labels, neg_pos_ratio=3.0)
         mask = tf.stop_gradient(mask) # neg sample 마스크
 
         confidence = tf.boolean_mask(confidence, mask)
+
+        logits = tf.reshape(confidence, [-1, self.num_classes])
+        labels = tf.boolean_mask(labels, mask)
+
         # calc classification loss
-        classification_loss = tf.math.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(logits = tf.reshape(confidence, [-1, self.num_classes]), labels = tf.boolean_mask(labels, mask)))
+        # logits (samples, classes) labels (samples)
+        ce_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits = logits , labels = labels)
+        classification_loss = tf.math.reduce_sum(ce_loss)
+
+        return classification_loss
+
+    def giou_loss(self, target, output):
+        giou_loss = tfa.losses.giou_loss(target, output)
+
+        return giou_loss
+
+        
+        
+
+    def call(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
+        # y_pred (loc, conf, obj)
+        # y_true (labels, loc, obj)
+
+        # y_true
+        labels = tf.math.argmax(y_true[:,:,:self.num_classes], axis=2)
+        # gt_locations = y_true[:,:,self.num_classes:]
+        gt_locations = y_true[:,:,self.num_classes:-1] # Test objectness
+        true_obj = y_true[:, :, -1:]
+
+        
+        # y_pred
+        
+        confidence = y_pred[:,:,:self.num_classes]
+        predicted_locations = y_pred[:,:,self.num_classes:-1]
+        pred_obj = y_pred[:, :, -1:]
+
+        if self.use_focal:
+            # focal_labels : [batch * samples]
+            focal_labels = tf.reshape(labels, [-1])
+            # confidence : [batch * samples , classes]
+            confidence = tf.reshape(confidence, [-1, self.num_classes])
+            classification_loss = self.sparse_categorical_focal_loss(y_true=focal_labels, y_pred=confidence, gamma=2.0, from_logits=True)
+            classification_loss = tf.reduce_sum(classification_loss)
+        else:
+            classification_loss = self.ce_with_hard_negaitve_mining(confidence=confidence, labels=labels)
+        
         pos_mask = labels > 0
         predicted_locations = tf.reshape(tf.boolean_mask(predicted_locations, pos_mask), [-1, 4])
         gt_locations = tf.reshape(tf.boolean_mask(gt_locations, pos_mask), [-1, 4])
+
+        gt_locations = tf.where(tf.shape(gt_locations)[0] == 0, tf.zeros([1, 4]), gt_locations)
+
+        # Test DIoU loss
+        # giou_loss = self.giou_loss(target=gt_locations, output=predicted_locations)
+
         # calc localization loss
         smooth_l1_loss = tf.math.reduce_sum(self.smooth_l1(scores=predicted_locations,labels=gt_locations))
-        num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
+
+        
+        # num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
+        num_pos = tf.cast(tf.where(tf.shape(gt_locations)[0] == 0, 1, tf.shape(gt_locations)[0]), tf.float32)
+
+        
+        
+        # objectness loss
+        obj_loss = BinaryCrossentropy(from_logits=False)(y_true=true_obj, y_pred=pred_obj)
+        obj_loss /= num_pos
+
         # divide num_pos objects
         loc_loss = smooth_l1_loss / num_pos
+        # giou_loss = giou_loss / num_pos
         class_loss = classification_loss / num_pos
+        
+        # Add to total loss
+        mbox_loss = loc_loss + class_loss + obj_loss
 
-            
-        mbox_loss = loc_loss + class_loss
-
+        # If use multi gpu, divide loss value by gpu numbers
         # if self.use_multi_gpu:
         #     mbox_loss *= (1. / self.global_batch_size)
             
@@ -81,8 +138,10 @@ class DetectionLoss(tf.keras.losses.Loss):
         """
         diff = scores-labels
         abs_diff = tf.abs(diff)
-
-        return tf.where(tf.less(abs_diff, 1/(sigma**2)), 0.5*(sigma*diff)**2, abs_diff-1/(2*sigma**2))
+        
+        clipping = tf.less(abs_diff, 1/(sigma**2))
+        choose_value = tf.where(clipping, 0.5*(sigma*diff)**2, abs_diff-1/(2*sigma**2))
+        return choose_value
 
 
     def hard_negative_mining(self, loss: tf.Tensor, labels: tf.Tensor, neg_pos_ratio: float):
@@ -97,6 +156,7 @@ class DetectionLoss(tf.keras.losses.Loss):
         neg_mask = tf.cast(orders, tf.float32) < num_neg
 
         return tf.logical_or(pos_mask ,neg_mask)
+
 
     def sparse_categorical_focal_loss(self, y_true, y_pred, gamma, *,
                                   class_weight: Optional[Any] = None,

@@ -167,7 +167,12 @@ class DataLoadHandler:
         # valid_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train[:10%]')
         train_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train')
         valid_data = tfds.load(dataset_name, data_dir=self.data_dir, split='validation')
-        test_data = valid_data    
+        voc_zero_data = tfds.load('voc_zero', data_dir=self.data_dir, split='train[50%:]')
+        test_data = valid_data 
+
+        # Add ignore datas
+        train_data = train_data.concatenate(voc_zero_data)   
+        # train_data = voc_zero_data
 
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
         number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
@@ -176,7 +181,7 @@ class DataLoadHandler:
         print("Nuber of train dataset = {0}".format(number_train))
         print("Nuber of validation dataset = {0}".format(number_valid))
         print("Nuber of test dataset = {0}".format(number_test))
-
+        
         # calculate number of classes
         total_data = train_data.concatenate(valid_data)
 
@@ -267,10 +272,10 @@ class GenerateDatasets(DataLoadHandler):
             labels = sample[self.label_key] + 1
             bbox = sample[self.bbox_key]
 
-        x_min = tf.where(tf.greater_equal(bbox[:,1], bbox[:,3]), tf.cast(0, dtype=tf.float32), bbox[:,1])
-        y_min = tf.where(tf.greater_equal(bbox[:,0], bbox[:,2]), tf.cast(0, dtype=tf.float32), bbox[:,0])
-        x_max = tf.where(tf.greater_equal(x_min, bbox[:,3]), tf.cast(x_min+0.1, dtype=tf.float32), bbox[:,3])
-        y_max = tf.where(tf.greater_equal(y_min, bbox[:,2]), tf.cast(y_min+0.1, dtype=tf.float32), bbox[:,2])
+        x_min = bbox[:,1]
+        y_min = bbox[:,0]
+        x_max = bbox[:,3]
+        y_max = bbox[:,2]
         bbox = tf.stack([x_min, y_min, x_max, y_max], axis=1)
 
         if self.image_norm_type == 'torch':
@@ -306,8 +311,19 @@ class GenerateDatasets(DataLoadHandler):
 
     def join_target(self, image: tf.Tensor, bbox: tf.Tensor, labels: tf.Tensor) -> Union[tf.Tensor, tf.Tensor]:
         locations, labels = self.target_transform(tf.cast(bbox, tf.float32), labels)
+
+        # Test objectness
+        objectness = tf.cast(tf.where(labels>0, 1, 0), tf.float32)
+        objectness = tf.expand_dims(objectness , axis=-1)
+
+        locations *= objectness
+        locations = tf.clip_by_value(locations, 0., 1000)
+        locations = tf.where(tf.math.is_nan(locations), 0.5, locations)
         labels = tf.one_hot(labels, self.num_classes, axis=1, dtype=tf.float32)
-        targets = tf.concat([labels, locations], axis=1)
+
+        # targets = tf.concat([labels, locations], axis=1)
+        # Test objectness
+        targets = tf.concat([labels, locations, objectness], axis=1)
         resized_img = tf.image.resize(image, self.image_size)
 
         return (resized_img, targets)

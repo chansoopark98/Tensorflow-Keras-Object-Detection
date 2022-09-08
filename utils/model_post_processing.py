@@ -37,7 +37,7 @@ def batched_nms(boxes, scores, idxs, iou_threshold, top_k=100):
     return keep
 
 def post_process(detections, target_transform, confidence_threshold=0.01, top_k=100, iou_threshold=0.5, classes=21):
-    batch_boxes = detections[:, :, classes:]
+    batch_boxes = detections[:, :, classes:-1]
     if not tf.is_tensor(batch_boxes):
         batch_boxes = tf.convert_to_tensor(batch_boxes)
     batch_scores = tf.nn.softmax(detections[:, :, :classes], axis=2)

@@ -65,7 +65,7 @@ class ModelConfiguration(GenerateDatasets):
         self.CHECKPOINT_DIR = self.args.checkpoint_dir
         self.TENSORBOARD_DIR = self.args.tensorboard_dir
         self.IMAGE_SIZE = self.args.image_size
-        self.USE_WEIGHT_DECAY = self.args.use_weightDecay
+        self.USE_WEIGHT_DECAY = self.args.use_weight_decay
         self.MIXED_PRECISION = self.args.mixed_precision
         self.LOSS_TYPE = self.args.loss_type
         self.DISTRIBUTION_MODE = self.args.multi_gpu
@@ -155,7 +155,7 @@ class ModelConfiguration(GenerateDatasets):
 
     def __set_metrics(self):
         metric = CreateMetrics(num_classes=self.num_classes)
-        metrics = [metric.localization]
+        metrics = [metric.cross_entropy, metric.localization, metric.objectness]
 
         return metrics
 
@@ -228,10 +228,10 @@ class ModelConfiguration(GenerateDatasets):
 
         if self.MODEL_PRUNING:
             # import tempfile
-            # model_for_export = tfmot.sparsity.keras.strip_pruning(self.model)
+            model_for_export = tfmot.sparsity.keras.strip_pruning(self.model)
             # _, pruned_keras_file = tempfile.mkstemp('.h5')
-            export_path = os.path.join(self.CHECKPOINT_DIR, 'pruning')
-            tf.keras.models.save_model(self.model, export_path,
+            export_path = os.path.join(self.CHECKPOINT_DIR, 'pruning.h5')
+            tf.keras.models.save_model(model_for_export, export_path,
                                        overwrite=True,
                                        include_optimizer=False,
                                        save_format=None,
