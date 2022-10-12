@@ -54,7 +54,7 @@ parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone
                                                             [ 6. efficientv2b3  : EfficientNet-V2-B3 ]",
                     default='efficient_lite_v0')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
-                    default=32)
+                    default=8)
 parser.add_argument("--epoch",            type=int,    help="Training epochs",
                     default=300)
 parser.add_argument("--lr",               type=float,  help="Initial learning rate",
@@ -71,7 +71,7 @@ parser.add_argument("--image_norm_type",  type=str,    help="Set RGB image norna
 parser.add_argument("--loss_type",        type=str,    help="Set the loss function for class classification.\
                                                             [ 1. ce     : Uses cross entropy with hard negative mining ]\
                                                             [ 2. focal  : Focal cross entropy ]",
-                    default='focal')
+                    default='ce')
 parser.add_argument("--optimizer",        type=str,    help="Set optimizer",
                     default='adam')
 parser.add_argument("--use_weight_decay",  type=bool,   help="Whether to use weightDecay",
@@ -89,7 +89,7 @@ parser.add_argument("--dataset_name",     type=str,    help="Set the dataset typ
                                                              [ 2. coco : COCO2017 dataset ] \
                                                              [ 3. wider_face : Wider Face dataset ] \
                                                              [ 4. custom : Custom TFDS ]",
-                    default='display_detection')
+                    default='coex_wtc')
 parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,    help="Set tensorboard storage path",
@@ -106,7 +106,7 @@ args = parser.parse_args()
 
 
 if __name__ == '__main__':
-    tf.config.run_functions_eagerly(True)
+    # tf.config.run_functions_eagerly(True)
     
     if args.saved_model:
         model = ModelConfiguration(args=args)

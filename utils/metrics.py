@@ -64,8 +64,8 @@ class CreateMetrics:
 
     def localization(self, y_true, y_pred):
         labels = tf.argmax(y_true[:, :, :self.num_classes], axis=2)  # batch, 13792
-        predicted_locations = y_pred[:, :, self.num_classes:-1]  # None, None, 4
-        gt_locations = y_true[:, :, self.num_classes:-1]  # None, 13792, None
+        predicted_locations = y_pred[:, :, self.num_classes:]  # None, None, 4
+        gt_locations = y_true[:, :, self.num_classes:]  # None, 13792, None
 
         pos_mask = labels > 0
 

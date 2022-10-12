@@ -231,7 +231,7 @@ def draw_bounding(img , bboxes, labels, scores, img_size, label_list):
         cv2.addWeighted(img_box, alpha, img, 1. - alpha, 0, img)
 
 
-# @tf.function
+@tf.function
 def convert_locations_to_boxes(locations, priors, center_variance,
                                size_variance):
     """네트워크의 회귀 위치 결과를 (center_x, center_y, h, w) 형식의 box로 변환하는 과정
@@ -262,7 +262,7 @@ def convert_locations_to_boxes(locations, priors, center_variance,
         tf.math.exp(locations[..., 2:] * size_variance) * priors[..., 2:]
     ], axis=tf.rank(locations) - 1)
 
-# @tf.function
+@tf.function
 def convert_locations_to_boxes_frozen(locations, priors, center_variance,
                                size_variance):
         
@@ -273,9 +273,7 @@ def convert_locations_to_boxes_frozen(locations, priors, center_variance,
         tf.math.exp(locations[..., 2:] * size_variance) * priors[..., 2:]
     ], axis=tf.rank(locations) - 1)
 
-
-
-# @tf.function
+@tf.function
 def convert_boxes_to_locations(center_form_boxes, center_form_priors, center_variance, size_variance):
     # priors_rank = tf.rank(center_form_priors)
     # boxes_rank = tf.rank(center_form_boxes)
@@ -292,7 +290,7 @@ def convert_boxes_to_locations(center_form_boxes, center_form_priors, center_var
 
 # experimental_relax_shapes=True인 경우 인스턴스 객체를 생성할 때 작은 graph를 생성할 수 있게 함 (XLA 타입으로 컴파일)
 # 참고 자료 : https://www.tensorflow.org/xla?hl=ko
-# @tf.function(experimental_relax_shapes=True)
+@tf.function(experimental_relax_shapes=True)
 def area_of(left_top, right_bottom):
     """bbox 좌표값 (좌상단, 우하단)으로 사각형 넓이 계산.
     Args:
@@ -306,7 +304,7 @@ def area_of(left_top, right_bottom):
     return hw[..., 0] * hw[..., 1]
 
 
-# @tf.function(experimental_relax_shapes=True)
+@tf.function(experimental_relax_shapes=True)
 def iou_of(boxes0, boxes1, eps=1e-5):
     """두 bbox간 iou 계산.
     Args:
@@ -324,13 +322,13 @@ def iou_of(boxes0, boxes1, eps=1e-5):
     area1 = area_of(boxes1[..., :2], boxes1[..., 2:])
     return overlap_area / (area0 + area1 - overlap_area + eps)
 
-# @tf.function
+@tf.function
 def center_form_to_corner_form(locations, axis=2):
     output = tf.concat([locations[..., :axis] - locations[..., axis:] / 2,
                         locations[..., :axis] + locations[..., axis:] / 2], tf.rank(locations) - 1)
     return output
 
-# @tf.function
+@tf.function
 def corner_form_to_center_form(boxes):
     return tf.concat([
         (boxes[..., :2] + boxes[..., 2:]) / 2,

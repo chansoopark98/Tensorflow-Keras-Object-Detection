@@ -21,6 +21,7 @@ class DataLoadHandler:
 
 
     def __select_dataset(self):
+        print(self.dataset_name)
         try:
             if self.dataset_name == 'voc':
                 self.num_classes = 21
@@ -167,7 +168,6 @@ class DataLoadHandler:
         # valid_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train[:10%]')
         train_data = tfds.load(dataset_name, data_dir=self.data_dir, split='train')
         valid_data = tfds.load(dataset_name, data_dir=self.data_dir, split='validation')
-        voc_zero_data = tfds.load('voc_zero', data_dir=self.data_dir, split='train[50%:]')
         test_data = valid_data 
 
         # Add ignore datas
@@ -195,6 +195,7 @@ class DataLoadHandler:
         # The maximum value of the label starts at index 0, so we need to add +1,
         # And we add a background class to add a total of 2.
         self.num_classes = best_label_value.numpy() + 2
+        print(self.num_classes)
         
         return (train_data, number_train, valid_data, number_valid, test_data, number_test)
 
@@ -291,39 +292,28 @@ class GenerateDatasets(DataLoadHandler):
     
     @tf.function
     def augmentation(self, image: tf.Tensor, boxes: tf.Tensor, labels: tf.Tensor)-> Union[tf.Tensor, tf.Tensor, tf.Tensor]:
-        # if tf.random.uniform([]) > 0.5:
-        #     image = tf.image.random_jpeg_quality(image, 30, 99)
-        # if tf.random.uniform([]) > 0.5:
-        #     image = tf.image.random_saturation(image, lower=0.5, upper=1.5) # 랜덤 채도
-        # if tf.random.uniform([]) > 0.5:
-        #     image = tf.image.random_brightness(image, max_delta=0.15) # 랜덤 밝기
-        # if tf.random.uniform([]) > 0.5:
-        #     image = tf.image.random_contrast(image, lower=0.5, upper=1.5) # 랜덤 대비
-        # if tf.random.uniform([]) > 0.5:
-        #     image = tf.image.random_hue(image, max_delta=0.2) # 랜덤 휴 트랜스폼
-        # image = random_lighting_noise(image)
-        # image, boxes = expand(image, boxes)
-        # image, boxes, labels = random_crop(image, boxes, labels) # 랜덤 자르기
-        # image, boxes = random_flip(image, boxes) # 랜덤 뒤집기
+        if tf.random.uniform([]) > 0.5:
+            image = tf.image.random_jpeg_quality(image, 30, 99)
+        if tf.random.uniform([]) > 0.5:
+            image = tf.image.random_saturation(image, lower=0.5, upper=1.5) # 랜덤 채도
+        if tf.random.uniform([]) > 0.5:
+            image = tf.image.random_brightness(image, max_delta=0.15) # 랜덤 밝기
+        if tf.random.uniform([]) > 0.5:
+            image = tf.image.random_contrast(image, lower=0.5, upper=1.5) # 랜덤 대비
+        if tf.random.uniform([]) > 0.5:
+            image = tf.image.random_hue(image, max_delta=0.2) # 랜덤 휴 트랜스폼
+        image = random_lighting_noise(image)
+        image, boxes = expand(image, boxes)
+        image, boxes, labels = random_crop(image, boxes, labels) # 랜덤 자르기
+        image, boxes = random_flip(image, boxes) # 랜덤 뒤집기
 
         return (image, boxes, labels)
 
 
     def join_target(self, image: tf.Tensor, bbox: tf.Tensor, labels: tf.Tensor) -> Union[tf.Tensor, tf.Tensor]:
         locations, labels = self.target_transform(tf.cast(bbox, tf.float32), labels)
-
-        # Test objectness
-        objectness = tf.cast(tf.where(labels>0, 1, 0), tf.float32)
-        objectness = tf.expand_dims(objectness , axis=-1)
-
-        locations *= objectness
-        locations = tf.clip_by_value(locations, 0., 1000)
-        locations = tf.where(tf.math.is_nan(locations), 0.5, locations)
         labels = tf.one_hot(labels, self.num_classes, axis=1, dtype=tf.float32)
-
-        # targets = tf.concat([labels, locations], axis=1)
-        # Test objectness
-        targets = tf.concat([labels, locations, objectness], axis=1)
+        targets = tf.concat([labels, locations], axis=1)
         resized_img = tf.image.resize(image, self.image_size)
 
         return (resized_img, targets)

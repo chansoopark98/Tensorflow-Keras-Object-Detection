@@ -32,80 +32,35 @@ class DetectionLoss(tf.keras.losses.Loss):
             Returns the config dictionary for a Loss instance.
         """
         config = super().get_config()
-        config.update(gamma=self.gamma, class_weight=self.class_weight,
-                      from_logits=self.from_logits, use_multi_gpu=self.use_multi_gpu,
+        config.update(use_multi_gpu=self.use_multi_gpu,
                       global_batch_size=self.global_batch_size, num_classes=self.num_classes)
         return config
 
-    def ce_with_hard_negaitve_mining(self, confidence: tf.Tensor, labels: tf.Tensor):
+    def call(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
+        labels = tf.argmax(y_true[:,:,:self.num_classes], axis=2)
+        confidence = y_pred[:,:,:self.num_classes]
+        predicted_locations = y_pred[:,:,self.num_classes:]
+        gt_locations = y_true[:,:,self.num_classes:]
+        neg_pos_ratio = 3.0
         loss = -tf.nn.log_softmax(confidence, axis=2)[:, :, 0]
         loss = tf.stop_gradient(loss)
 
-        mask = self.hard_negative_mining(loss, labels, neg_pos_ratio=3.0)
+        mask = self.hard_negative_mining(loss, labels, neg_pos_ratio)
         mask = tf.stop_gradient(mask) # neg sample 마스크
 
         confidence = tf.boolean_mask(confidence, mask)
-
-        logits = tf.reshape(confidence, [-1, self.num_classes])
-        labels = tf.boolean_mask(labels, mask)
-
         # calc classification loss
-        # logits (samples, classes) labels (samples)
-        ce_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits = logits , labels = labels)
-        classification_loss = tf.math.reduce_sum(ce_loss)
-
-        return classification_loss
-
-    def giou_loss(self, target, output):
-        giou_loss = tfa.losses.giou_loss(target, output)
-
-        return giou_loss
-
-        
-        
-
-    def call(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
-        # Label
-        labels = tf.math.argmax(y_true[:,:,:self.num_classes], axis=2)
-        confidence = y_pred[:,:,:self.num_classes]
-        
-        # Box
-        gt_locations = y_true[:,:,self.num_classes:]
-        predicted_locations = y_pred[:,:,self.num_classes:]
-
-        if self.use_focal:
-            # focal_labels : [batch * samples]
-            focal_labels = tf.reshape(labels, [-1])
-            # confidence : [batch * samples , classes]
-            confidence = tf.reshape(confidence, [-1, self.num_classes])
-            classification_loss = self.sparse_categorical_focal_loss(y_true=focal_labels, y_pred=confidence, gamma=2.0, from_logits=True)
-            classification_loss = tf.reduce_sum(classification_loss)
-        else:
-            classification_loss = self.ce_with_hard_negaitve_mining(confidence=confidence, labels=labels)
-        
+        classification_loss = tf.math.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(logits = tf.reshape(confidence, [-1, self.num_classes]), labels = tf.boolean_mask(labels, mask)))
         pos_mask = labels > 0
         predicted_locations = tf.reshape(tf.boolean_mask(predicted_locations, pos_mask), [-1, 4])
         gt_locations = tf.reshape(tf.boolean_mask(gt_locations, pos_mask), [-1, 4])
-
-        # Test DIoU loss
-        # giou_loss = self.giou_loss(target=gt_locations, output=predicted_locations)
-
         # calc localization loss
         smooth_l1_loss = tf.math.reduce_sum(self.smooth_l1(scores=predicted_locations,labels=gt_locations))
         num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
-
         # divide num_pos objects
         loc_loss = smooth_l1_loss / num_pos
-        # giou_loss = giou_loss / num_pos
         class_loss = classification_loss / num_pos
-        
-        # Add to total loss
         mbox_loss = loc_loss + class_loss
-
-        # If use multi gpu, divide loss value by gpu numbers
-        # if self.use_multi_gpu:
-        #     mbox_loss *= (1. / self.global_batch_size)
-            
         return mbox_loss
 
 
@@ -118,10 +73,7 @@ class DetectionLoss(tf.keras.losses.Loss):
         """
         diff = scores-labels
         abs_diff = tf.abs(diff)
-        
-        clipping = tf.less(abs_diff, 1/(sigma**2))
-        choose_value = tf.where(clipping, 0.5*(sigma*diff)**2, abs_diff-1/(2*sigma**2))
-        return choose_value
+        return tf.where(tf.less(abs_diff, 1/(sigma**2)), 0.5*(sigma*diff)**2, abs_diff-1/(2*sigma**2))
 
 
     def hard_negative_mining(self, loss: tf.Tensor, labels: tf.Tensor, neg_pos_ratio: float):
@@ -136,78 +88,3 @@ class DetectionLoss(tf.keras.losses.Loss):
         neg_mask = tf.cast(orders, tf.float32) < num_neg
 
         return tf.logical_or(pos_mask ,neg_mask)
-
-
-    def sparse_categorical_focal_loss(self, y_true, y_pred, gamma, *,
-                                  class_weight: Optional[Any] = None,
-                                  from_logits: bool = False, axis: int = -1,
-                                  ) -> tf.Tensor:
-        # Process focusing parameter
-        gamma = tf.convert_to_tensor(gamma, dtype=tf.dtypes.float32)
-        gamma_rank = gamma.shape.rank
-        scalar_gamma = gamma_rank == 0
-
-        # Process class weight
-        if class_weight is not None:
-            class_weight = tf.convert_to_tensor(class_weight,
-                                                dtype=tf.dtypes.float32)
-
-        # Process prediction tensor
-        y_pred = tf.convert_to_tensor(y_pred)
-        y_pred_rank = y_pred.shape.rank
-        if y_pred_rank is not None:
-            axis %= y_pred_rank
-            if axis != y_pred_rank - 1:
-                # Put channel axis last for sparse_softmax_cross_entropy_with_logits
-                perm = list(itertools.chain(range(axis),
-                                            range(axis + 1, y_pred_rank), [axis]))
-                y_pred = tf.transpose(y_pred, perm=perm)
-        elif axis != -1:
-            raise ValueError(
-                f'Cannot compute sparse categorical focal loss with axis={axis} on '
-                'a prediction tensor with statically unknown rank.')
-        y_pred_shape = tf.shape(y_pred)
-
-        # Process ground truth tensor
-        y_true = tf.dtypes.cast(y_true, dtype=tf.dtypes.int64)
-        y_true_rank = y_true.shape.rank
-
-        if y_true_rank is None:
-            raise NotImplementedError('Sparse categorical focal loss not supported '
-                                    'for target/label tensors of unknown rank')
-
-        reshape_needed = (y_true_rank is not None and y_pred_rank is not None and
-                        y_pred_rank != y_true_rank + 1)
-        if reshape_needed:
-            y_true = tf.reshape(y_true, [-1])
-            y_pred = tf.reshape(y_pred, [-1, y_pred_shape[-1]])
-
-        if from_logits:
-            logits = y_pred
-            probs = tf.nn.softmax(y_pred, axis=-1)
-        else:
-            probs = y_pred
-            logits = tf.math.log(tf.clip_by_value(y_pred, _EPSILON, 1 - _EPSILON))
-
-        xent_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-            labels=y_true,
-            logits=logits)
-
-        y_true_rank = y_true.shape.rank
-        probs = tf.gather(probs, y_true, axis=-1, batch_dims=y_true_rank)
-
-        if not scalar_gamma:
-            gamma = tf.gather(gamma, y_true, axis=0, batch_dims=y_true_rank)
-        focal_modulation = (1 - probs) ** gamma
-
-        loss = focal_modulation * xent_loss
-
-        if class_weight is not None:
-            class_weight = tf.gather(class_weight, y_true, axis=0,
-                                    batch_dims=y_true_rank)
-            loss *= class_weight
-
-        if reshape_needed:
-            loss = tf.reshape(loss, y_pred_shape[:-1])
-
-        return loss

@@ -199,8 +199,6 @@ class DetectionLoss(tf.keras.losses.Loss):
         # smooth_l1_loss = tf.math.reduce_sum(self.smooth_l1(scores=predicted_locations,labels=gt_locations))
         smooth_l1_loss = Huber()(y_true=gt_locations, y_pred=predicted_locations)
 
-        np_gt_locations = gt_locations.numpy()
-        np_predicted_locations = predicted_locations.numpy()
         ciou_loss = self.ciou_loss(gt_locations, predicted_locations)
         
         # num_pos = tf.cast(tf.shape(gt_locations)[0], tf.float32)
