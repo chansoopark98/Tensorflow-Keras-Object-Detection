@@ -1,6 +1,6 @@
 from tensorflow.keras.layers import Concatenate, Flatten, Reshape, SeparableConv2D, Conv2D, DepthwiseConv2D
 from tensorflow.keras.layers import Layer
-from tensorflow.keras.initializers import Constant, VarianceScaling
+from tensorflow.keras.initializers import Constant, VarianceScaling, HeNormal
 from tensorflow.keras.regularizers import L2
 import tensorflow as tf
 from tensorflow.keras.models import Model
@@ -45,10 +45,12 @@ class ModelBuilder():
         self.weight_decay = weight_decay
         self.include_preprocessing = include_preprocessing
 
-        self.kernel_initializer = VarianceScaling(scale=2.0, mode="fan_out",
-                                                  distribution="truncated_normal")
-        self.normalize = [20, 20, 20, -1, -1, -1]
-        self.num_priors = [4, 6, 6, 6, 4, 4]
+        self.kernel_initializer = HeNormal()
+        
+        # self.normalize = [20, 20, 20, -1, -1, -1]
+        self.normalize = [-1, -1, -1, -1, -1]
+        # self.num_priors = [4, 6, 6, 6, 4, 4]
+        self.num_priors = [4, 6, 6, 6, 4]
         # self.num_priors = [2, 2, 2, 2, 2, 2]
 
 
@@ -146,4 +148,12 @@ class ModelBuilder():
         predictions = Concatenate(axis=2, name='predictios', dtype=tf.float32)([mbox_conf, mbox_loc])
 
         return predictions
-        
+
+
+if __name__ == '__main__':
+    
+    model_builder = ModelBuilder(image_size=(300, 300), num_classes=6)
+
+    model = model_builder.build_model(model_name='efficientv2b0')
+
+    # model.summary()

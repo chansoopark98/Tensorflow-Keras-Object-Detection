@@ -1,6 +1,7 @@
 from .EfficientNet_lite import EfficientNetLiteB0
 from tensorflow.keras.layers import Conv2D, BatchNormalization, ReLU, SeparableConv2D, Activation, ZeroPadding2D
 from tensorflow.keras.layers import Input, Rescaling
+from tensorflow.keras.initializers import VarianceScaling
 
 class EfficientLiteB0():
     def __init__(self, image_size: tuple, pretrained: str = "imagenet", include_preprocessing: bool = False):
@@ -17,10 +18,8 @@ class EfficientLiteB0():
 
         base = EfficientNetLiteB0(include_top=False, weights=self.pretrained, input_shape=(*self.image_size, 3), input_tensor=input_tensor)
 
-        self.kernel_initializer = {
-            "class_name": "VarianceScaling",
-            "config": {"scale": 2.0, "mode": "fan_out", "distribution": "truncated_normal"},
-        }
+        self.kernel_initializer = VarianceScaling(scale=2.0, mode="fan_out",
+                                                  distribution="truncated_normal")
 
         return base
 

@@ -43,7 +43,7 @@ parser.add_argument("--pruning",  help="Apply pruning when training",
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name (logging weights name and tensorboard)",
-                    default='test_objectness_display_detection_switch-new_loss-TEST_HUBER')
+                    default='COEX_WTC_E100_B8_lr0.001-adam_256x256_efficientnetv2b0_bifpn')
 parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone name\
                                                             |   model_name    : description | \
                                                             [ 1. mobilenetv2       : MobileNetV2 ]\
@@ -52,17 +52,17 @@ parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone
                                                             [ 4. efficient_lite_v0 : EfficientNet-Lite-B0 ]\
                                                             [ 5. efficientv2b0  : EfficientNet-V2-B0 ]\
                                                             [ 6. efficientv2b3  : EfficientNet-V2-B3 ]",
-                    default='efficient_lite_v0')
+                    default='efficientv2b0')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
                     default=8)
 parser.add_argument("--epoch",            type=int,    help="Training epochs",
-                    default=300)
+                    default=100)
 parser.add_argument("--lr",               type=float,  help="Initial learning rate",
-                    default=0.005)
+                    default=0.001)
 parser.add_argument("--weight_decay",     type=float,  help="Set Weight Decay",
                     default=0.00001)
 parser.add_argument("--image_size",       type=tuple,  help="Set model input size",
-                    default=(300, 300))
+                    default=(256, 256))
 parser.add_argument("--image_norm_type",  type=str,    help="Set RGB image nornalize format (tf or torch or no)\
                                                              [ 1. tf    : Rescaling RGB image -1 ~ 1 from imageNet ]\
                                                              [ 2. torch : Rescaling RGB image 0 ~ 1 from imageNet ]\
