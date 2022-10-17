@@ -14,24 +14,24 @@ parser.add_argument("--backbone_name",    type=str,    help="Pretrained backbone
                                                             [ 2. mobilenetv3s      : MobileNetV3-Small ] \
                                                             [ 3. mobilenetv3l      : MobileNetV3-Large ] \
                                                             [ 4. efficient_lite_v0 : EfficientNet-Lite-B0 ]\
-                                                            [ 5. efficientnetv2b0  : EfficientNet-V2-B0 ]\
+                                                            [ 5. efficientv2b0  : EfficientNet-V2-B0 ]\
                                                             [ 6. efficientnetv2b3  : EfficientNet-V2-B3 ]",
-                    default='efficient_lite_v0')
+                    default='efficientv2b0')
 parser.add_argument("--num_classes",          type=int,   help="Number of classes in the pretrained model",
-                    default=4)
+                    default=6)
 parser.add_argument("--image_norm_type",  type=str,    help="Set RGB image nornalize format (tf or torch or no)\
                                                              [ 1. tf    : Rescaling RGB image -1 ~ 1 from imageNet ]\
                                                              [ 2. torch : Rescaling RGB image 0 ~ 1 from imageNet ]\
                                                              [ 3. else  : Rescaling RGB image 0 ~ 1 only divide 255 ]",
                     default='div')
 parser.add_argument("--image_size",          type=tuple, help="Model image size (input resolution)",
-                    default=(300, 300))
+                    default=(256, 256))
 parser.add_argument("--threshold",           type=float, help="Post processing confidence threshold",
-                    default=0.5)
+                    default=0.9)
 parser.add_argument("--checkpoint_dir",      type=str,   help="Setting the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--weight_name",         type=str,   help="Saved model weights directory",
-                    default='0907/_0907_test_objectness_display_detection_switch-new_loss_best_loss.h5')
+                    default='1017/_1017_COEX_WTC_E100_B8_lr0.001-adam_256x256_efficientnetv2b0_bifpn_best_loss.h5')
 parser.add_argument("--gpu_num",             type=int,    help="Set GPU number to use(When without distribute training)",
                     default=1)
 args = parser.parse_args()
@@ -89,7 +89,7 @@ if __name__ == '__main__':
 
             pred = model.predict(img)
 
-            predictions = post_process(pred, target_transform, classes=args.num_classes, confidence_threshold=args.threshold)
+            predictions = post_process(pred, target_transform, classes=args.num_classes, confidence_threshold=args.threshold, iou_threshold=0.9, top_k=50)
             
             pred_boxes, pred_scores, pred_labels = predictions[0]
 
